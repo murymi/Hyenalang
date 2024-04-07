@@ -313,6 +313,7 @@ function genSubtract() {
 }
 
 function genNegate() {
+    console.log("   neg rax");
     console.log("   push rax");
 }
 
@@ -338,6 +339,7 @@ function genBinary(operator: tokenType) {
 }
 
 function genUnary() {
+    console.log("   pop rax");
     genNegate();
 }
 
@@ -432,5 +434,5 @@ function compile(text: string) {
 // make > tmp.s
 // gcc -static -o tmp tmp.s
 // ./tmp
-compile("(10/2 + 7 * 2)/2");
+compile("-20 + 5");
 

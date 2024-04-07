@@ -3,22 +3,13 @@
 .data
 .align 1
 .fmtbytes:
-   .byte '('
-   .byte '1'
-   .byte '0'
-   .byte '/'
+   .byte '-'
    .byte '2'
+   .byte '0'
    .byte ' '
    .byte '+'
    .byte ' '
-   .byte '7'
-   .byte ' '
-   .byte '*'
-   .byte ' '
-   .byte '2'
-   .byte ')'
-   .byte '/'
-   .byte '2'
+   .byte '5'
    .byte ' '
    .byte '='
    .byte ' '
@@ -33,28 +24,14 @@ fmt: .quad .fmtbytes
 main:
    push rbp
    mov rbp, rsp
-   push 10
-   push 2
-   pop rdi
+   push 20
    pop rax
-   cqo
-   idiv rdi
+   neg rax
    push rax
-   push 7
-   push 2
-   pop rdi
-   pop rax
-   imul rax, rdi
-   push rax
+   push 5
    pop rdi
    pop rax
    add rax, rdi
-   push rax
-   push 2
-   pop rdi
-   pop rax
-   cqo
-   idiv rdi
    push rax
    mov rsi, rax
    mov rdi, fmt
