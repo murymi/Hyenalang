@@ -3,13 +3,8 @@
 .data
 .align 1
 .fmtbytes:
-   .byte '-'
-   .byte '2'
+   .byte '4'
    .byte '0'
-   .byte ' '
-   .byte '+'
-   .byte ' '
-   .byte '5'
    .byte ' '
    .byte '='
    .byte ' '
@@ -24,15 +19,8 @@ fmt: .quad .fmtbytes
 main:
    push rbp
    mov rbp, rsp
-   push 20
+   push 40
    pop rax
-   neg rax
-   push rax
-   push 5
-   pop rdi
-   pop rax
-   add rax, rdi
-   push rax
    mov rsi, rax
    mov rdi, fmt
   mov rax, rsp

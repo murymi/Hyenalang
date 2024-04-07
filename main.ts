@@ -393,7 +393,8 @@ function genStart(text: string, ast: Expression) {
     console.log("   mov rbp, rsp");
 
     generateCode(ast);
-
+    
+    console.log("   pop rax");
     console.log("   mov rsi, rax");
     console.log("   mov rdi, fmt");
 
@@ -434,5 +435,5 @@ function compile(text: string) {
 // make > tmp.s
 // gcc -static -o tmp tmp.s
 // ./tmp
-compile("-20 + 5");
+compile("40");
 
