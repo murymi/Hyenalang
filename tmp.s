@@ -20,69 +20,36 @@ fmt: .quad .fmtbytes
 main:
    push rbp
    mov rbp, rsp
-   push 40
-   push 2
-   pop rdi
-   pop rax
-   add rax, rdi
+   sub rsp, 16
+
+   lea rax, [rbp-0]
    push rax
-   pop rax
-   mov rsi, rax
-   mov rdi, fmt
-   mov rax, rsp
-   and rax, 15
-   jnz .L.call.0
-   mov rax, 0
-   call printf
-   jmp .L.end.0
-.L.call.0:
-   sub rsp, 8
-   mov rax, 0
-   call printf
-   add rsp, 8
-.L.end.0:
-   push 69
-   push 3
-   pop rdi
-   pop rax
-   imul rax, rdi
-   push rax
-   pop rax
-   mov rsi, rax
-   mov rdi, fmt
-   mov rax, rsp
-   and rax, 15
-   jnz .L.call.1
-   mov rax, 0
-   call printf
-   jmp .L.end.1
-.L.call.1:
-   sub rsp, 8
-   mov rax, 0
-   call printf
-   add rsp, 8
-.L.end.1:
+
    push 90
-   push 8
+
+   pop rdi
+   pop rax
+   mov [rax], rdi
+
+
+   push 10
+   push 10
    pop rdi
    pop rax
    add rax, rdi
    push rax
-   pop rax
-   mov rsi, rax
-   mov rdi, fmt
-   mov rax, rsp
-   and rax, 15
-   jnz .L.call.2
-   mov rax, 0
-   call printf
-   jmp .L.end.2
-.L.call.2:
    sub rsp, 8
-   mov rax, 0
-   call printf
-   add rsp, 8
-.L.end.2:
+
+
+   lea rax, [rbp-8]
+   push rax
+
+   push 78
+
+   pop rdi
+   pop rax
+   mov [rax], rdi
+
    xor rax, rax
    mov rsp, rbp
    pop rbp

@@ -1,7 +1,7 @@
 import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
-import { Statement } from "./stmt";
+import { Statement, stmtType } from "./stmt";
 
 
 function genDivide() {
@@ -60,6 +60,23 @@ function genPrimary(a: number) {
     console.log("   push " + a);
 }
 
+function load() {
+    console.log("   pop rax");
+    console.log("   mov rax, [rax]");
+    console.log("   push rax");
+}
+
+function store() {
+    console.log("   pop rdi");
+    console.log("   pop rax");
+    console.log("   mov [rax], rdi");
+}
+
+function genAddress(stmt: Statement){
+    console.log("   lea rax, [rbp-"+stmt.offset+"]");
+    console.log("   push rax")
+}
+
 
 function generateCode(expr: Expression) {
     switch (expr.type) {
@@ -83,7 +100,31 @@ function generateCode(expr: Expression) {
     }
 }
 
-export function genStart(stmts: Statement[]) {
+
+function genStmt(stmt: Statement, labeloffset: number):void {
+
+    switch(stmt.type) {
+        case stmtType.exprstmt:
+            console.log("");
+            generateCode(stmt.expr);
+            console.log("   sub rsp, 8");
+            console.log("");
+            break;
+        case stmtType.vardeclstmt:
+            console.log("");
+            genAddress(stmt);
+            console.log("");
+            generateCode(stmt.expr);
+            console.log("");
+            store();
+            console.log("");
+            break;
+        default: break;
+    }
+
+}
+
+export function genStart(stmts: Statement[], localSize: number) {
     var text = "res = %d";
     console.log(".intel_syntax noprefix");
     console.log(".global fmt")
@@ -102,27 +143,10 @@ export function genStart(stmts: Statement[]) {
     console.log("main:");
     console.log("   push rbp");
     console.log("   mov rbp, rsp");
+    console.log("   sub rsp, "+ localSize);
 
-    
     stmts.forEach((s, i)=> {
-        generateCode(s.expr);
-
-        console.log("   pop rax");
-        console.log("   mov rsi, rax");
-        console.log("   mov rdi, fmt");
-    
-        console.log("   mov rax, rsp");
-        console.log("   and rax, 15");
-        console.log("   jnz .L.call."+i);
-        console.log("   mov rax, 0");
-        console.log("   call printf");
-        console.log("   jmp .L.end."+i);
-        console.log(".L.call."+i+":");
-        console.log("   sub rsp, 8");
-        console.log("   mov rax, 0");
-        console.log("   call printf");
-        console.log("   add rsp, 8");
-        console.log(".L.end."+i+":");
+        genStmt(s, i);
     })
 
     console.log("   xor rax, rax");
@@ -130,3 +154,21 @@ export function genStart(stmts: Statement[]) {
     console.log("   pop rbp");
     console.log("   ret")
 }
+
+
+        // console.log("   pop rax");
+        // console.log("   mov rsi, rax");
+        // console.log("   mov rdi, fmt");
+    // 
+        // console.log("   mov rax, rsp");
+        // console.log("   and rax, 15");
+        // console.log("   jnz .L.call."+i);
+        // console.log("   mov rax, 0");
+        // console.log("   call printf");
+        // console.log("   jmp .L.end."+i);
+        // console.log(".L.call."+i+":");
+        // console.log("   sub rsp, 8");
+        // console.log("   mov rax, 0");
+        // console.log("   call printf");
+        // console.log("   add rsp, 8");
+        // console.log(".L.end."+i+":");

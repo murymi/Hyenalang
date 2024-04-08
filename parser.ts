@@ -2,7 +2,8 @@ import { Token } from "./token";
 import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
-import { Statement } from "./stmt";
+import { Statement, stmtType } from "./stmt";
+import { incLocalOffset } from "./main";
 
 export class Parser {
     tokens: Token[];
@@ -34,10 +35,11 @@ export class Parser {
 
     previous(): Token { return this.tokens[this.current - 1]; }
 
-    expect(type, name) {
-        if (this.advance().type !== type) {
+    expect(type, name):Token {
+        if (this.peek().type !== type) {
             throw new Error("Expected " + name);
         }
+        return this.advance();
     }
 
     primary(): Expression {
@@ -96,16 +98,35 @@ export class Parser {
     statement(): Statement {
         var expr = this.expression();
         this.expect(tokenType.semicolon, ";");
-        return new Statement(expr);
+        var stmt = new Statement().newExprStatement(expr);
+        return stmt;
+    }
+
+    varDeclaration():Statement {
+        var name = this.expect(tokenType.identifier, "var name");
+        var initializer;
+        if(this.match([tokenType.equal])) {
+            initializer = this.expression();
+        }
+        this.expect(tokenType.semicolon, ";");
+        var offset = incLocalOffset();
+        return new Statement().newVarstatement(name.value as string, initializer, offset*8);
+    }
+
+    declaration(): Statement {
+        if(this.match([tokenType.var])) {
+            return this.varDeclaration();
+        }
+        return this.statement();
     }
 
     parse(): Statement[] {
         var stmts: Statement[] = [];
         while(this.moreTokens()) {
-            stmts.push(this.statement());
+            stmts.push(this.declaration());
         }
 
-        //console.log(stmts);
+        //console.log(stmts.length);
         return stmts;
     }
 

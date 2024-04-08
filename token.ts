@@ -8,6 +8,9 @@ export enum tokenType {
     leftparen,
     rightparen,
     semicolon,
+    identifier,
+    var,
+    equal,
     eof
 };
 
@@ -49,6 +52,10 @@ export class Lexer {
         return false;
     }
 
+    isAlpha(text: string): boolean {
+        return /^[a-z]$/.test(text);
+    }
+
     isNumber(text: string): boolean {
         return /^[0-9]$/.test(text);
     }
@@ -61,6 +68,18 @@ export class Lexer {
         }
         var str = this.text.substring(start, this.current);
         return parseFloat(str);
+    }
+
+    identifier():Token {
+        var start = this.current;
+        while (this.moreTokens()) {
+            if (!this.isAlpha(this.peek())) break;
+            this.advance();
+        }
+        var str = this.text.substring(start, this.current);
+        if(str === "var") return new Token(tokenType.var, str);
+
+        return new Token(tokenType.identifier, str);
     }
 
     lex(): Token[] {
@@ -97,6 +116,11 @@ export class Lexer {
             } else if (char === ')') {
                 tokens.push(new Token(tokenType.rightparen, ")"));
                 this.advance();
+            } else if (char === '=') {
+                tokens.push(new Token(tokenType.equal, "="));
+                this.advance();
+            }  else if(this.isAlpha(char)) {
+                tokens.push(this.identifier());
             } else if (char === "eof") {
                 tokens.push(new Token(tokenType.eof, "eof"));
                 break;
