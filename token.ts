@@ -12,6 +12,8 @@ export enum tokenType {
     var,
     equal,
     print,
+    leftbrace,
+    rightbrace,
     eof
 };
 
@@ -71,15 +73,15 @@ export class Lexer {
         return parseFloat(str);
     }
 
-    identifier():Token {
+    identifier(): Token {
         var start = this.current;
         while (this.moreTokens()) {
             if (!this.isAlpha(this.peek())) break;
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        if(str === "var") return new Token(tokenType.var, str);
-        if(str === "print") return new Token(tokenType.print, str);
+        if (str === "var") return new Token(tokenType.var, str);
+        if (str === "print") return new Token(tokenType.print, str);
 
         return new Token(tokenType.identifier, str);
     }
@@ -118,10 +120,16 @@ export class Lexer {
             } else if (char === ')') {
                 tokens.push(new Token(tokenType.rightparen, ")"));
                 this.advance();
+            } else if (char === '}') {
+                tokens.push(new Token(tokenType.rightbrace, "}"));
+                this.advance();
+            } else if (char === '{') {
+                tokens.push(new Token(tokenType.leftbrace, "{"));
+                this.advance();
             } else if (char === '=') {
                 tokens.push(new Token(tokenType.equal, "="));
                 this.advance();
-            }  else if(this.isAlpha(char)) {
+            } else if (this.isAlpha(char)) {
                 tokens.push(this.identifier());
             } else if (char === "eof") {
                 tokens.push(new Token(tokenType.eof, "eof"));

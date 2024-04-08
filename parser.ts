@@ -3,7 +3,7 @@ import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { getLocalOffset, incLocalOffset } from "./main";
+import { beginScope, endScope, getLocalOffset, incLocalOffset } from "./main";
 
 export class Parser {
     tokens: Token[];
@@ -45,13 +45,13 @@ export class Parser {
     primary(): Expression {
         if(this.match([tokenType.identifier])) {
             var offset = getLocalOffset(this.previous().value as string);
+            ///console.log("=============");
             var expr = new Expression(exprType.identifier, undefined, this.previous().value);
             expr.offset = offset;
             return expr;
         }
         
         if (this.match([tokenType.number])) {
-            //console.log("=============");
             return new Expression(exprType.primary, undefined, this.previous().value);
         }
 
@@ -133,9 +133,24 @@ export class Parser {
         return new Statement().newPrintStatement(val);
     }
 
+    block():Statement {
+        beginScope();
+        var stmts: Statement[] = [];
+        while(!this.check(tokenType.rightbrace) && this.moreTokens()) {
+            stmts.push(this.declaration());
+        }
+        this.expect(tokenType.rightbrace, "}");
+        endScope();
+        return new Statement().newBlockStatement(stmts);
+    }
+
     statement():Statement {
         if(this.match([tokenType.print])) {
             return this.printStatement();
+        }
+
+        if(this.match([tokenType.leftbrace])) {
+            return this.block();
         }
 
         return this.ExprStatement();

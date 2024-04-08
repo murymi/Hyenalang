@@ -4,7 +4,8 @@ export enum stmtType {
     vardeclstmt,
     exprstmt,
     print,
-    varAccess
+    varAccess,
+    block
 }
 
 export class Statement {
@@ -15,6 +16,9 @@ export class Statement {
     initializer?: Expression;
     name: string;
     offset: number;
+
+    // block
+    stmts: Statement[];
 
     newVarstatement(name : string, initializer: Expression|undefined, offset: number) :Statement {
         if(initializer === undefined) {
@@ -28,6 +32,12 @@ export class Statement {
         this.name = name;
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
+        return this;
+    }
+
+    newBlockStatement(stmts: Statement[]): Statement {
+        this.stmts = stmts;
+        this.type = stmtType.block;
         return this;
     }
 

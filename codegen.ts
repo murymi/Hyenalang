@@ -101,7 +101,7 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             store();
             break;
-            case exprType.identifier:
+        case exprType.identifier:
             genAddress(expr);
             load();
             break;
@@ -115,20 +115,17 @@ function genStmt(stmt: Statement, labeloffset: number):void {
 
     switch(stmt.type) {
         case stmtType.exprstmt:
-            console.log("");
             generateCode(stmt.expr);
             console.log("   sub rsp, 8");
-            console.log("");
             break;
         case stmtType.vardeclstmt:
-            console.log("");
             genAddress(stmt);
-            console.log("");
             generateCode(stmt.expr);
-            console.log("");
             store();
-            console.log("");
             break;
+        case stmtType.block:
+            stmt.stmts.forEach((s, i)=>{ genStmt(s, i+labeloffset+1); })
+            break
         case stmtType.print:
             generateCode(stmt.expr);
             console.log("   pop rax");
