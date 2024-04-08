@@ -7,3 +7,6 @@ endif
 main:
 	$(V_AT)tsc main.ts
 	$(V_AT)node main.js
+
+bin:
+	$(V_AT)gcc -static -o tmp tmp.s
