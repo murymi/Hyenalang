@@ -72,13 +72,14 @@ function store() {
     console.log("   mov [rax], rdi");
 }
 
-function genAddress(stmt: Statement){
-    console.log("   lea rax, [rbp-"+stmt.offset+"]");
+function genAddress(stmt: Statement | Expression){
+    console.log("   lea rax, [rbp-"+stmt.offset*8+"]");
     console.log("   push rax")
 }
 
 
 function generateCode(expr: Expression) {
+    //console.log(expr);
     switch (expr.type) {
         case exprType.binary:
             generateCode(expr.left as Expression);
@@ -89,11 +90,20 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             genUnary();
             break;
-        case exprType.primary:
+            case exprType.primary:
             genPrimary(expr.val as number);
             break;
         case exprType.grouping:
             generateCode(expr.left as Expression);
+            break;
+        case exprType.assign:
+            genAddress(expr)
+            generateCode(expr.left as Expression);
+            store();
+            break;
+            case exprType.identifier:
+            genAddress(expr);
+            load();
             break;
         default:
             throw new Error("Unexpected expression");
@@ -118,6 +128,25 @@ function genStmt(stmt: Statement, labeloffset: number):void {
             console.log("");
             store();
             console.log("");
+            break;
+        case stmtType.print:
+            generateCode(stmt.expr);
+            console.log("   pop rax");
+            console.log("   mov rsi, rax");
+            console.log("   mov rdi, fmt");
+        
+            console.log("   mov rax, rsp");
+            console.log("   and rax, 15");
+            console.log("   jnz .L.call."+labeloffset);
+            console.log("   mov rax, 0");
+            console.log("   call printf");
+            console.log("   jmp .L.end."+labeloffset);
+            console.log(".L.call."+labeloffset+":");
+            console.log("   sub rsp, 8");
+            console.log("   mov rax, 0");
+            console.log("   call printf");
+            console.log("   add rsp, 8");
+            console.log(".L.end."+labeloffset+":");
             break;
         default: break;
     }

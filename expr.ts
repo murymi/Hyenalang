@@ -5,7 +5,9 @@ export enum exprType {
     unary,
     binary,
     primary,
-    grouping
+    grouping,
+    identifier,
+    assign
 }
 
 export class Expression {
@@ -16,9 +18,12 @@ export class Expression {
     operator: Token | undefined;
     val: Expression | string | number;
 
+    // var
+    offset: number;
+
 
  
-     constructor(type: exprType, operator: Token | undefined, left: Expression | string | number, right?: Expression) {
+    constructor(type: exprType, operator: Token | undefined, left: Expression | string | number, right?: Expression) {
          if (type === exprType.primary) {
              this.val = left;
          }

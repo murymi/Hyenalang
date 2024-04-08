@@ -11,6 +11,7 @@ export enum tokenType {
     identifier,
     var,
     equal,
+    print,
     eof
 };
 
@@ -78,6 +79,7 @@ export class Lexer {
         }
         var str = this.text.substring(start, this.current);
         if(str === "var") return new Token(tokenType.var, str);
+        if(str === "print") return new Token(tokenType.print, str);
 
         return new Token(tokenType.identifier, str);
     }

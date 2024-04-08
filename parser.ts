@@ -3,7 +3,7 @@ import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { incLocalOffset } from "./main";
+import { getLocalOffset, incLocalOffset } from "./main";
 
 export class Parser {
     tokens: Token[];
@@ -43,8 +43,15 @@ export class Parser {
     }
 
     primary(): Expression {
-
+        if(this.match([tokenType.identifier])) {
+            var offset = getLocalOffset(this.previous().value as string);
+            var expr = new Expression(exprType.identifier, undefined, this.previous().value);
+            expr.offset = offset;
+            return expr;
+        }
+        
         if (this.match([tokenType.number])) {
+            //console.log("=============");
             return new Expression(exprType.primary, undefined, this.previous().value);
         }
 
@@ -91,26 +98,58 @@ export class Parser {
         return expr;
     }
 
-    expression(): Expression {
-        return this.term()
+    assign(): Expression {
+        var expr = this.term();
+
+        if(this.match([tokenType.equal])) {
+            var val = this.assign();
+            if(expr.type === exprType.identifier) {
+                var n = new Expression(exprType.assign, undefined, val);
+                n.offset = expr.offset;
+                return n;
+            }
+
+            throw new Error("Unexpected assignment");
+        }
+
+        return expr;
     }
 
-    statement(): Statement {
+    expression(): Expression {
+        return this.assign();
+    }
+
+    ExprStatement(): Statement {
+
         var expr = this.expression();
         this.expect(tokenType.semicolon, ";");
         var stmt = new Statement().newExprStatement(expr);
         return stmt;
     }
 
+    printStatement(): Statement {
+        var val = this.expression();
+        this.expect(tokenType.semicolon, ";");
+        return new Statement().newPrintStatement(val);
+    }
+
+    statement():Statement {
+        if(this.match([tokenType.print])) {
+            return this.printStatement();
+        }
+
+        return this.ExprStatement();
+    }
+
     varDeclaration():Statement {
         var name = this.expect(tokenType.identifier, "var name");
-        var initializer;
+        var initializer: Expression|undefined;
         if(this.match([tokenType.equal])) {
             initializer = this.expression();
         }
         this.expect(tokenType.semicolon, ";");
-        var offset = incLocalOffset();
-        return new Statement().newVarstatement(name.value as string, initializer, offset*8);
+        var offset = incLocalOffset(name.value as string);
+        return new Statement().newVarstatement(name.value as string, initializer, offset);
     }
 
     declaration(): Statement {

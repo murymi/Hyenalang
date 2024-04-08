@@ -3,9 +3,21 @@ import { Parser } from "./parser";
 import { genStart } from "./codegen";
 
 var localSize = 0;
-export function incLocalOffset(){
+var locals: { name:string, offset:number }[] = [];
+export function incLocalOffset(name: string){
+    locals.push({name: name, offset: localSize });
     localSize++;
     return localSize-1;
+}
+
+export function getLocalOffset(name: string): number {
+    for (let loc of locals) {
+        if(loc.name === name) {
+            return loc.offset;
+        }
+    }
+
+    throw new Error("undefined variable");
 }
 
 function compile(text: string) {
@@ -13,17 +25,11 @@ function compile(text: string) {
 
     var tokens = lexer.lex();
 
-    //console.log(tokens);
-
     var parser = new Parser(tokens);
     var stmts = parser.parse();
-    //console.log(localSize);
     genStart(stmts, localSize*8);
 }
 
 
-// make > tmp.s
-// gcc -static -o tmp tmp.s
-// ./tmp
-compile("var a = 90; 10 + 10; var t = 78;");
+compile("var a; a = 90 * 90; print a;");
 
