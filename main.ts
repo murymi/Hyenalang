@@ -21,9 +21,7 @@ export function incLocalOffset(name: string){
 export function getLocalOffset(name: string): number {
     var lr = locals.reverse();
     for (let loc of lr) {
-        //console.log(loc);
         if(loc.name === name && loc.scope === scopeDepth) {
-            //console.log(loc.offset);
             return loc.offset;
         }
     }
@@ -43,12 +41,12 @@ function compile(text: string) {
     var lexer = new Lexer(text);
 
     var tokens = lexer.lex();
-
+    //console.log(tokens);
     var parser = new Parser(tokens);
     var stmts = parser.parse();
     genStart(stmts, localSize*8);
 }
 
 
-compile("{ var a = 20;   { var a = 40; a = 90; print a; } }");
+compile("if(0 > 0) { print 1; } else print 0;");
 

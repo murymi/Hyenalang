@@ -25,6 +25,20 @@ function genSubtract() {
     console.log("   push rax");
 }
 
+function genLess(){
+    console.log("   cmp rax, rdi");
+    console.log("   setl al");
+    console.log("   movzb rax, al")
+    console.log("   push rax");
+}
+
+function genGreater(){
+    console.log("   cmp rax, rdi");
+    console.log("   setg al");
+    console.log("   movzb rax, al")
+    console.log("   push rax");
+}
+
 function genNegate() {
     console.log("   neg rax");
     console.log("   push rax");
@@ -46,6 +60,12 @@ function genBinary(operator: tokenType) {
         case tokenType.minus:
             genSubtract();
             break
+        case tokenType.greater:
+            genGreater();
+            break;
+        case tokenType.less:
+            genLess();
+            break;
         default:
             break;
     }
@@ -126,6 +146,19 @@ function genStmt(stmt: Statement, labeloffset: number):void {
         case stmtType.block:
             stmt.stmts.forEach((s, i)=>{ genStmt(s, i+labeloffset+1); })
             break
+        case stmtType.ifStmt:
+            generateCode(stmt.cond);
+            console.log("   pop rax");
+            console.log("   cmp rax, 0");
+            console.log("   je .L.else."+labeloffset);
+            genStmt(stmt.then, labeloffset + 1);
+            console.log("   jmp .L.end."+labeloffset);
+            console.log(".L.else."+labeloffset+":");
+            if(stmt.else_){
+                genStmt(stmt.else_, labeloffset + 1);
+            }
+            console.log(".L.end."+labeloffset+":");
+            break;
         case stmtType.print:
             generateCode(stmt.expr);
             console.log("   pop rax");

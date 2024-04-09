@@ -98,8 +98,20 @@ export class Parser {
         return expr;
     }
 
-    assign(): Expression {
+    comparisson():Expression {
         var expr = this.term();
+
+        while (this.match([tokenType.less, tokenType.greater])) {
+            var operator = this.previous();
+            var right = this.term();
+            expr = new Expression(exprType.binary, operator, expr, right);
+        }
+
+        return expr;
+    }
+
+    assign(): Expression {
+        var expr = this.comparisson();
 
         if(this.match([tokenType.equal])) {
             var val = this.assign();
@@ -151,6 +163,19 @@ export class Parser {
 
         if(this.match([tokenType.leftbrace])) {
             return this.block();
+        }
+
+        if(this.match([tokenType.if])){
+            this.expect(tokenType.leftparen, "( after if");
+            var cond = this.expression();
+            this.expect(tokenType.rightparen, ") after condition");
+            var then = this.statement();
+            var else_: Statement | undefined = undefined;
+            if(this.match([tokenType.else])) {
+                else_ = this.statement();
+            }
+
+            return new Statement().newIfStatement(cond, then, else_);
         }
 
         return this.ExprStatement();

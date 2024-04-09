@@ -5,7 +5,8 @@ export enum stmtType {
     exprstmt,
     print,
     varAccess,
-    block
+    block,
+    ifStmt
 }
 
 export class Statement {
@@ -20,6 +21,11 @@ export class Statement {
     // block
     stmts: Statement[];
 
+    //if
+    cond: Expression;
+    then: Statement;
+    else_: Statement | undefined;
+
     newVarstatement(name : string, initializer: Expression|undefined, offset: number) :Statement {
         if(initializer === undefined) {
             var zero = new Expression(exprType.primary, undefined, 0);
@@ -32,6 +38,14 @@ export class Statement {
         this.name = name;
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
+        return this;
+    }
+
+    newIfStatement(cond: Expression, then:Statement, else_:Statement | undefined) :Statement {
+        this.type = stmtType.ifStmt;
+        this.then = then;
+        this.else_ = else_;
+        this.cond = cond;
         return this;
     }
 

@@ -14,6 +14,11 @@ export enum tokenType {
     print,
     leftbrace,
     rightbrace,
+    bang,
+    greater,
+    less,
+    if,
+    else,
     eof
 };
 
@@ -82,6 +87,8 @@ export class Lexer {
         var str = this.text.substring(start, this.current);
         if (str === "var") return new Token(tokenType.var, str);
         if (str === "print") return new Token(tokenType.print, str);
+        if (str === "if") return new Token(tokenType.if, str);
+        if (str === "else") return new Token(tokenType.else, "str");
 
         return new Token(tokenType.identifier, str);
     }
@@ -116,6 +123,15 @@ export class Lexer {
                 this.advance();
             } else if (char === ';') {
                 tokens.push(new Token(tokenType.semicolon, ";"));
+                this.advance();
+            } else if (char === '>') {
+                tokens.push(new Token(tokenType.greater, ">"));
+                this.advance();
+            } else if (char === '!') {
+                tokens.push(new Token(tokenType.bang, "!"));
+                this.advance();
+            } else if (char === '<') {
+                tokens.push(new Token(tokenType.less, "<"));
                 this.advance();
             } else if (char === ')') {
                 tokens.push(new Token(tokenType.rightparen, ")"));
