@@ -11,7 +11,8 @@ export enum stmtType {
     whileStmt,
     contineu,
     braek,
-    externfn
+    externfn,
+    nativefn
 }
 
 export class Statement {
@@ -73,6 +74,12 @@ export class Statement {
     newExternFnStatement(name: string, params: Token[]):Statement {
         this.name = name;
         this.params = params;
+        return this;
+    }
+
+    newNativeFnStatement(name: string) :Statement {
+        this.name = name;
+        this.type = stmtType.nativefn;
         return this;
     }
 

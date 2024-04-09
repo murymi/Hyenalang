@@ -1,3 +1,4 @@
+import { fnType } from "./main";
 import { Token } from "./token";
 import { tokenType } from "./token";
 
@@ -27,6 +28,7 @@ export class Expression {
     params: Expression[];
     callee: Expression;
     name: string;
+    fntype: fnType;
  
     constructor(type: exprType, operator: Token | undefined, left: Expression | string | number, right?: Expression) {
          if (type === exprType.primary) {

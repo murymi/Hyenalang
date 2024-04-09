@@ -1,22 +1,55 @@
-import { Lexer } from "./token";
+import { Lexer, Token } from "./token";
 import { Parser } from "./parser";
 import { genStart } from "./codegen";
+import { Statement } from "./stmt";
 
-var localSize = 0;
+export enum fnType{
+    extern,
+    native,
+}
+
+//var localSize = 0;
 var scopeDepth = 0;
-var locals: { name:string, offset:number, scope: number }[] = [];
+//var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: {name: string, value: string}[] = [];
-var externFns: {name: string, arity: number}[] = [];
+
+export class Function {
+    name: string;
+    arity: number;
+    type: fnType;
+    locals: { name:string, offset:number, scope: number }[];
+    localSize: number;
+    params: Token[];
+    body:Statement;
+
+    constructor(
+        name: string,
+        type: fnType,
+        params: Token[],
+        arity: number,
+        locals: { name:string, offset:number, scope: number }[],
+    ) { 
+        this.localSize = 0; 
+        this.name = name;
+        this.type = type;
+        this.params = params;
+        this.arity = arity;
+        this.locals = locals;
+    }
+}
+
+var functions: Function[] = [];
+
 export function incLocalOffset(name: string){
-    for (let i = locals.length-1; i >= 0; i--) {
-        if(locals[i].name === name && locals[i].scope === scopeDepth) {
+    for (let i = functions[currentFn].locals.length-1; i >= 0; i--) {
+        if(functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
             throw new Error("Redefination of a variable "+name);
         }
     }
     
-    locals.push({name: name, offset: localSize , scope: scopeDepth });
-    localSize++;
-    return localSize-1;
+    functions[currentFn].locals.push({name: name, offset: functions[currentFn].localSize , scope: scopeDepth });
+    functions[currentFn].localSize++;
+    return (functions[currentFn].localSize-1)+functions[currentFn].arity;
 }
 
 export function addGlobal(name:string, value:string):void {
@@ -24,14 +57,20 @@ export function addGlobal(name:string, value:string):void {
 }
 
 export function getLocalOffset(name: string): number {
-    for (let i = locals.length-1; i >= 0; i--) {
-        if(locals[i].name === name && locals[i].scope <= scopeDepth) {
-            return locals[i].offset;
+    for (let i = functions[currentFn].locals.length-1; i >= 0; i--) {
+        if(functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope <= scopeDepth) {
+            return functions[currentFn].locals[i].offset+1;
         }
     }
 
-    for (let i = externFns.length-1; i >= 0; i--) {
-        if(externFns[i].name === name) {
+    for (let i = functions[currentFn].params.length-1; i >= 0; i--) {
+        if(functions[currentFn].params[i].value === name) {
+            return i;
+        }
+    }
+
+    for (let i = functions.length-1; i >= 0; i--) {
+        if(functions[i].name === name) {
             return 0;
         }
     }
@@ -39,18 +78,29 @@ export function getLocalOffset(name: string): number {
     throw new Error("undefined variable");
 }
 
-export function getFn(name: string):{name:string, arity:number} {
-    for (let i = externFns.length-1; i >= 0; i--) {
-        if(externFns[i].name === name) {
-            return externFns[i];
+export function getFn(name: string):{name:string, arity:number, type:fnType} {
+    for (let i = functions.length-1; i >= 0; i--) {
+        if(functions[i].name === name) {
+            return functions[i];
         }
     }
 
     throw new Error("undefined function");
 }
 
-export function pushExtern(name: string, arity:number) {
-    externFns.push({name:name, arity:arity});
+export function pushFunction(name: string,params: Token[], arity:number, type:fnType, locals:[]):number {
+    functions.push(new Function(name, type, params, arity, locals));
+    return functions.length-1;
+}
+
+var currentFn: number = -1;
+export function setCurrentFuction(n: number) {
+    currentFn = n;
+}
+
+export function resetCurrentFunction(body:Statement) {
+    functions[currentFn].body = body;
+    currentFn = -1;
 }
 
 export function beginScope() {
@@ -67,17 +117,19 @@ function compile(text: string) {
     var tokens = lexer.lex();
     var parser = new Parser(tokens);
     var stmts = parser.parse();
-    genStart(globalstrings, stmts, localSize*8);
+    genStart(globalstrings, functions);
 }
 
 var prog = `
-extern fn printf(fmt, others);
-var fmt = "hello world %d ";
-var i = 0;
+extern fn printf(a, b);
 
-while(i < 50) {
-    printf(fmt, i);
-    i = i + 1;
+fn foo(a) {
+    var fmt = "hello word %d";
+    printf(fmt, a);
+}
+
+fn main(){
+    foo(70);
 }
 `
 compile(prog);

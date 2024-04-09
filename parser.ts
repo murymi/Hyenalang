@@ -3,7 +3,7 @@ import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { addGlobal, beginScope, endScope, getFn, getLocalOffset, incLocalOffset, pushExtern } from "./main";
+import { addGlobal, beginScope, endScope, fnType, getFn, getLocalOffset, incLocalOffset, pushFunction, resetCurrentFunction, setCurrentFuction } from "./main";
 
 export class Parser {
     tokens: Token[];
@@ -88,6 +88,7 @@ export class Parser {
             throw new Error(fn.name+" expects "+fn.arity+" args but "+args.length+" provided.");
         }
         expr.params = args;
+        expr.fntype = fn.type;
         return expr;
     }
 
@@ -266,8 +267,29 @@ export class Parser {
         }
         this.expect(tokenType.rightparen, ") after params");
         this.expect(tokenType.semicolon, ";");
-        pushExtern(name.value as string, params.length);
+        pushFunction(name.value as string, params, params.length, fnType.extern, []);
         return new Statement().newExternFnStatement(name.value as string, params);
+    }
+
+    nativeFuncDeclaration():Statement {
+        var name = this.expect(tokenType.identifier, "fn name");
+        this.expect(tokenType.leftparen, "( after fn name");
+        var params: Token[] = [];
+        if (!this.check(tokenType.rightparen)) {
+            while (true) {
+                var param = this.expect(tokenType.identifier, "param name");
+                params.push(param);
+                if (!this.check(tokenType.comma)) break;
+                this.advance();
+            }
+        }
+        this.expect(tokenType.rightparen, ") after params");
+        this.expect(tokenType.leftbrace, "function body");
+        var currFn = pushFunction(name.value as string,params, params.length, fnType.native, []);
+        setCurrentFuction(currFn);
+        var body = this.block();
+        resetCurrentFunction(body);
+        return new Statement().newNativeFnStatement(name.value as string);
     }
 
     declaration(): Statement {
@@ -277,6 +299,10 @@ export class Parser {
 
         if (this.match([tokenType.extern])) {
             return this.externFuncDeclaration();
+        }
+
+        if(this.match([tokenType.fn])) {
+            return this.nativeFuncDeclaration();
         }
 
         return this.statement();
