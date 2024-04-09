@@ -48,5 +48,5 @@ function compile(text: string) {
 }
 
 
-compile("if(0 > 0) { print 1; } else print 0;");
+compile("while (1 > 0) { print 1; }");
 

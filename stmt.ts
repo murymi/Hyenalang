@@ -6,7 +6,8 @@ export enum stmtType {
     print,
     varAccess,
     block,
-    ifStmt
+    ifStmt,
+    whileStmt
 }
 
 export class Statement {
@@ -45,6 +46,13 @@ export class Statement {
         this.type = stmtType.ifStmt;
         this.then = then;
         this.else_ = else_;
+        this.cond = cond;
+        return this;
+    }
+
+    newWhileStatement(cond: Expression, then:Statement) :Statement {
+        this.type = stmtType.whileStmt;
+        this.then = then;
         this.cond = cond;
         return this;
     }

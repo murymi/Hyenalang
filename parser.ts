@@ -178,6 +178,15 @@ export class Parser {
             return new Statement().newIfStatement(cond, then, else_);
         }
 
+        if(this.match([tokenType.while])){
+            this.expect(tokenType.leftparen, "( after while");
+            var cond = this.expression();
+            this.expect(tokenType.rightparen, ") after condition");
+            var then = this.statement();
+
+            return new Statement().newWhileStatement(cond, then);
+        }
+
         return this.ExprStatement();
     }
 

@@ -19,6 +19,7 @@ export enum tokenType {
     less,
     if,
     else,
+    while,
     eof
 };
 
@@ -89,6 +90,7 @@ export class Lexer {
         if (str === "print") return new Token(tokenType.print, str);
         if (str === "if") return new Token(tokenType.if, str);
         if (str === "else") return new Token(tokenType.else, "str");
+        if (str === "while") return new Token(tokenType.while, "while");
 
         return new Token(tokenType.identifier, str);
     }

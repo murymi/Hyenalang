@@ -21,7 +21,8 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 0
-   push 0
+.L.continue.0:
+   push 1
    push 0
    pop rdi
    pop rax
@@ -31,7 +32,7 @@ main:
    push rax
    pop rax
    cmp rax, 0
-   je .L.else.0
+   je .L.end.0
    push 1
    pop rax
    mov rsi, rax
@@ -48,24 +49,7 @@ main:
    call printf
    add rsp, 8
 .L.end.2:
-   jmp .L.end.0
-.L.else.0:
-   push 0
-   pop rax
-   mov rsi, rax
-   mov rdi, fmt
-   mov rax, rsp
-   and rax, 15
-   jnz .L.call.1
-   mov rax, 0
-   call printf
-   jmp .L.end.1
-.L.call.1:
-   sub rsp, 8
-   mov rax, 0
-   call printf
-   add rsp, 8
-.L.end.1:
+   jmp .L.continue.0
 .L.end.0:
    xor rax, rax
    mov rsp, rbp

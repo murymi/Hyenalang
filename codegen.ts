@@ -159,6 +159,16 @@ function genStmt(stmt: Statement, labeloffset: number):void {
             }
             console.log(".L.end."+labeloffset+":");
             break;
+        case stmtType.whileStmt:
+            console.log(".L.continue."+labeloffset+":");
+            generateCode(stmt.cond);
+            console.log("   pop rax");
+            console.log("   cmp rax, 0");
+            console.log("   je .L.end."+labeloffset);
+            genStmt(stmt.then, labeloffset + 1);
+            console.log("   jmp .L.continue."+labeloffset);
+            console.log(".L.end."+labeloffset+":");
+            break;
         case stmtType.print:
             generateCode(stmt.expr);
             console.log("   pop rax");
@@ -214,20 +224,3 @@ export function genStart(stmts: Statement[], localSize: number) {
     console.log("   ret")
 }
 
-
-        // console.log("   pop rax");
-        // console.log("   mov rsi, rax");
-        // console.log("   mov rdi, fmt");
-    // 
-        // console.log("   mov rax, rsp");
-        // console.log("   and rax, 15");
-        // console.log("   jnz .L.call."+i);
-        // console.log("   mov rax, 0");
-        // console.log("   call printf");
-        // console.log("   jmp .L.end."+i);
-        // console.log(".L.call."+i+":");
-        // console.log("   sub rsp, 8");
-        // console.log("   mov rax, 0");
-        // console.log("   call printf");
-        // console.log("   add rsp, 8");
-        // console.log(".L.end."+i+":");
