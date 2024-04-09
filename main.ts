@@ -6,23 +6,21 @@ var localSize = 0;
 var scopeDepth = 0;
 var locals: { name:string, offset:number, scope: number }[] = [];
 export function incLocalOffset(name: string){
-    var lr = locals.reverse();
-    for (let loc of lr) {
-        if(loc.name === name && loc.scope === scopeDepth) {
+    for (let i = locals.length-1; i >= 0; i--) {
+        if(locals[i].name === name && locals[i].scope === scopeDepth) {
             throw new Error("Redefination of a variable "+name);
         }
     }
-
+    
     locals.push({name: name, offset: localSize , scope: scopeDepth });
     localSize++;
     return localSize-1;
 }
 
 export function getLocalOffset(name: string): number {
-    var lr = locals.reverse();
-    for (let loc of lr) {
-        if(loc.name === name && loc.scope === scopeDepth) {
-            return loc.offset;
+    for (let i = locals.length-1; i >= 0; i--) {
+        if(locals[i].name === name && locals[i].scope <= scopeDepth) {
+            return locals[i].offset;
         }
     }
 
@@ -47,6 +45,25 @@ function compile(text: string) {
     genStart(stmts, localSize*8);
 }
 
+var prog = `
+var a = 10; 
+{ 
+    var b = 11; 
+    {
+        var c = 10;
+        {
+            var d = 90;
+            {
+                var e = 89;
+                while (e < 100) {
+                    print e;
+                    e = e + 1;
+                }
+            }
+        }
+    }
+}
 
-compile("while (1 > 0) { print 1; }");
+`
+compile(prog);
 
