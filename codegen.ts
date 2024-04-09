@@ -4,6 +4,12 @@ import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 
 
+var latestContinueLabel = "";
+var latestBreakLabel = "";
+
+var argRegisters = ["rdi","rsi","rdx","rcx","r8","r9"];
+var usedRegs: string[] = [];
+
 function genDivide() {
     console.log("   cqo");
     console.log("   idiv rdi");
@@ -97,6 +103,19 @@ function genAddress(stmt: Statement | Expression){
     console.log("   push rax")
 }
 
+function saveRegisters(): string[] {
+    return usedRegs.map((reg)=>{
+        console.log("   push "+reg);
+        return reg;
+    })
+}
+
+function restore(saved: string[]):void{
+    for(let i = saved.length-1; i >= 0; i--){
+        console.log("   pop "+saved[i]);
+    }
+}
+
 
 function generateCode(expr: Expression) {
     //console.log(expr);
@@ -125,9 +144,51 @@ function generateCode(expr: Expression) {
             genAddress(expr);
             load();
             break;
+        case exprType.call:
+            expr.params.forEach((p, i) => {
+                var saved: string[] = [];
+                var isCall = false;
+                if(p.type === exprType.call) {
+                    isCall = true;
+                    saved = saveRegisters();
+                }
+                generateCode(p);
+                if(isCall) {
+                    restore(saved);
+                    console.log("   push rax");
+                }
+                console.log("   pop "+argRegisters[i]);
+                usedRegs.push(argRegisters[i]);
+            });
+            console.log("   lea r15, ["+expr.callee.name+"]");
+            console.log("   call buitin_glibc_caller");
+            break;
+        case exprType.string:
+            break;
         default:
             throw new Error("Unexpected expression");
     }
+}
+
+function genAlignedCall() {
+    console.log("buitin_glibc_caller:")
+    console.log("   push rbp");
+    console.log("   mov rbp, rsp");
+    console.log("   mov rax, rsp");
+    console.log("   and rax, 15");
+    console.log("   jnz .L.call");
+    console.log("   mov rax, 0");
+    console.log("   call r15");
+    console.log("   jmp .L.end");
+    console.log(".L.call:");
+    console.log("   sub rsp, 8");
+    console.log("   mov rax, 0");
+    console.log("   call r15");
+    console.log("   add rsp, 8");
+    console.log(".L.end:");
+    console.log("   mov rsp, rbp");
+    console.log("   pop rbp");
+    console.log("   ret")
 }
 
 
@@ -140,7 +201,11 @@ function genStmt(stmt: Statement, labeloffset: number):void {
             break;
         case stmtType.vardeclstmt:
             genAddress(stmt);
-            generateCode(stmt.expr);
+            if(stmt.expr.type === exprType.string) {
+                console.log("   push "+(stmt.expr.name as string));
+            } else {
+                generateCode(stmt.expr);
+            }
             store();
             break;
         case stmtType.block:
@@ -160,14 +225,24 @@ function genStmt(stmt: Statement, labeloffset: number):void {
             console.log(".L.end."+labeloffset+":");
             break;
         case stmtType.whileStmt:
+            latestBreakLabel = ".L.break."+labeloffset;
+            latestContinueLabel = ".L.continue."+labeloffset;
             console.log(".L.continue."+labeloffset+":");
             generateCode(stmt.cond);
             console.log("   pop rax");
             console.log("   cmp rax, 0");
-            console.log("   je .L.end."+labeloffset);
+            console.log("   je .L.break."+labeloffset);
             genStmt(stmt.then, labeloffset + 1);
             console.log("   jmp .L.continue."+labeloffset);
-            console.log(".L.end."+labeloffset+":");
+            console.log(".L.break."+labeloffset+":");
+            break;
+        case stmtType.braek:
+            if(latestBreakLabel === "") throw new Error("Stray break");
+            console.log("jmp "+latestBreakLabel);
+            break;
+        case stmtType.contineu:
+            if(latestContinueLabel === "") throw new Error("Stray continue");
+            console.log("jmp "+latestContinueLabel);
             break;
         case stmtType.print:
             generateCode(stmt.expr);
@@ -193,21 +268,30 @@ function genStmt(stmt: Statement, labeloffset: number):void {
 
 }
 
-export function genStart(stmts: Statement[], localSize: number) {
+function genGlobalStrings(globs:{name:string, value:string}[]) {
+    globs.forEach((glob, i)=>{
+        console.log(".align 1");
+        console.log(".L.data."+i+":");
+        for (let i = 0; i < glob.value.length; i++) {
+            console.log("   .byte '" + glob.value[i] + "'");
+        }
+        console.log("   .byte " + 0);
+        console.log(".align 8");
+        console.log(glob.name+": .quad .L.data."+i);
+    })
+}
+
+export function genStart(globs:{name:string, value:string}[],stmts: Statement[], localSize: number) {
     var text = "res = %d";
     console.log(".intel_syntax noprefix");
     console.log(".global fmt")
     console.log(".data");
-    console.log(".align 1");
-    console.log(".fmtbytes:");
-    for (let i = 0; i < text.length; i++) {
-        console.log("   .byte '" + text[i] + "'");
-    }
-    console.log("   .byte " + 10);
-    console.log("   .byte " + 0);
-    console.log(".align 8");
-    console.log("fmt: .quad .fmtbytes");
+
+    genGlobalStrings(globs);
+    console.log("");
     console.log(".text");
+    genAlignedCall();
+    console.log("");
     console.log(".global main");
     console.log("main:");
     console.log("   push rbp");

@@ -20,6 +20,12 @@ export enum tokenType {
     if,
     else,
     while,
+    braek,
+    contineu,
+    extern,
+    fn,
+    comma,
+    string,
     eof
 };
 
@@ -40,6 +46,15 @@ export class Lexer {
     constructor(text: string) {
         this.current = 0;
         this.text = text;
+    }
+
+    expect(char: string) {
+        if(this.peek() === char){
+            this.advance();
+            return;
+        }
+
+        throw new Error("Expected "+char);
     }
 
     peek() {
@@ -79,6 +94,17 @@ export class Lexer {
         return parseFloat(str);
     }
 
+    readString():Token {
+        this.advance();
+        var start = this.current;
+        while(this.moreTokens() && this.peek() !== '"' && this.peek() !== '\n') {
+            this.advance();
+        }
+        this.expect('"');
+        var value = this.text.substring(start, this.current-1);
+        return new Token(tokenType.string, value);
+    }
+
     identifier(): Token {
         var start = this.current;
         while (this.moreTokens()) {
@@ -89,8 +115,12 @@ export class Lexer {
         if (str === "var") return new Token(tokenType.var, str);
         if (str === "print") return new Token(tokenType.print, str);
         if (str === "if") return new Token(tokenType.if, str);
-        if (str === "else") return new Token(tokenType.else, "str");
-        if (str === "while") return new Token(tokenType.while, "while");
+        if (str === "else") return new Token(tokenType.else, str);
+        if (str === "while") return new Token(tokenType.while, str);
+        if (str === "break") return new Token(tokenType.braek, str);
+        if(str === "continue") return new Token(tokenType.contineu, str);
+        if(str === "extern") return new Token(tokenType.extern, str);
+        if(str === "fn") return new Token(tokenType.fn, str)
 
         return new Token(tokenType.identifier, str);
     }
@@ -120,7 +150,10 @@ export class Lexer {
             } else if (char === "*") {
                 tokens.push(new Token(tokenType.multiply, "*"));
                 this.advance();
-            } else if (char === '(') {
+            }  else if (char === ",") {
+                tokens.push(new Token(tokenType.comma, ","));
+                this.advance();
+            }else if (char === '(') {
                 tokens.push(new Token(tokenType.leftparen, "("));
                 this.advance();
             } else if (char === ';') {
@@ -147,6 +180,8 @@ export class Lexer {
             } else if (char === '=') {
                 tokens.push(new Token(tokenType.equal, "="));
                 this.advance();
+            } else if (char === '"') {
+               tokens.push(this.readString());
             } else if (this.isAlpha(char)) {
                 tokens.push(this.identifier());
             } else if (char === "eof") {

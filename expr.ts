@@ -7,7 +7,9 @@ export enum exprType {
     primary,
     grouping,
     identifier,
-    assign
+    assign,
+    call,
+    string
 }
 
 export class Expression {
@@ -21,7 +23,10 @@ export class Expression {
     // var
     offset: number;
 
-
+    // call
+    params: Expression[];
+    callee: Expression;
+    name: string;
  
     constructor(type: exprType, operator: Token | undefined, left: Expression | string | number, right?: Expression) {
          if (type === exprType.primary) {

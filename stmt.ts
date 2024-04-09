@@ -1,4 +1,5 @@
 import { Expression, exprType } from "./expr";
+import { Token } from "./token";
 
 export enum stmtType {
     vardeclstmt,
@@ -7,7 +8,10 @@ export enum stmtType {
     varAccess,
     block,
     ifStmt,
-    whileStmt
+    whileStmt,
+    contineu,
+    braek,
+    externfn
 }
 
 export class Statement {
@@ -26,6 +30,10 @@ export class Statement {
     cond: Expression;
     then: Statement;
     else_: Statement | undefined;
+
+    // fn
+    params: Token[]|undefined
+    body: Statement
 
     newVarstatement(name : string, initializer: Expression|undefined, offset: number) :Statement {
         if(initializer === undefined) {
@@ -54,6 +62,22 @@ export class Statement {
         this.type = stmtType.whileStmt;
         this.then = then;
         this.cond = cond;
+        return this;
+    }
+
+    newBreakStatement(): Statement{
+        this.type = stmtType.braek;
+        return this;
+    }
+
+    newExternFnStatement(name: string, params: Token[]):Statement {
+        this.name = name;
+        this.params = params;
+        return this;
+    }
+
+    newContinueStatement():Statement {
+        this.type = stmtType.contineu;
         return this;
     }
 
