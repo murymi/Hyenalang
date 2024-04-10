@@ -1,3 +1,5 @@
+//import process from "process";
+
 export enum tokenType {
     plus,
     minus,
@@ -32,16 +34,22 @@ export enum tokenType {
 export class Token {
     type: tokenType;
     value: string | number;
+    line: number;
+    col:number;
 
-    constructor(type: tokenType, value: string | number) {
+    constructor(type: tokenType, value: string | number, line:number, col:number) {
         this.type = type;
         this.value = value;
+        this.col = col;
+        this.line = line;
     }
 }
 
 export class Lexer {
     current: number;
     text: string;
+    line: number;
+    col:number;
 
     constructor(text: string) {
         this.current = 0;
@@ -64,6 +72,7 @@ export class Lexer {
 
     advance() {
         this.current++;
+        this.col++;
         return this.text[this.current - 1];
     }
 
@@ -102,7 +111,7 @@ export class Lexer {
         }
         this.expect('"');
         var value = this.text.substring(start, this.current-1);
-        return new Token(tokenType.string, value);
+        return new Token(tokenType.string, value, this.line, this.col);
     }
 
     identifier(): Token {
@@ -112,84 +121,95 @@ export class Lexer {
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        if (str === "var") return new Token(tokenType.var, str);
-        if (str === "print") return new Token(tokenType.print, str);
-        if (str === "if") return new Token(tokenType.if, str);
-        if (str === "else") return new Token(tokenType.else, str);
-        if (str === "while") return new Token(tokenType.while, str);
-        if (str === "break") return new Token(tokenType.braek, str);
-        if(str === "continue") return new Token(tokenType.contineu, str);
-        if(str === "extern") return new Token(tokenType.extern, str);
-        if(str === "fn") return new Token(tokenType.fn, str)
+        if (str === "var") return new Token(tokenType.var, str, this.line, this.col);
+        if (str === "print") return new Token(tokenType.print, str, this.line, this.col);
+        if (str === "if") return new Token(tokenType.if, str, this.line, this.col);
+        if (str === "else") return new Token(tokenType.else, str, this.line, this.col);
+        if (str === "while") return new Token(tokenType.while, str, this.line, this.col);
+        if (str === "break") return new Token(tokenType.braek, str, this.line, this.col);
+        if(str === "continue") return new Token(tokenType.contineu, str, this.line, this.col);
+        if(str === "extern") return new Token(tokenType.extern, str, this.line, this.col);
+        if(str === "fn") return new Token(tokenType.fn, str, this.line, this.col)
 
-        return new Token(tokenType.identifier, str);
+        return new Token(tokenType.identifier, str, this.line, this.col);
     }
+
+    tokenError(message:string): void {
+        console.log(message+" - [ line: " + this.line + " col: " + this.col+" ]");
+        process.exit();
+    }
+
+
 
     lex(): Token[] {
         var tokens: Token[] = [];
+        this.line = 0;
+        this.col = 1;
 
         while (true) {
             let char = this.peek();
 
             //console.log("token => ", char);
             if (this.isNumber(char)) {
-                tokens.push(new Token(tokenType.number, this.number()));
+                tokens.push(new Token(tokenType.number, this.number(), this.line, this.col));
             } else if (this.isSpace(char)) {
-                this.advance();
+                if(this.advance() === '\n') { 
+                    this.col = 1; this.line++; 
+                } else this.col++;
                 continue;
             }
             else if (char === "+") {
-                tokens.push(new Token(tokenType.plus, "+"));
+                tokens.push(new Token(tokenType.plus, "+", this.line, this.col));
                 this.advance();
             } else if (char === "-") {
-                tokens.push(new Token(tokenType.minus, "-"));
+                tokens.push(new Token(tokenType.minus, "-", this.line, this.col));
                 this.advance();
             } else if (char === "/") {
-                tokens.push(new Token(tokenType.divide, "/"));
+                tokens.push(new Token(tokenType.divide, "/", this.line, this.col));
                 this.advance();
             } else if (char === "*") {
-                tokens.push(new Token(tokenType.multiply, "*"));
+                tokens.push(new Token(tokenType.multiply, "*", this.line, this.col));
                 this.advance();
             }  else if (char === ",") {
-                tokens.push(new Token(tokenType.comma, ","));
+                tokens.push(new Token(tokenType.comma, ",", this.line, this.col));
                 this.advance();
             }else if (char === '(') {
-                tokens.push(new Token(tokenType.leftparen, "("));
+                tokens.push(new Token(tokenType.leftparen, "(", this.line, this.col));
                 this.advance();
             } else if (char === ';') {
-                tokens.push(new Token(tokenType.semicolon, ";"));
+                tokens.push(new Token(tokenType.semicolon, ";", this.line, this.col));
                 this.advance();
             } else if (char === '>') {
-                tokens.push(new Token(tokenType.greater, ">"));
+                tokens.push(new Token(tokenType.greater, ">", this.line, this.col));
                 this.advance();
             } else if (char === '!') {
-                tokens.push(new Token(tokenType.bang, "!"));
+                tokens.push(new Token(tokenType.bang, "!", this.line, this.col));
                 this.advance();
             } else if (char === '<') {
-                tokens.push(new Token(tokenType.less, "<"));
+                tokens.push(new Token(tokenType.less, "<", this.line, this.col));
                 this.advance();
             } else if (char === ')') {
-                tokens.push(new Token(tokenType.rightparen, ")"));
+                tokens.push(new Token(tokenType.rightparen, ")",this.line, this.col));
                 this.advance();
             } else if (char === '}') {
-                tokens.push(new Token(tokenType.rightbrace, "}"));
+                tokens.push(new Token(tokenType.rightbrace, "}", this.line, this.col));
                 this.advance();
             } else if (char === '{') {
-                tokens.push(new Token(tokenType.leftbrace, "{"));
+                tokens.push(new Token(tokenType.leftbrace, "{", this.line, this.col));
                 this.advance();
             } else if (char === '=') {
-                tokens.push(new Token(tokenType.equal, "="));
+                tokens.push(new Token(tokenType.equal, "=", this.line, this.col));
                 this.advance();
             } else if (char === '"') {
                tokens.push(this.readString());
             } else if (this.isAlpha(char)) {
                 tokens.push(this.identifier());
             } else if (char === "eof") {
-                tokens.push(new Token(tokenType.eof, "eof"));
+                tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
                 break;
             } else {
-                console.log(char);
-                throw new Error("Unexpeted character");
+                //console.log(char);
+                this.tokenError("unexpected token "+ char);
             }
 
         }

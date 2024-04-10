@@ -124,8 +124,13 @@ var prog = `
 extern fn printf(a, b);
 
 fn foo(a) {
-    var fmt = "hello word %d";
-    printf(fmt, a);
+    var c = 0;
+    var fmt = "hello word %d  ";
+
+    while(c < 10) {
+        printf(fmt, c);
+        c = c + 1;
+    }
 }
 
 fn main(){

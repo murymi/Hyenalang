@@ -37,9 +37,14 @@ export class Parser {
 
     expect(type, name): Token {
         if (this.peek().type !== type) {
-            throw new Error("Expected " + name);
+            this.tokenError("Expected " + name, this.peek());
         }
         return this.advance();
+    }
+
+    tokenError(message: string, token:Token):void {
+        console.log(message+" - [ line: " + token.line + " col: " + token.col+" ]");
+        process.exit();
     }
 
     primary(): Expression {
@@ -69,8 +74,10 @@ export class Parser {
 
         }
 
-        console.log(this.peek());
+        //console.log(this.peek());
+        this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
+        
     }
 
     finishCall(callee: Expression):Expression {
@@ -80,12 +87,12 @@ export class Parser {
                 args.push(this.expression());
             } while (this.match([tokenType.comma]));
         }
-        this.expect(tokenType.rightparen,") after params");
+        var fntok = this.expect(tokenType.rightparen,") after params");
         var expr = new Expression(exprType.call,undefined, "");
         expr.callee = callee;
         var fn = getFn(callee.name as string);
         if(fn.arity !== args.length) {
-            throw new Error(fn.name+" expects "+fn.arity+" args but "+args.length+" provided.");
+            this.tokenError(fn.name+" expects "+fn.arity+" args but "+args.length+" provided.", fntok);
         }
         expr.params = args;
         expr.fntype = fn.type;
@@ -148,16 +155,17 @@ export class Parser {
 
     assign(): Expression {
         var expr = this.comparisson();
-
+        var equals:Token;
         if (this.match([tokenType.equal])) {
             var val = this.assign();
+            equals = this.previous();
             if (expr.type === exprType.identifier) {
                 var n = new Expression(exprType.assign, undefined, val);
                 n.offset = expr.offset;
                 return n;
             }
 
-            throw new Error("Unexpected assignment");
+            this.tokenError("Unexpected assignment", equals);
         }
 
         return expr;
