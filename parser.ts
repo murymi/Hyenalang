@@ -3,7 +3,8 @@ import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { addGlobal, beginScope, endScope, fnType, getFn, getLocalOffset, incLocalOffset, pushFunction, resetCurrentFunction, setCurrentFuction } from "./main";
+import { addGlobal, beginScope, endScope, fnType, getFn, getLocalOffset, incLocalOffset, myType, pushFunction, resetCurrentFunction, setCurrentFuction } from "./main";
+
 
 export class Parser {
     tokens: Token[];
@@ -50,27 +51,24 @@ export class Parser {
     primary(): Expression {
         if (this.match([tokenType.identifier])) {
             var offset = getLocalOffset(this.previous().value as string);
-            var expr = new Expression(exprType.identifier, undefined, this.previous().value);
-            expr.offset = offset;
-            //console.log(this.previous().value);
-            expr.name = this.previous().value as string;
+            var expr = new Expression().newExprIdentifier(this.previous().value as string, offset, myType.void);
             return expr;
         }
 
         if(this.match([tokenType.string])) {
-            var expr = new Expression(exprType.string, undefined, this.previous().value);
-            expr.val = this.previous().value;
+            var expr = new Expression().newExprString(this.previous().value as string);
+            //addGlobal()
             return expr;
         }
 
         if (this.match([tokenType.number])) {
-            return new Expression(exprType.primary, undefined, this.previous().value);
+            return new Expression().newExprNumber(this.previous().value as number);
         }
 
         if (this.match([tokenType.leftparen])) {
             var expr = this.expression();
             this.expect(tokenType.rightparen, ")");
-            return new Expression(exprType.grouping, undefined, expr);
+            return new Expression().newExprGrouping(expr);
 
         }
 
@@ -88,9 +86,10 @@ export class Parser {
             } while (this.match([tokenType.comma]));
         }
         var fntok = this.expect(tokenType.rightparen,") after params");
-        var expr = new Expression(exprType.call,undefined, "");
-        expr.callee = callee;
+        //console.log(callee.name);
         var fn = getFn(callee.name as string);
+        var expr = new Expression().newExprCall(callee);;
+        expr.callee = callee;
         if(fn.arity !== args.length) {
             this.tokenError(fn.name+" expects "+fn.arity+" args but "+args.length+" provided.", fntok);
         }
@@ -114,8 +113,20 @@ export class Parser {
         if (this.match([tokenType.minus])) {
             var operator = this.previous();
             var right = this.unary();
-            return new Expression(exprType.unary, operator, right);
+            return new Expression().newExprUnary(operator, right);
         }
+
+        if (this.match([tokenType.andsand])) {
+            var operator = this.previous();
+            var depth = 1;
+            while(this.match([tokenType.andsand])) {
+                depth++;
+            }
+            var right = this.unary();
+            //console.log(right.type === exprType.identifier);
+            return new Expression().newExprDeref(right,depth);
+        }
+
         return this.call();
     }
 
@@ -124,7 +135,7 @@ export class Parser {
         while (this.match([tokenType.divide, tokenType.multiply])) {
             var operator = this.previous();
             var right = this.unary();
-            expr = new Expression(exprType.binary, operator, expr, right);
+            expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
@@ -135,7 +146,7 @@ export class Parser {
         while (this.match([tokenType.plus, tokenType.minus])) {
             var operator = this.previous();
             var right = this.factor();
-            expr = new Expression(exprType.binary, operator, expr, right);
+            expr = new Expression().newExprBinary(operator, expr, right);
         }
 
         return expr;
@@ -147,7 +158,7 @@ export class Parser {
         while (this.match([tokenType.less, tokenType.greater])) {
             var operator = this.previous();
             var right = this.term();
-            expr = new Expression(exprType.binary, operator, expr, right);
+            expr = new Expression().newExprBinary(operator, expr, right);
         }
 
         return expr;
@@ -157,11 +168,10 @@ export class Parser {
         var expr = this.comparisson();
         var equals:Token;
         if (this.match([tokenType.equal])) {
-            var val = this.assign();
             equals = this.previous();
+            var val = this.assign();
             if (expr.type === exprType.identifier) {
-                var n = new Expression(exprType.assign, undefined, val);
-                n.offset = expr.offset;
+                var n = new Expression().newExprAssign(val, expr.offset);
                 return n;
             }
 
@@ -200,6 +210,18 @@ export class Parser {
         return new Statement().newBlockStatement(stmts);
     }
 
+    re_turn() :Statement {
+        if(this.match([tokenType.semicolon])) {
+            var expr = new Expression().newExprNumber(0);
+            expr.datatype = myType.void;
+            return new Statement().newReturnStatement(expr);
+        }
+
+        var expr = this.expression();
+        this.expect(tokenType.semicolon, ";");
+        return new Statement().newReturnStatement(expr);
+    }
+
     statement(): Statement {
 
         if (this.match([tokenType.contineu])) {
@@ -218,6 +240,10 @@ export class Parser {
 
         if (this.match([tokenType.leftbrace])) {
             return this.block();
+        }
+
+        if(this.match([tokenType.return])) {
+            return this.re_turn();
         }
 
         if (this.match([tokenType.if])) {
@@ -245,19 +271,87 @@ export class Parser {
         return this.ExprStatement();
     }
 
+    parseType() {
+        //this.expect(tokenType.colon, ": after variable name");
+        var is_ptr = false;
+        if(this.match([tokenType.leftsquare])) {
+            is_ptr = true;
+            this.expect(tokenType.rightsquare, "] expected");
+        }
+        //console.log(this.peek());
+        switch(this.advance().type) {
+            case tokenType.u8:
+                if(is_ptr) return myType.u8_ptr;
+                return myType.u8;
+            case tokenType.u16:
+                if(is_ptr) return myType.u16_ptr;
+                return myType.u16;
+            case tokenType.u32:
+                if(is_ptr) return myType.u32_ptr;
+                return myType.u32;
+            case tokenType.u64:
+                if(is_ptr) return myType.u64_ptr;
+                return myType.u64;
+            case tokenType.i8:
+                if(is_ptr) return myType.i8_ptr;
+                return myType.i8;
+            case tokenType.i16:
+                if(is_ptr) return myType.i16_ptr;
+                return myType.i16;
+            case tokenType.i32:
+                if(is_ptr) return myType.i32_ptr;
+                return myType.i32;
+            case tokenType.i64:
+                if(is_ptr) return myType.i64_ptr;
+                return myType.i64;
+            case tokenType.void:
+                if(is_ptr) return myType.void_ptr;
+                return myType.void;
+            default:
+                //throw new Error("unhandled case");
+                break;
+        }
+
+        this.tokenError("Expected type", this.peek());
+        return myType.void;
+    }
+
     varDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression | undefined;
+        var type: any|undefined = undefined;
+
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
+            //this.expect(tokenType.semicolon, ";");
             if(initializer.type === exprType.string) {
-                addGlobal(name.value as string, initializer.val as string);
+                addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
                 initializer.name = name.value as string;
             }
+            type = initializer.datatype;
+        } else if(this.match([tokenType.colon])){
+            type = this.parseType()
+            //console.log(type)
         }
+
+        if(this.match([tokenType.equal])) {
+            initializer = this.expression();
+
+            if(initializer.type === exprType.string) {
+                addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
+                initializer.name = name.value as string;
+            }
+            type = initializer.datatype;
+        }
+
+        //if(type === undefined){
+            //console.log(type);
+            //this.tokenError("Expect type--", this.peek());
+        //}
+
         this.expect(tokenType.semicolon, ";");
         var offset = incLocalOffset(name.value as string);
-        return new Statement().newVarstatement(name.value as string, initializer, offset);
+        return new Statement().newVarstatement(name.value as string, initializer, offset, type);
     }
 
     externFuncDeclaration(): Statement {
@@ -274,8 +368,9 @@ export class Parser {
             }
         }
         this.expect(tokenType.rightparen, ") after params");
+        var type = this.parseType();
         this.expect(tokenType.semicolon, ";");
-        pushFunction(name.value as string, params, params.length, fnType.extern, []);
+        pushFunction(name.value as string, params, params.length, fnType.extern, [], type);
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
@@ -292,12 +387,33 @@ export class Parser {
             }
         }
         this.expect(tokenType.rightparen, ") after params");
+        var type = this.parseType();
+        var currFn = pushFunction(name.value as string,params, params.length, fnType.native, [], type);
         this.expect(tokenType.leftbrace, "function body");
-        var currFn = pushFunction(name.value as string,params, params.length, fnType.native, []);
         setCurrentFuction(currFn);
         var body = this.block();
         resetCurrentFunction(body);
         return new Statement().newNativeFnStatement(name.value as string);
+    }
+
+    structDeclaration():Statement {
+        var name = this.expect(tokenType.identifier, "expect struct name").value as string;
+        //console.log("========");
+        this.expect( tokenType.leftbrace, "Expect struct body");
+        var strucmembers: Statement[] = [];
+        while(!this.check(tokenType.rightbrace)) {
+            var tok = this.peek();
+            var member = this.varDeclaration();
+            if(member.type !== stmtType.vardeclstmt) {
+                this.tokenError("Expect var declararion", tok);
+            }
+
+            strucmembers.push(member);
+        }
+
+
+        this.expect(tokenType.rightbrace, "Expect } after struct body");
+        return new Statement().newStructDeclStatement();
     }
 
     declaration(): Statement {
@@ -311,6 +427,10 @@ export class Parser {
 
         if(this.match([tokenType.fn])) {
             return this.nativeFuncDeclaration();
+        }
+
+        if(this.match([tokenType.struct])) {
+            return this.structDeclaration();
         }
 
         return this.statement();

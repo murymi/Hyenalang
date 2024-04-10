@@ -84,8 +84,12 @@ function genUnary() {
     genNegate();
 }
 
-function genPrimary(a: number) {
+function genNumber(a: number) {
     console.log("   push " + a);
+}
+
+function genString(name:string) {
+    console.log("   push "+name);
 }
 
 function load() {
@@ -127,12 +131,22 @@ function generateCode(expr: Expression) {
             generateCode(expr.right as Expression);
             genBinary(expr.operator?.type as tokenType);
             break;
+        case exprType.deref:
+            generateCode(expr.left as Expression);
+            console.log("sub rsp, 8");
+            for(let i = 0; i < expr.depth; i++) {
+                console.log("lea rax, rax");
+            }
+            console.log("push rax");
+            break;
         case exprType.unary:
             generateCode(expr.left as Expression);
             genUnary();
             break;
         case exprType.primary:
-            genPrimary(expr.val as number);
+            genNumber(expr.val);
+            break;
+        case exprType.number:
             break;
         case exprType.grouping:
             generateCode(expr.left as Expression);
@@ -166,6 +180,7 @@ function generateCode(expr: Expression) {
                     });
                     console.log("   lea r15, [" + expr.callee.name + "]");
                     console.log("   call buitin_glibc_caller");
+                    console.log("   push rax");
                     break;
                 case fnType.native:
                     expr.params.forEach((p, i) => {
@@ -184,11 +199,13 @@ function generateCode(expr: Expression) {
                         usedRegs.push(argRegisters[i]);
                     });
                     console.log("   call "+expr.callee.name);
+                    console.log("   push rax");
                     break;
                 default: break;
             }
             break;
         case exprType.string:
+            genString(expr.name);
             break;
         default:
             throw new Error("Unexpected expression");
@@ -289,6 +306,10 @@ function genStmt(stmt: Statement, labeloffset: number): void {
             console.log("   call printf");
             console.log("   add rsp, 8");
             console.log(".L.end." + labeloffset + ":");
+            break;
+        case stmtType.ret:
+            generateCode(stmt.expr);
+            console.log("   pop rax");
             break;
         default: break;
     }

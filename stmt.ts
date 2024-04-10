@@ -1,4 +1,5 @@
 import { Expression, exprType } from "./expr";
+import { myType } from "./main";
 import { Token } from "./token";
 
 export enum stmtType {
@@ -12,7 +13,9 @@ export enum stmtType {
     contineu,
     braek,
     externfn,
-    nativefn
+    nativefn,
+    structdecl,
+    ret
 }
 
 export class Statement {
@@ -36,9 +39,9 @@ export class Statement {
     params: Token[]|undefined
     body: Statement
 
-    newVarstatement(name : string, initializer: Expression|undefined, offset: number) :Statement {
+    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype: any) :Statement {
         if(initializer === undefined) {
-            var zero = new Expression(exprType.primary, undefined, 0);
+            var zero = new Expression().newExprNumber(0);
             this.initializer = zero;
             this.expr = zero;
         } else {
@@ -48,6 +51,17 @@ export class Statement {
         this.name = name;
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
+        return this;
+    }
+
+    newStructDeclStatement() :Statement {
+        this.type = stmtType.structdecl;
+        return this;
+    }
+
+    newReturnStatement(expr: Expression):Statement {
+        this.expr = expr;
+        this.type = stmtType.ret;
         return this;
     }
 

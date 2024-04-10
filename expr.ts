@@ -1,4 +1,5 @@
-import { fnType } from "./main";
+import { off } from "process";
+import { fnType, myType } from "./main";
 import { Token } from "./token";
 import { tokenType } from "./token";
 
@@ -8,18 +9,22 @@ export enum exprType {
     primary,
     grouping,
     identifier,
+    deref,
     assign,
     call,
-    string
+    string,
+    number
 }
 
 export class Expression {
     type: exprType;
 
-    left: Expression | string | number;
+    left: Expression | undefined;
     right?: Expression;
     operator: Token | undefined;
-    val: Expression | string | number;
+
+    // number
+    val: number;
 
     // var
     offset: number;
@@ -29,17 +34,104 @@ export class Expression {
     callee: Expression;
     name: string;
     fntype: fnType;
+
+    //
+    datatype: any;
+
+    //bytes
+    bytes: string;
+
+    // addr
+    depth: number;
+
+    newExprUnary(op: Token, right:Expression):Expression{
+        this.type = exprType.unary;
+        this.operator = op;
+        this.right = right;
+        this.datatype = right.datatype;
+        return this;
+    }
+
+    newExprBinary(op: Token, left: Expression, right:Expression):Expression{
+        this.type = exprType.binary;
+        this.left = left;
+        this.right = right;
+        this.datatype = left.datatype;
+        return this;
+    }
+
+    newExprPrimary():Expression{
+        this.type = exprType.primary;
+        return this;
+    }
+
+    newExprGrouping(expr: Expression):Expression{
+        this.left = expr;
+        this.type = exprType.grouping;
+        return this;
+    }
+
+    newExprIdentifier(name: string,offset:number, datatype: any):Expression{
+        this.type = exprType.identifier;
+        this.datatype = datatype;
+        this.offset = offset;
+        this.name = name;
+        return this;
+    }
+
+    newExprDeref(left:Expression, depth:number) :Expression {
+        this.left = left;
+        this.type = exprType.deref;
+        this.depth = depth;
+        return this;
+    }
+
+    newExprAddr(datatype: any) :Expression {
+        this.type = exprType.identifier;
+        this.datatype = datatype;
+        return this;
+    }
+
+    newExprAssign(val:Expression, offset:number):Expression{
+        this.type = exprType.assign;
+        this.offset = offset;
+        this.left = val;
+        return this;
+    }
+
+    newExprCall(callee:Expression):Expression{
+        this.type = exprType.call;
+        this.datatype = callee.datatype;
+        return this;
+    }
+
+    newExprString(value:string):Expression{
+        this.type = exprType.string;
+        this.datatype = myType.u8_ptr;
+        this.bytes = value;
+        return this;
+    }
+
+    newExprNumber(val:number):Expression{
+        this.type = exprType.number;
+        this.val = val;
+        return this;
+    }
+
+    constructor(){
+    }
  
-    constructor(type: exprType, operator: Token | undefined, left: Expression | string | number, right?: Expression) {
-         if (type === exprType.primary) {
-             this.val = left;
-         }
-     
-         this.type = type;
-         this.operator = operator;
-         this.right = right;
-         this.left = left;
-     }
+    // constructor(type: exprType, operator: Token | undefined, left: Expression | undefined, datatype:myType, right?: Expression) {
+    //      if (type === exprType.primary) {
+    //          this.val = left;
+    //      }
+    //  
+    //      this.type = type;
+    //      this.operator = operator;
+    //      this.right = right;
+    //      this.left = left;
+    //      this.datatype = datatype;
+    //  }
 }
 
 
