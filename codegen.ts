@@ -1,5 +1,5 @@
 import { Token, tokenType } from "./token";
-import { Expression } from "./expr";
+import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import { fnType } from "./main";
@@ -88,8 +88,8 @@ function genNumber(a: number) {
     console.log("   push " + a);
 }
 
-function genString(name:string) {
-    console.log("   push "+name);
+function genString(name: string) {
+    console.log("   push " + name);
 }
 
 function load() {
@@ -107,6 +107,11 @@ function store() {
 function genAddress(stmt: Statement | Expression) {
     console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
     console.log("   push rax")
+}
+
+function genFnAddress(expr: Expression) {
+    console.log("lea rax, [" + expr.name + "]");
+    console.log("push rax");
 }
 
 function saveRegisters(): string[] {
@@ -134,7 +139,7 @@ function generateCode(expr: Expression) {
         case exprType.deref:
             generateCode(expr.left as Expression);
             console.log("sub rsp, 8");
-            for(let i = 0; i < expr.depth; i++) {
+            for (let i = 0; i < expr.depth; i++) {
                 console.log("lea rax, rax");
             }
             console.log("push rax");
@@ -147,6 +152,7 @@ function generateCode(expr: Expression) {
             genNumber(expr.val);
             break;
         case exprType.number:
+            genNumber(expr.val);
             break;
         case exprType.grouping:
             generateCode(expr.left as Expression);
@@ -157,10 +163,16 @@ function generateCode(expr: Expression) {
             store();
             break;
         case exprType.identifier:
-            genAddress(expr);
-            load();
+            //console.log("===================", expr.type);
+            if (expr.idtype === identifierType.func) {
+                genFnAddress(expr);
+            } else {
+                genAddress(expr);
+                load();
+            }
             break;
         case exprType.call:
+            generateCode(expr.callee);
             switch (expr.fntype) {
                 case fnType.extern:
                     expr.params.forEach((p, i) => {
@@ -178,11 +190,13 @@ function generateCode(expr: Expression) {
                         console.log("   pop " + argRegisters[i]);
                         usedRegs.push(argRegisters[i]);
                     });
-                    console.log("   lea r15, [" + expr.callee.name + "]");
-                    console.log("   call buitin_glibc_caller");
-                    console.log("   push rax");
+                    // console.log("   lea r15, [" + expr.callee.name + "]");
+                    // console.log("   call buitin_glibc_caller");
+                    // console.log("   push rax");
                     break;
                 case fnType.native:
+                    //genAddress()
+
                     expr.params.forEach((p, i) => {
                         var saved: string[] = [];
                         var isCall = false;
@@ -198,11 +212,11 @@ function generateCode(expr: Expression) {
                         console.log("   pop " + argRegisters[i]);
                         usedRegs.push(argRegisters[i]);
                     });
-                    console.log("   call "+expr.callee.name);
-                    console.log("   push rax");
                     break;
                 default: break;
             }
+            console.log("   pop rax");
+            console.log("   call rax");
             break;
         case exprType.string:
             genString(expr.name);
@@ -236,8 +250,6 @@ function genAlignedCall() {
 
 
 function genStmt(stmt: Statement, labeloffset: number): void {
-    //console.log("========================");
-
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
@@ -248,6 +260,7 @@ function genStmt(stmt: Statement, labeloffset: number): void {
             if (stmt.expr.type === exprType.string) {
                 console.log("   push " + (stmt.expr.name as string));
             } else {
+                //console.log(stmt.expr);
                 generateCode(stmt.expr);
             }
             store();
@@ -333,9 +346,9 @@ function genGlobalStrings(globs: { name: string, value: string }[]) {
 }
 
 function genArgs(names: Token[]) {
-    names.forEach((n,i)=>{
-        console.log("   lea rax, [rbp-"+(i+1)*8+"]");
-        console.log("   mov [rax], "+argRegisters[i])
+    names.forEach((n, i) => {
+        console.log("   lea rax, [rbp-" + (i + 1) * 8 + "]");
+        console.log("   mov [rax], " + argRegisters[i])
     })
 }
 
@@ -347,7 +360,7 @@ function genText(fns: Function[]) {
             console.log(fn.name + ":");
             console.log("   push rbp");
             console.log("   mov rbp, rsp");
-            console.log("   sub rsp, " + (fn.localSize*8 + fn.arity * 8));
+            console.log("   sub rsp, " + (fn.localSize * 8 + fn.arity * 8));
 
             genArgs(fn.params);
 

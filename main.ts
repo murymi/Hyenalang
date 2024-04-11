@@ -2,6 +2,7 @@ import { Lexer, Token } from "./token";
 import { Parser } from "./parser";
 import { genStart } from "./codegen";
 import { Statement } from "./stmt";
+import { Expression } from "./expr";
 
 export enum fnType{
     extern,
@@ -72,9 +73,26 @@ export class Function {
     }
 }
 
+
+export class Struct {
+    name: string;
+    size: number;
+    members: { name:string, size:number, default: number }[];
+
+    constructor(name: string){
+        this.name = name;
+        this.size = 0;
+        this.members = [];
+    }
+}
+
+var structs: Struct[] = [];
+
 var functions: Function[] = [];
 
-export function incLocalOffset(name: string){
+// size in 8 bytes (for now)
+export function incLocalOffset(name: string, size: number): number {
+    if(currentFn === -1) return -1;
     for (let i = functions[currentFn].locals.length-1; i >= 0; i--) {
         if(functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
             throw new Error("Redefination of a variable "+name);
@@ -82,13 +100,22 @@ export function incLocalOffset(name: string){
     }
     
     functions[currentFn].locals.push({name: name, offset: functions[currentFn].localSize , scope: scopeDepth });
-    functions[currentFn].localSize++;
-    return (functions[currentFn].localSize-1)+functions[currentFn].arity;
+    functions[currentFn].localSize += size;// ++;
+    // return start point for var
+    return (functions[currentFn].localSize - /*-1*/ size) + functions[currentFn].arity;
 }
 
 export function addGlobal(name:string, value:string, type:any):void {
     globalstrings.push({name:name, value:value, type:type});
 }
+
+// export function addStructMember(name: string, value) {
+//     if(inStruct()){
+//         var curroffset = structs[currentFn].size;
+//         structs[currentStruct].members.push({name:name,offset:curroffset })
+//         structs[currentFn].size += 8;
+//     } 
+// }
 
 export function getLocalOffset(name: string): number {
     for (let i = functions[currentFn].locals.length-1; i >= 0; i--) {
@@ -105,7 +132,7 @@ export function getLocalOffset(name: string): number {
 
     for (let i = functions.length-1; i >= 0; i--) {
         if(functions[i].name === name) {
-            return 0;
+            return -1;
         }
     }
 
@@ -127,14 +154,33 @@ export function pushFunction(name: string,params: Token[], arity:number, type:fn
     return functions.length-1;
 }
 
+export function pushStruct(name:string) {
+    structs.push(new Struct(name));
+    return structs.length-1;
+}
+
 var currentFn: number = -1;
 var currentStruct: number = -1;
+var ins_struct = false;
 
 export function setCurrentStruct(n: number) {
+    ins_struct = true;
     currentStruct = n;
 }
 
-export function resetCurrentStruct() {
+export function inStruct() {
+    return ins_struct;
+}
+
+export function resetCurrentStruct(members: Statement[]) {
+    members.forEach((m)=> {
+        structs[currentStruct].members.push({ name:m.name, size: 8, default:0/*default:m.expr*/ })
+        structs[currentStruct].size += 8;
+    })
+
+    //console.log(structs[currentStruct]);
+
+    ins_struct = false;
     currentStruct = -1;
 }
 
@@ -144,6 +190,7 @@ export function setCurrentFuction(n: number) {
 
 export function resetCurrentFunction(body:Statement) {
     functions[currentFn].body = body;
+    //console.log(functions[currentFn].body);
     currentFn = -1;
 }
 
@@ -159,10 +206,11 @@ function compile(text: string) {
     var lexer = new Lexer(text);
 
     var tokens = lexer.lex();
-    console.log(tokens);
+    //console.log(tokens);
     var parser = new Parser(tokens);
     var stmts = parser.parse();
-    //genStart(globalstrings, functions);
+    //console.log(stmts);
+    genStart(globalstrings, functions);
 }
 
 var prog = `
@@ -170,15 +218,19 @@ extern fn printf(a, b) void;
 extern fn puts(a) void;
 
 struct bar {
-    x: i8;
-    y: i8;
+    x:u8;
+    y:u8;
 }
 
+
 fn foo() void {
-    
-    var x = "xxxword";
-    var b = &&&&x;
-    return;
+    var hello = "hello world";
+    puts(hello);
+    return 0;
+}
+
+fn main() void {
+    foo();
 }
 
 `

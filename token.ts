@@ -27,6 +27,7 @@ export enum tokenType {
     contineu,
     extern,
     fn,
+    dot,
     comma,
     string,
     return,
@@ -265,6 +266,9 @@ export class Lexer {
                 this.advance();
             } else if (char === ']') {
                 tokens.push(new Token(tokenType.rightsquare, "]", this.line, this.col));
+                this.advance();
+            } else if (char === '.') {
+                tokens.push(new Token(tokenType.dot, ".", this.line, this.col));
                 this.advance();
             } else if (char === '"') {
                 tokens.push(this.readString());

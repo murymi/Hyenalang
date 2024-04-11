@@ -16,6 +16,12 @@ export enum exprType {
     number
 }
 
+export enum identifierType {
+    struct,
+    variable,
+    func
+}
+
 export class Expression {
     type: exprType;
 
@@ -44,6 +50,9 @@ export class Expression {
     // addr
     depth: number;
 
+    //fn id
+    idtype: identifierType;
+
     newExprUnary(op: Token, right:Expression):Expression{
         this.type = exprType.unary;
         this.operator = op;
@@ -71,11 +80,12 @@ export class Expression {
         return this;
     }
 
-    newExprIdentifier(name: string,offset:number, datatype: any):Expression{
+    newExprIdentifier(name: string,offset:number, datatype: any, idtype:identifierType):Expression{
         this.type = exprType.identifier;
         this.datatype = datatype;
         this.offset = offset;
         this.name = name;
+        this.idtype = idtype;
         return this;
     }
 
