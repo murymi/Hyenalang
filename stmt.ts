@@ -39,7 +39,7 @@ export class Statement {
     params: Token[]|undefined
     body: Statement
 
-    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype: any) :Statement {
+    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype: any, custom:any) :Statement {
         if(initializer === undefined) {
             var zero = new Expression().newExprNumber(0);
             this.initializer = zero;
@@ -48,6 +48,8 @@ export class Statement {
             this.initializer = initializer;
             this.expr = initializer;
         }
+        this.initializer.datatype = datatype;
+        this.initializer.CustomType = custom;
         this.name = name;
         this.type = stmtType.vardeclstmt;
         this.offset = offset;

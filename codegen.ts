@@ -93,15 +93,25 @@ function genString(name: string) {
 }
 
 function load() {
+    //console.log("begin load");
     console.log("   pop rax");
     console.log("   mov rax, [rax]");
+    console.log("   push rax");
+    //console.log("end load");
+}
+
+function loadWoffset(offset:number) {
+    console.log("   pop rax");
+    console.log("   mov rax, [rax+"+offset+"]");
     console.log("   push rax");
 }
 
 function store() {
+    //console.log("begin store");
     console.log("   pop rdi");
     console.log("   pop rax");
     console.log("   mov [rax], rdi");
+    //console.log("end store");
 }
 
 function genAddress(stmt: Statement | Expression) {
@@ -131,6 +141,13 @@ function restore(saved: string[]): void {
 function generateCode(expr: Expression) {
     //console.log(expr);
     switch (expr.type) {
+        case exprType.get:
+            console.log("================");
+            //generateCode(expr.left as Expression);
+            genAddress(expr);
+            loadWoffset(expr.offset);
+            console.log("================");
+            break;
         case exprType.binary:
             generateCode(expr.left as Expression);
             generateCode(expr.right as Expression);

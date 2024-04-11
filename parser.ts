@@ -3,13 +3,12 @@ import { tokenType } from "./token";
 import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { addGlobal, beginScope, endScope, fnType, getFn, getLocalOffset, inStruct, incLocalOffset, myType, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
-
+import { addGlobal, beginScope, checkStruct, endScope, fnType, getFn, getLocalOffset, getOffsetOfMember, inStruct, incLocalOffset, myType, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
 
 export class Parser {
     tokens: Token[];
     current: number;
-    
+
     match(types: tokenType[]): boolean {
         for (let T of types) {
             if (this.check(T)) {
@@ -19,46 +18,49 @@ export class Parser {
         }
         return false;
     }
-    
+
     advance(): Token {
         if (this.moreTokens()) this.current++;
         return this.previous();
     }
-    
+
     check(type: tokenType): boolean {
         if (!this.moreTokens()) return false;
         return this.peek().type === type;
     }
-    
+
     moreTokens(): boolean { return this.peek().type != tokenType.eof; }
-    
+
     peek(): Token { return this.tokens[this.current]; }
-    
+
     previous(): Token { return this.tokens[this.current - 1]; }
-    
+
     expect(type, name): Token {
         if (this.peek().type !== type) {
             this.tokenError("Expected " + name, this.peek());
         }
         return this.advance();
     }
-    
-    tokenError(message: string, token:Token):void {
-        console.log(message+" - [ line: " + token.line + " col: " + token.col+" ]");
+
+    tokenError(message: string, token: Token): void {
+        console.log(message + " - [ line: " + token.line + " col: " + token.col + " ]");
         process.exit();
     }
-    
+
     primary(): Expression {
         if (this.match([tokenType.identifier])) {
-            var offset = getLocalOffset(this.previous().value as string);
-                if(offset === -1) {
-                    //console.log("============Func name detected");
-                    return new Expression().newExprIdentifier(this.previous().value as string, offset, myType.void, identifierType.func);
-                }
-                return new Expression().newExprIdentifier(this.previous().value as string, offset, myType.void, identifierType.variable);
+            var obj = getLocalOffset(this.previous().value as string);
+            if (obj.offset === -1) {
+                //console.log("============Func name detected");
+                return new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type, identifierType.func);
             }
-            
-            if(this.match([tokenType.string])) {
+            var expr = new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type, identifierType.variable);
+            //console.log(obj);
+            expr.CustomType = obj.custom;
+            return expr;
+        }
+
+        if (this.match([tokenType.string])) {
             var expr = new Expression().newExprString(this.previous().value as string);
             //addGlobal()
             return expr;
@@ -78,23 +80,23 @@ export class Parser {
         //console.log(this.peek());
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
-        
+
     }
 
-    finishCall(callee: Expression):Expression {
+    finishCall(callee: Expression): Expression {
         var args: Expression[] = [];
-        if(!this.check(tokenType.rightparen)) {
+        if (!this.check(tokenType.rightparen)) {
             do {
                 args.push(this.expression());
             } while (this.match([tokenType.comma]));
         }
-        var fntok = this.expect(tokenType.rightparen,") after params");
+        var fntok = this.expect(tokenType.rightparen, ") after params");
         //console.log(callee.name);
         var fn = getFn(callee.name as string);
         var expr = new Expression().newExprCall(callee);;
         expr.callee = callee;
-        if(fn.arity !== args.length) {
-            this.tokenError(fn.name+" expects "+fn.arity+" args but "+args.length+" provided.", fntok);
+        if (fn.arity !== args.length) {
+            this.tokenError(fn.name + " expects " + fn.arity + " args but " + args.length + " provided.", fntok);
         }
         expr.params = args;
         expr.fntype = fn.type;
@@ -102,17 +104,30 @@ export class Parser {
     }
 
     call(): Expression {
-        var expr = this.primary();
+        var expr = this.primary();// identifier
 
         // should return identifier
 
-        if(this.match([tokenType.leftparen])) {
-            //console.log("==================");
-            expr = this.finishCall(expr);
-        } else if (this.match([tokenType.dot])) {
+        while (true) {
 
+            if (this.match([tokenType.leftparen])) {
+                //console.log("==================");
+                expr = this.finishCall(expr);
+            } else if (this.match([tokenType.dot])) {
+                var name = this.expect(tokenType.identifier, "expect property name after dot").value as string;
+                console.log(name);
+                console.log(expr.CustomType);
+                if (expr.datatype === myType.struct) {
+                    expr = new Expression().newExprGet(getOffsetOfMember(expr.CustomType, name), expr)
+                } else {
+                    console.log("member access to non struct");
+                    process.exit(1);
+                }
+                // get struct type of expr, find offset of x, get with offset
+            } else {
+                break;
+            }
         }
-
         return expr;
     }
 
@@ -126,12 +141,12 @@ export class Parser {
         if (this.match([tokenType.andsand])) {
             var operator = this.previous();
             var depth = 1;
-            while(this.match([tokenType.andsand])) {
+            while (this.match([tokenType.andsand])) {
                 depth++;
             }
             var right = this.unary();
             //console.log(right.type === exprType.identifier);
-            return new Expression().newExprDeref(right,depth);
+            return new Expression().newExprDeref(right, depth);
         }
 
         return this.call();
@@ -173,7 +188,7 @@ export class Parser {
 
     assign(): Expression {
         var expr = this.comparisson();
-        var equals:Token;
+        var equals: Token;
         if (this.match([tokenType.equal])) {
             equals = this.previous();
             var val = this.assign();
@@ -217,8 +232,8 @@ export class Parser {
         return new Statement().newBlockStatement(stmts);
     }
 
-    re_turn() :Statement {
-        if(this.match([tokenType.semicolon])) {
+    re_turn(): Statement {
+        if (this.match([tokenType.semicolon])) {
             var expr = new Expression().newExprNumber(0);
             expr.datatype = myType.void;
             return new Statement().newReturnStatement(expr);
@@ -249,7 +264,7 @@ export class Parser {
             return this.block();
         }
 
-        if(this.match([tokenType.return])) {
+        if (this.match([tokenType.return])) {
             return this.re_turn();
         }
 
@@ -278,91 +293,98 @@ export class Parser {
         return this.ExprStatement();
     }
 
-    parseType() {
+    parseType(): { type: myType | undefined, custom: any } {
         //this.expect(tokenType.colon, ": after variable name");
         var is_ptr = false;
-        if(this.match([tokenType.leftsquare])) {
+        if (this.match([tokenType.leftsquare])) {
             is_ptr = true;
             this.expect(tokenType.rightsquare, "] expected");
         }
         //console.log(this.peek());
-        switch(this.advance().type) {
+        var tok = this.advance();
+        switch (tok.type) {
             case tokenType.u8:
-                if(is_ptr) return myType.u8_ptr;
-                return myType.u8;
+                if (is_ptr) return { type: myType.u8_ptr, custom: undefined };
+                return { type: myType.u8, custom: undefined };
             case tokenType.u16:
-                if(is_ptr) return myType.u16_ptr;
-                return myType.u16;
+                if (is_ptr) return { type: myType.u16_ptr, custom: undefined };
+                return { type: myType.u16, custom: undefined };
             case tokenType.u32:
-                if(is_ptr) return myType.u32_ptr;
-                return myType.u32;
+                if (is_ptr) return { type: myType.u32_ptr, custom: undefined };
+                return { type: myType.u32, custom: undefined };
             case tokenType.u64:
-                if(is_ptr) return myType.u64_ptr;
-                return myType.u64;
+                if (is_ptr) return { type: myType.u64_ptr, custom: undefined };
+                return { type: myType.u64, custom: undefined };
             case tokenType.i8:
-                if(is_ptr) return myType.i8_ptr;
-                return myType.i8;
+                if (is_ptr) return { type: myType.i8_ptr, custom: undefined };
+                return { type: myType.i8, custom: undefined };
             case tokenType.i16:
-                if(is_ptr) return myType.i16_ptr;
-                return myType.i16;
+                if (is_ptr) return { type: myType.i16_ptr, custom: undefined };;
+                return { type: myType.i16, custom: undefined };
             case tokenType.i32:
-                if(is_ptr) return myType.i32_ptr;
-                return myType.i32;
+                if (is_ptr) return { type: myType.i32_ptr, custom: undefined };
+                return { type: myType.i32, custom: undefined };
             case tokenType.i64:
-                if(is_ptr) return myType.i64_ptr;
-                return myType.i64;
+                if (is_ptr) return { type: myType.i64_ptr, custom: undefined };
+                return { type: myType.i64, custom: undefined };
             case tokenType.void:
-                if(is_ptr) return myType.void_ptr;
-                return myType.void;
+                if (is_ptr) return { type: myType.void_ptr, custom: undefined };
+                return { type: myType.void, custom: undefined };
             case tokenType.identifier:
-                //console.log("============");
-                return myType.void_ptr;
+                var stct = checkStruct(tok.value as string);
+                if (stct) {
+                    //console.log("============",myType.void_ptr);
+                    return { type: myType.struct, custom: stct };
+                }
+                //console.log(tok.value);
+                this.tokenError("Expected valid type", this.peek());
             default:
                 //throw new Error("unhandled case");
                 break;
         }
 
         this.tokenError("Expected type", this.peek());
-        return myType.void;
+        return { type: undefined, custom: undefined };
     }
 
     varDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression | undefined;
-        var type: any|undefined = undefined;
+        var type: { type: myType | undefined, custom: any } = { type: undefined, custom: undefined };
 
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
             //this.expect(tokenType.semicolon, ";");
-            if(initializer.type === exprType.string) {
+            if (initializer.type === exprType.string) {
                 addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
                 initializer.name = name.value as string;
             }
-            type = initializer.datatype;
-        } else if(this.match([tokenType.colon])){
+            type.type = initializer.datatype;
+            type.custom = type.type;
+        } else if (this.match([tokenType.colon])) {
             type = this.parseType()
             //console.log(type)
         }
         //console.log(inStruct());
 
-        if(this.match([tokenType.equal])) {
+        if (this.match([tokenType.equal])) {
             initializer = this.expression();
 
-            if(initializer.type === exprType.string) {
+            if (initializer.type === exprType.string) {
                 addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
                 initializer.name = name.value as string;
             }
-            type = initializer.datatype;
+            //type = initializer.datatype;
         }
 
-        //if(type === undefined){
-            //console.log(type);
-            //this.tokenError("Expect type--", this.peek());
-        //}
+        if (type.type === undefined) {
+            console.log(type);
+            this.tokenError("Expect type--", this.peek());
+        }
 
         this.expect(tokenType.semicolon, ";");
-        var offset = incLocalOffset(name.value as string, 2);
-        return new Statement().newVarstatement(name.value as string, initializer, offset, type);
+        var offset = incLocalOffset(name.value as string, 2, type.type as myType, type.custom);
+        return new Statement().newVarstatement(name.value as string, initializer, offset, type.type, type.custom);
     }
 
     externFuncDeclaration(): Statement {
@@ -385,7 +407,7 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    nativeFuncDeclaration():Statement {
+    nativeFuncDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "fn name");
         this.expect(tokenType.leftparen, "( after fn name");
         var params: Token[] = [];
@@ -399,7 +421,7 @@ export class Parser {
         }
         this.expect(tokenType.rightparen, ") after params");
         var type = this.parseType();
-        var currFn = pushFunction(name.value as string,params, params.length, fnType.native, [], type);
+        var currFn = pushFunction(name.value as string, params, params.length, fnType.native, [], type);
         this.expect(tokenType.leftbrace, "function body");
         setCurrentFuction(currFn);
         var body = this.block();
@@ -407,18 +429,18 @@ export class Parser {
         return new Statement().newNativeFnStatement(name.value as string);
     }
 
-    structDeclaration():Statement {
+    structDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "expect struct name").value as string;
         //console.log("========");
         var currstruct = pushStruct(name);
-        this.expect( tokenType.leftbrace, "Expect struct body");
+        this.expect(tokenType.leftbrace, "Expect struct body");
         var strucmembers: Statement[] = [];
         setCurrentStruct(currstruct);
-        while(!this.check(tokenType.rightbrace)) {
+        while (!this.check(tokenType.rightbrace)) {
             var tok = this.peek();
             //console.log("==================");
             var member = this.varDeclaration();
-            if(member.type !== stmtType.vardeclstmt) {
+            if (member.type !== stmtType.vardeclstmt) {
                 this.tokenError("Expect var declararion", tok);
             }
 
@@ -441,11 +463,11 @@ export class Parser {
             return this.externFuncDeclaration();
         }
 
-        if(this.match([tokenType.fn])) {
+        if (this.match([tokenType.fn])) {
             return this.nativeFuncDeclaration();
         }
 
-        if(this.match([tokenType.struct])) {
+        if (this.match([tokenType.struct])) {
             return this.structDeclaration();
         }
 

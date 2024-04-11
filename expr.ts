@@ -13,13 +13,16 @@ export enum exprType {
     assign,
     call,
     string,
-    number
+    number,
+    get,
+    set
 }
 
 export enum identifierType {
     struct,
     variable,
-    func
+    func,
+    //structvar
 }
 
 export class Expression {
@@ -42,7 +45,7 @@ export class Expression {
     fntype: fnType;
 
     //
-    datatype: any;
+    datatype: myType;
 
     //bytes
     bytes: string;
@@ -53,11 +56,21 @@ export class Expression {
     //fn id
     idtype: identifierType;
 
+    // custom
+    CustomType: any;
+
     newExprUnary(op: Token, right:Expression):Expression{
         this.type = exprType.unary;
         this.operator = op;
         this.right = right;
         this.datatype = right.datatype;
+        return this;
+    }
+
+    newExprGet(offset:number, expr :Expression):Expression{
+        this.type = exprType.get;
+        this.left = expr;
+        this.offset = offset;
         return this;
     }
 
@@ -80,7 +93,7 @@ export class Expression {
         return this;
     }
 
-    newExprIdentifier(name: string,offset:number, datatype: any, idtype:identifierType):Expression{
+    newExprIdentifier(name: string,offset:number, datatype: myType, idtype:identifierType):Expression{
         this.type = exprType.identifier;
         this.datatype = datatype;
         this.offset = offset;
@@ -96,7 +109,7 @@ export class Expression {
         return this;
     }
 
-    newExprAddr(datatype: any) :Expression {
+    newExprAddr(datatype: myType) :Expression {
         this.type = exprType.identifier;
         this.datatype = datatype;
         return this;

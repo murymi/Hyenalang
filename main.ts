@@ -9,35 +9,36 @@ export enum fnType{
     native,
 }
 
-export const myType = {
-    u8: {},
-    u16: {},
-    u32: {},
-    u64: {},
+export enum myType {
+    u8,
+    u16,
+    u32,
+    u64,
 
-    i8: {},
-    i16: {},
-    i32: {},
-    i64: {},
+    i8,
+    i16,
+    i32,
+    i64,
+    u8_ptr,
+    u16_ptr,
+    u32_ptr,
+    u64_ptr,
 
-    u8_ptr: {},
-    u16_ptr: {},
-    u32_ptr: {},
-    u64_ptr: {},
+    i8_ptr,
+    i16_ptr,
+    i32_ptr,
+    i64_ptr,
 
-    i8_ptr: {},
-    i16_ptr: {},
-    i32_ptr: {},
-    i64_ptr: {},
+    f32,
+    f64,
 
-    f32: {},
-    f64: {},
+    f32_ptr,
+    f64_ptr,
 
-    f32_ptr: {},
-    f64_ptr: {},
+    void,
+    void_ptr,
 
-    void: {},
-    void_ptr: {}
+    struct
 }
 
 //var localSize = 0;
@@ -45,11 +46,14 @@ var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: { name: string, value: string, type:any }[] = [];
 
+
+//class Variable
+
 export class Function {
     name: string;
     arity: number;
     type: fnType;
-    locals: { name:string, offset:number, scope: number }[];
+    locals: { name:string, offset:number, scope: number, type:myType, customtype:any }[];
     localSize: number;
     params: Token[];
     body:Statement;
@@ -60,7 +64,7 @@ export class Function {
         type: fnType,
         params: Token[],
         arity: number,
-        locals: { name:string, offset:number, scope: number, type:any }[],
+        locals: { name:string, offset:number, scope: number, type:myType, customtype:any }[],
         retType: any
     ) { 
         this.localSize = 0; 
@@ -90,8 +94,15 @@ var structs: Struct[] = [];
 
 var functions: Function[] = [];
 
+export function checkStruct(name: string) {
+    for(let s of structs) {
+        if(s.name === name) return s;
+    }
+    return null;
+}
+
 // size in 8 bytes (for now)
-export function incLocalOffset(name: string, size: number): number {
+export function incLocalOffset(name: string, size: number, type:myType, custom:any): number {
     if(currentFn === -1) return -1;
     for (let i = functions[currentFn].locals.length-1; i >= 0; i--) {
         if(functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
@@ -99,7 +110,12 @@ export function incLocalOffset(name: string, size: number): number {
         }
     }
     
-    functions[currentFn].locals.push({name: name, offset: functions[currentFn].localSize , scope: scopeDepth });
+    functions[currentFn].locals.push({
+        name: name,
+         offset: functions[currentFn].localSize ,
+          scope: scopeDepth, type:type,
+           customtype:custom 
+        });
     functions[currentFn].localSize += size;// ++;
     // return start point for var
     return (functions[currentFn].localSize - /*-1*/ size) + functions[currentFn].arity;
@@ -117,22 +133,42 @@ export function addGlobal(name:string, value:string, type:any):void {
 //     } 
 // }
 
-export function getLocalOffset(name: string): number {
+export function getOffsetOfMember(struct:Struct, member:string) {
+    var offset = 0;
+    for(let m of struct.members) {
+        if(m.name === member){
+            return offset;
+        }
+
+        offset+=m.size;
+    }
+
+    console.log("struct "+struct.name+" has no member named "+member);
+    process.exit(1);
+}
+
+export function getLocalOffset(name: string): { offset: number, type:any, custom:any} {
     for (let i = functions[currentFn].locals.length-1; i >= 0; i--) {
         if(functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope <= scopeDepth) {
-            return functions[currentFn].locals[i].offset + functions[currentFn].arity;
+            var off = functions[currentFn].locals[i].offset + functions[currentFn].arity;
+            var type = functions[currentFn].locals[i].type;
+            var custom = functions[currentFn].locals[i].customtype;
+
+            //console.log(functions[currentFn].locals)
+
+            return { offset:off, type:type, custom:custom }
         }
     }
 
     for (let i = functions[currentFn].params.length-1; i >= 0; i--) {
         if(functions[currentFn].params[i].value === name) {
-            return i;
+            return { offset:i, type:myType.void, custom:undefined }
         }
     }
 
     for (let i = functions.length-1; i >= 0; i--) {
         if(functions[i].name === name) {
-            return -1;
+            return { offset:-1, type:myType.void, custom:undefined }
         }
     }
 
@@ -178,7 +214,7 @@ export function resetCurrentStruct(members: Statement[]) {
         structs[currentStruct].size += 8;
     })
 
-    //console.log(structs[currentStruct]);
+    //console.log(structs[0]);
 
     ins_struct = false;
     currentStruct = -1;
@@ -220,17 +256,13 @@ extern fn puts(a) void;
 struct bar {
     x:u8;
     y:u8;
+    z:bar;
 }
 
-
-fn foo() void {
-    var hello = "hello world";
-    puts(hello);
-    return 0;
-}
 
 fn main() void {
-    foo();
+    var a:bar;
+    var c: u64 = a.z.y;
 }
 
 `
