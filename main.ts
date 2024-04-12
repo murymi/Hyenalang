@@ -256,13 +256,16 @@ extern fn puts(a) void;
 struct bar {
     x:u8;
     y:u8;
-    z:bar;
 }
 
 
 fn main() void {
     var a:bar;
-    var c: u64 = a.z.y;
+    var fmt = "a.x = %d ";
+    a.x = 90;
+    a.y = 78;
+
+    printf(fmt, a.y);
 }
 
 `

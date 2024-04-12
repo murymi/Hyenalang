@@ -54,7 +54,8 @@ export class Parser {
                 //console.log("============Func name detected");
                 return new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type, identifierType.func);
             }
-            var expr = new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type, identifierType.variable);
+            var expr = new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type,
+             obj.type === myType.struct? identifierType.struct : identifierType.variable);
             //console.log(obj);
             expr.CustomType = obj.custom;
             return expr;
@@ -115,8 +116,8 @@ export class Parser {
                 expr = this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
                 var name = this.expect(tokenType.identifier, "expect property name after dot").value as string;
-                console.log(name);
-                console.log(expr.CustomType);
+                //console.log(name);
+                //console.log(expr.CustomType);
                 if (expr.datatype === myType.struct) {
                     expr = new Expression().newExprGet(getOffsetOfMember(expr.CustomType, name), expr)
                 } else {
@@ -195,6 +196,9 @@ export class Parser {
             if (expr.type === exprType.identifier) {
                 var n = new Expression().newExprAssign(val, expr.offset);
                 return n;
+            } else if (expr.type === exprType.get) {
+                expr.loadaddr = true;
+                return new Expression().newExprSet(expr, val);
             }
 
             this.tokenError("Unexpected assignment", equals);

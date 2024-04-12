@@ -2,55 +2,68 @@
 .data
 .align 1
 .L.data.0:
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
+   .byte 'a'
+   .byte '.'
+   .byte 'x'
    .byte ' '
-   .byte 'w'
-   .byte 'o'
-   .byte 'r'
-   .byte 'l'
+   .byte '='
+   .byte ' '
+   .byte '%'
    .byte 'd'
+   .byte ' '
    .byte 0
 .align 8
-hello: .quad .L.data.0
+fmt: .quad .L.data.0
 .text
-.global foo
-foo:
+.global main
+main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
+   sub rsp, 32
    lea rax, [rbp-8]
    push rax
-   push hello
+   push 0
    pop rdi
    pop rax
    mov [rax], rdi
-lea rax, [puts]
-push rax
+   lea rax, [rbp-24]
+   push rax
+   push fmt
+   pop rdi
+   pop rax
+   mov [rax], rdi
    lea rax, [rbp-8]
+   push rax
+   pop rax
+   lea rax, [rax-0]
+   push rax
+   push 90
+   pop rdi
+   pop rax
+   mov [rax], rdi
+   lea rax, [rbp-8]
+   push rax
+   pop rax
+   lea rax, [rax-8]
+   push rax
+   push 78
+   pop rdi
+   pop rax
+   mov [rax], rdi
+lea rax, [printf]
+push rax
+   lea rax, [rbp-24]
    push rax
    pop rax
    mov rax, [rax]
    push rax
    pop rdi
+   lea rax, [rbp-8]
+   push rax
    pop rax
-   call rax
-   push 0
-   pop rax
-   mov rsp, rbp
-   pop rbp
-   ret
-
-.global main
-main:
-   push rbp
-   mov rbp, rsp
-   sub rsp, 0
-lea rax, [foo]
-push rax
+   mov rax, [rax-8]
+   push rax
+   pop rsi
    pop rax
    call rax
    mov rsp, rbp

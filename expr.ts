@@ -59,6 +59,9 @@ export class Expression {
     // custom
     CustomType: any;
 
+    // get
+    loadaddr:boolean;
+
     newExprUnary(op: Token, right:Expression):Expression{
         this.type = exprType.unary;
         this.operator = op;
@@ -71,6 +74,14 @@ export class Expression {
         this.type = exprType.get;
         this.left = expr;
         this.offset = offset;
+        this.loadaddr = false;
+        return this;
+    }
+
+    newExprSet(expr: Expression, assign:Expression):Expression{
+        this.type = exprType.set;
+        this.left = expr;
+        this.right = assign;
         return this;
     }
 

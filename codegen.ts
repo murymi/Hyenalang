@@ -102,7 +102,13 @@ function load() {
 
 function loadWoffset(offset:number) {
     console.log("   pop rax");
-    console.log("   mov rax, [rax+"+offset+"]");
+    console.log("   mov rax, [rax-"+offset+"]");
+    console.log("   push rax");
+}
+
+function loadaddrWoffset(offset:number) {
+    console.log("   pop rax");
+    console.log("   lea rax, [rax-"+offset+"]");
     console.log("   push rax");
 }
 
@@ -118,6 +124,11 @@ function genAddress(stmt: Statement | Expression) {
     console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
     console.log("   push rax")
 }
+
+// function genStructAddress(stmt: Statement | Expression) {
+//     console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
+//     console.log("   push rax")
+// }
 
 function genFnAddress(expr: Expression) {
     console.log("lea rax, [" + expr.name + "]");
@@ -141,12 +152,29 @@ function restore(saved: string[]): void {
 function generateCode(expr: Expression) {
     //console.log(expr);
     switch (expr.type) {
+        case exprType.set:
+            generateCode(expr.left as Expression);
+            // value
+            generateCode(expr.right as Expression);
+            store();
+            break;
         case exprType.get:
-            console.log("================");
-            //generateCode(expr.left as Expression);
-            genAddress(expr);
-            loadWoffset(expr.offset);
-            console.log("================");
+            generateCode(expr.left as Expression);
+            if(expr.loadaddr) {
+                loadaddrWoffset(expr.offset);
+                //console.log("=========load addr====");
+            } else {
+                //console.log("=========load direct====");
+
+                loadWoffset(expr.offset);
+            }
+            //genAddress(expr);
+            //console.log("================");
+            //loadWoffset(expr.offset);
+            // console.log("pop rax");
+            // console.log("mov rax, [rax]");
+            // console.log("push rax");
+            //console.log("================");
             break;
         case exprType.binary:
             generateCode(expr.left as Expression);
@@ -183,7 +211,11 @@ function generateCode(expr: Expression) {
             //console.log("===================", expr.type);
             if (expr.idtype === identifierType.func) {
                 genFnAddress(expr);
-            } else {
+            } else if(expr.idtype === identifierType.struct){
+                //console.log("struct identifier detected");
+                genAddress(expr);
+            }
+            else {
                 genAddress(expr);
                 load();
             }
