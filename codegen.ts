@@ -128,8 +128,8 @@ function genAddress(stmt: Statement | Expression) {
 }
 
 function genFnAddress(expr: Expression) {
-    console.log("lea rax, [" + expr.name + "]");
-    console.log("push rax");
+    console.log("   lea rax, [" + expr.name + "]");
+    console.log("   push rax");
 }
 
 function saveRegisters(): string[] {
@@ -278,7 +278,7 @@ function genAlignedCall() {
 }
 
 
-function genStmt(stmt: Statement, labeloffset: number): void {
+function genStmt(stmt: Statement, labeloffset: number, fnid:number): void {
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
@@ -293,18 +293,18 @@ function genStmt(stmt: Statement, labeloffset: number): void {
             store();
             break;
         case stmtType.block:
-            stmt.stmts.forEach((s, i) => { genStmt(s, i + labeloffset + 1); })
+            stmt.stmts.forEach((s, i) => { genStmt(s, i + labeloffset + 1, fnid); })
             break
         case stmtType.ifStmt:
             generateCode(stmt.cond);
             console.log("   pop rax");
             console.log("   cmp rax, 0");
             console.log("   je .L.else." + labeloffset);
-            genStmt(stmt.then, labeloffset + 1);
+            genStmt(stmt.then, labeloffset + 1, fnid);
             console.log("   jmp .L.end." + labeloffset);
             console.log(".L.else." + labeloffset + ":");
             if (stmt.else_) {
-                genStmt(stmt.else_, labeloffset + 1);
+                genStmt(stmt.else_, labeloffset + 1, fnid);
             }
             console.log(".L.end." + labeloffset + ":");
             break;
@@ -316,7 +316,7 @@ function genStmt(stmt: Statement, labeloffset: number): void {
             console.log("   pop rax");
             console.log("   cmp rax, 0");
             console.log("   je .L.break." + labeloffset);
-            genStmt(stmt.then, labeloffset + 1);
+            genStmt(stmt.then, labeloffset + 1,fnid);
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
             break;
@@ -328,28 +328,10 @@ function genStmt(stmt: Statement, labeloffset: number): void {
             if (latestContinueLabel === "") throw new Error("Stray continue");
             console.log("jmp " + latestContinueLabel);
             break;
-        case stmtType.print:
-            generateCode(stmt.expr);
-            console.log("   pop rax");
-            console.log("   mov rsi, rax");
-            console.log("   mov rdi, fmt");
-
-            console.log("   mov rax, rsp");
-            console.log("   and rax, 15");
-            console.log("   jnz .L.call." + labeloffset);
-            console.log("   mov rax, 0");
-            console.log("   call printf");
-            console.log("   jmp .L.end." + labeloffset);
-            console.log(".L.call." + labeloffset + ":");
-            console.log("   sub rsp, 8");
-            console.log("   mov rax, 0");
-            console.log("   call printf");
-            console.log("   add rsp, 8");
-            console.log(".L.end." + labeloffset + ":");
-            break;
         case stmtType.ret:
             generateCode(stmt.expr);
             console.log("   pop rax");
+            console.log(`   jmp .L.endfn.${fnid}`);
             break;
         default: break;
     }
@@ -372,7 +354,7 @@ function genGlobalStrings(globs: { name: string, value: string }[]) {
 }
 
 function genArgs(names: Token[]) {
-    names.forEach((n, i) => {
+    names.forEach((_, i) => {
         console.log("   lea rax, [rbp-" + (i + 1) * 8 + "]");
         console.log("   mov [rax], " + argRegisters[i])
     })
@@ -380,7 +362,7 @@ function genArgs(names: Token[]) {
 
 function genText(fns: Function[]) {
     console.log(".text");
-    fns.forEach((fn) => {
+    fns.forEach((fn, i) => {
         if (fn.type === fnType.native) {
             console.log(".global " + fn.name);
             console.log(fn.name + ":");
@@ -390,8 +372,9 @@ function genText(fns: Function[]) {
 
             genArgs(fn.params);
 
-            genStmt(fn.body, 0);
-
+            genStmt(fn.body, 0, i);
+            console.log("   xor rax, rax");
+            console.log(`.L.endfn.${i}:`);
             console.log("   mov rsp, rbp");
             console.log("   pop rbp");
             console.log("   ret");

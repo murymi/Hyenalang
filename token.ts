@@ -14,7 +14,6 @@ export enum tokenType {
     identifier,
     var,
     equal,
-    print,
     leftbrace,
     rightbrace,
     bang,
@@ -163,7 +162,6 @@ export class Lexer {
         }
         var str = this.text.substring(start, this.current);
         if (str === "var") return new Token(tokenType.var, str, this.line, this.col);
-        if (str === "print") return new Token(tokenType.print, str, this.line, this.col);
         if (str === "if") return new Token(tokenType.if, str, this.line, this.col);
         if (str === "else") return new Token(tokenType.else, str, this.line, this.col);
         if (str === "while") return new Token(tokenType.while, str, this.line, this.col);

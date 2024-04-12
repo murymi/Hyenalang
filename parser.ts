@@ -253,10 +253,6 @@ export class Parser {
             return new Statement().newBreakStatement();
         }
 
-        if (this.match([tokenType.print])) {
-            return this.printStatement();
-        }
-
         if (this.match([tokenType.leftbrace])) {
             return this.block();
         }

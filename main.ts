@@ -255,6 +255,7 @@ fn main() void {
     var fmt = "value is -> %d ";
 
     printf(fmt, d);
+    return;
 }
 
 `
