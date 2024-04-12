@@ -90,6 +90,7 @@ export class Expression {
         this.left = left;
         this.right = right;
         this.datatype = left.datatype;
+        this.operator = op;
         return this;
     }
 
@@ -149,6 +150,7 @@ export class Expression {
     newExprNumber(val:number):Expression{
         this.type = exprType.number;
         this.val = val;
+        this.datatype = myType.i64
         return this;
     }
 

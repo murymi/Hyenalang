@@ -2,11 +2,17 @@
 .data
 .align 1
 .L.data.0:
+   .byte 'v'
    .byte 'a'
-   .byte '.'
-   .byte 'x'
+   .byte 'l'
+   .byte 'u'
+   .byte 'e'
    .byte ' '
-   .byte '='
+   .byte 'i'
+   .byte 's'
+   .byte ' '
+   .byte '-'
+   .byte '>'
    .byte ' '
    .byte '%'
    .byte 'd'
@@ -22,31 +28,18 @@ main:
    sub rsp, 32
    lea rax, [rbp-8]
    push rax
-   push 0
+   push 1
+   push 3
+   pop rdi
+   pop rax
+   imul rax, rdi
+   push rax
    pop rdi
    pop rax
    mov [rax], rdi
    lea rax, [rbp-24]
    push rax
    push fmt
-   pop rdi
-   pop rax
-   mov [rax], rdi
-   lea rax, [rbp-8]
-   push rax
-   pop rax
-   lea rax, [rax-0]
-   push rax
-   push 90
-   pop rdi
-   pop rax
-   mov [rax], rdi
-   lea rax, [rbp-8]
-   push rax
-   pop rax
-   lea rax, [rax-8]
-   push rax
-   push 78
    pop rdi
    pop rax
    mov [rax], rdi
@@ -61,7 +54,7 @@ push rax
    lea rax, [rbp-8]
    push rax
    pop rax
-   mov rax, [rax-8]
+   mov rax, [rax]
    push rax
    pop rsi
    pop rax

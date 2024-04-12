@@ -4,6 +4,7 @@ import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import { fnType } from "./main";
 import { Function } from "./main";
+import { error } from "console";
 
 
 var latestContinueLabel = "";
@@ -75,6 +76,7 @@ function genBinary(operator: tokenType) {
             genLess();
             break;
         default:
+            throw new error("unhandled operator");
             break;
     }
 }
@@ -100,15 +102,15 @@ function load() {
     //console.log("end load");
 }
 
-function loadWoffset(offset:number) {
+function loadWoffset(offset: number) {
     console.log("   pop rax");
-    console.log("   mov rax, [rax-"+offset+"]");
+    console.log("   mov rax, [rax-" + offset + "]");
     console.log("   push rax");
 }
 
-function loadaddrWoffset(offset:number) {
+function loadaddrWoffset(offset: number) {
     console.log("   pop rax");
-    console.log("   lea rax, [rax-"+offset+"]");
+    console.log("   lea rax, [rax-" + offset + "]");
     console.log("   push rax");
 }
 
@@ -124,11 +126,6 @@ function genAddress(stmt: Statement | Expression) {
     console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
     console.log("   push rax")
 }
-
-// function genStructAddress(stmt: Statement | Expression) {
-//     console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
-//     console.log("   push rax")
-// }
 
 function genFnAddress(expr: Expression) {
     console.log("lea rax, [" + expr.name + "]");
@@ -150,7 +147,6 @@ function restore(saved: string[]): void {
 
 
 function generateCode(expr: Expression) {
-    //console.log(expr);
     switch (expr.type) {
         case exprType.set:
             generateCode(expr.left as Expression);
@@ -160,21 +156,11 @@ function generateCode(expr: Expression) {
             break;
         case exprType.get:
             generateCode(expr.left as Expression);
-            if(expr.loadaddr) {
+            if (expr.loadaddr) {
                 loadaddrWoffset(expr.offset);
-                //console.log("=========load addr====");
             } else {
-                //console.log("=========load direct====");
-
                 loadWoffset(expr.offset);
             }
-            //genAddress(expr);
-            //console.log("================");
-            //loadWoffset(expr.offset);
-            // console.log("pop rax");
-            // console.log("mov rax, [rax]");
-            // console.log("push rax");
-            //console.log("================");
             break;
         case exprType.binary:
             generateCode(expr.left as Expression);
@@ -203,16 +189,15 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             break;
         case exprType.assign:
+
             genAddress(expr)
             generateCode(expr.left as Expression);
             store();
             break;
         case exprType.identifier:
-            //console.log("===================", expr.type);
             if (expr.idtype === identifierType.func) {
                 genFnAddress(expr);
-            } else if(expr.idtype === identifierType.struct){
-                //console.log("struct identifier detected");
+            } else if (expr.idtype === identifierType.struct) {
                 genAddress(expr);
             }
             else {
@@ -239,13 +224,8 @@ function generateCode(expr: Expression) {
                         console.log("   pop " + argRegisters[i]);
                         usedRegs.push(argRegisters[i]);
                     });
-                    // console.log("   lea r15, [" + expr.callee.name + "]");
-                    // console.log("   call buitin_glibc_caller");
-                    // console.log("   push rax");
                     break;
                 case fnType.native:
-                    //genAddress()
-
                     expr.params.forEach((p, i) => {
                         var saved: string[] = [];
                         var isCall = false;
@@ -302,14 +282,12 @@ function genStmt(stmt: Statement, labeloffset: number): void {
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
-            //console.log("   sub rsp, 8");
             break;
         case stmtType.vardeclstmt:
             genAddress(stmt);
             if (stmt.expr.type === exprType.string) {
                 console.log("   push " + (stmt.expr.name as string));
-            } else {
-                //console.log(stmt.expr);
+            } else {                
                 generateCode(stmt.expr);
             }
             store();
@@ -380,7 +358,6 @@ function genStmt(stmt: Statement, labeloffset: number): void {
 
 function genGlobalStrings(globs: { name: string, value: string }[]) {
     console.log(".intel_syntax noprefix");
-    //console.log(".global ")
     console.log(".data");
     globs.forEach((glob, i) => {
         console.log(".align 1");

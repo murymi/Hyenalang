@@ -154,8 +154,6 @@ export function getLocalOffset(name: string): { offset: number, type:any, custom
             var type = functions[currentFn].locals[i].type;
             var custom = functions[currentFn].locals[i].customtype;
 
-            //console.log(functions[currentFn].locals)
-
             return { offset:off, type:type, custom:custom }
         }
     }
@@ -214,7 +212,6 @@ export function resetCurrentStruct(members: Statement[]) {
         structs[currentStruct].size += 8;
     })
 
-    //console.log(structs[0]);
 
     ins_struct = false;
     currentStruct = -1;
@@ -226,7 +223,6 @@ export function setCurrentFuction(n: number) {
 
 export function resetCurrentFunction(body:Statement) {
     functions[currentFn].body = body;
-    //console.log(functions[currentFn].body);
     currentFn = -1;
 }
 
@@ -253,19 +249,12 @@ var prog = `
 extern fn printf(a, b) void;
 extern fn puts(a) void;
 
-struct bar {
-    x:u8;
-    y:u8;
-}
-
-
 fn main() void {
-    var a:bar;
-    var fmt = "a.x = %d ";
-    a.x = 90;
-    a.y = 78;
+    var d = 1 * 3;
 
-    printf(fmt, a.y);
+    var fmt = "value is -> %d ";
+
+    printf(fmt, d);
 }
 
 `

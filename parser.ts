@@ -51,19 +51,16 @@ export class Parser {
         if (this.match([tokenType.identifier])) {
             var obj = getLocalOffset(this.previous().value as string);
             if (obj.offset === -1) {
-                //console.log("============Func name detected");
                 return new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type, identifierType.func);
             }
             var expr = new Expression().newExprIdentifier(this.previous().value as string, obj.offset, obj.type,
              obj.type === myType.struct? identifierType.struct : identifierType.variable);
-            //console.log(obj);
             expr.CustomType = obj.custom;
             return expr;
         }
 
         if (this.match([tokenType.string])) {
             var expr = new Expression().newExprString(this.previous().value as string);
-            //addGlobal()
             return expr;
         }
 
@@ -78,7 +75,6 @@ export class Parser {
 
         }
 
-        //console.log(this.peek());
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
 
@@ -92,7 +88,6 @@ export class Parser {
             } while (this.match([tokenType.comma]));
         }
         var fntok = this.expect(tokenType.rightparen, ") after params");
-        //console.log(callee.name);
         var fn = getFn(callee.name as string);
         var expr = new Expression().newExprCall(callee);;
         expr.callee = callee;
@@ -112,12 +107,9 @@ export class Parser {
         while (true) {
 
             if (this.match([tokenType.leftparen])) {
-                //console.log("==================");
                 expr = this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
                 var name = this.expect(tokenType.identifier, "expect property name after dot").value as string;
-                //console.log(name);
-                //console.log(expr.CustomType);
                 if (expr.datatype === myType.struct) {
                     expr = new Expression().newExprGet(getOffsetOfMember(expr.CustomType, name), expr)
                 } else {
@@ -146,7 +138,6 @@ export class Parser {
                 depth++;
             }
             var right = this.unary();
-            //console.log(right.type === exprType.identifier);
             return new Expression().newExprDeref(right, depth);
         }
 
@@ -189,6 +180,7 @@ export class Parser {
 
     assign(): Expression {
         var expr = this.comparisson();
+
         var equals: Token;
         if (this.match([tokenType.equal])) {
             equals = this.previous();
@@ -198,6 +190,7 @@ export class Parser {
                 return n;
             } else if (expr.type === exprType.get) {
                 expr.loadaddr = true;
+                
                 return new Expression().newExprSet(expr, val);
             }
 
@@ -298,13 +291,11 @@ export class Parser {
     }
 
     parseType(): { type: myType | undefined, custom: any } {
-        //this.expect(tokenType.colon, ": after variable name");
         var is_ptr = false;
         if (this.match([tokenType.leftsquare])) {
             is_ptr = true;
             this.expect(tokenType.rightsquare, "] expected");
         }
-        //console.log(this.peek());
         var tok = this.advance();
         switch (tok.type) {
             case tokenType.u8:
@@ -337,10 +328,8 @@ export class Parser {
             case tokenType.identifier:
                 var stct = checkStruct(tok.value as string);
                 if (stct) {
-                    //console.log("============",myType.void_ptr);
                     return { type: myType.struct, custom: stct };
                 }
-                //console.log(tok.value);
                 this.tokenError("Expected valid type", this.peek());
             default:
                 //throw new Error("unhandled case");
@@ -358,7 +347,6 @@ export class Parser {
 
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
-            //this.expect(tokenType.semicolon, ";");
             if (initializer.type === exprType.string) {
                 addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
                 initializer.name = name.value as string;
@@ -367,9 +355,7 @@ export class Parser {
             type.custom = type.type;
         } else if (this.match([tokenType.colon])) {
             type = this.parseType()
-            //console.log(type)
         }
-        //console.log(inStruct());
 
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
@@ -378,15 +364,14 @@ export class Parser {
                 addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
                 initializer.name = name.value as string;
             }
-            //type = initializer.datatype;
         }
 
         if (type.type === undefined) {
-            console.log(type);
             this.tokenError("Expect type--", this.peek());
         }
 
         this.expect(tokenType.semicolon, ";");
+
         var offset = incLocalOffset(name.value as string, 2, type.type as myType, type.custom);
         return new Statement().newVarstatement(name.value as string, initializer, offset, type.type, type.custom);
     }
@@ -435,14 +420,12 @@ export class Parser {
 
     structDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "expect struct name").value as string;
-        //console.log("========");
         var currstruct = pushStruct(name);
         this.expect(tokenType.leftbrace, "Expect struct body");
         var strucmembers: Statement[] = [];
         setCurrentStruct(currstruct);
         while (!this.check(tokenType.rightbrace)) {
             var tok = this.peek();
-            //console.log("==================");
             var member = this.varDeclaration();
             if (member.type !== stmtType.vardeclstmt) {
                 this.tokenError("Expect var declararion", tok);
@@ -454,7 +437,6 @@ export class Parser {
 
         this.expect(tokenType.rightbrace, "Expect } after struct body");
         resetCurrentStruct(strucmembers);
-        //console.log(strucmembers);
         return new Statement().newStructDeclStatement();
     }
 
@@ -484,7 +466,6 @@ export class Parser {
             stmts.push(this.declaration());
         }
 
-        //console.log(stmts.length);
         return stmts;
     }
 
