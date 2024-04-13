@@ -1,64 +1,50 @@
 .intel_syntax noprefix
 .data
-.align 1
-.L.data.0:
-   .byte 'v'
-   .byte 'a'
-   .byte 'l'
-   .byte 'u'
-   .byte 'e'
-   .byte ' '
-   .byte 'i'
-   .byte 's'
-   .byte ' '
-   .byte '-'
-   .byte '>'
-   .byte ' '
-   .byte '%'
-   .byte 'd'
-   .byte ' '
-   .byte 0
-.align 8
-fmt: .quad .L.data.0
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 32
-   lea rax, [rbp-8]
+   sub rsp, 6
+   lea rax, [rbp-6]
    push rax
-   push 1
-   push 3
+sub rsp, 8
+   lea rax, [rbp-6]
+   push rax
+   pop rax
+   lea rax, [rax+4]
+   push rax
+   push 9
    pop rdi
    pop rax
-   imul rax, rdi
+   mov [rax], di
+   lea rax, [rbp-6]
    push rax
+   pop rax
+   lea rax, [rax+2]
+   push rax
+   push 8
    pop rdi
    pop rax
-   mov [rax], rdi
-   lea rax, [rbp-24]
+   mov [rax], di
+   lea rax, [rbp-6]
    push rax
-   push fmt
+   pop rax
+   lea rax, [rax+0]
+   push rax
+   push 8
    pop rdi
    pop rax
-   mov [rax], rdi
-lea rax, [printf]
-push rax
-   lea rax, [rbp-24]
+   mov [rax], di
+   lea rax, [rbp-6]
    push rax
    pop rax
-   mov rax, [rax]
-   push rax
-   pop rdi
-   lea rax, [rbp-8]
+   mov rax, [rax+4]
    push rax
    pop rax
-   mov rax, [rax]
-   push rax
-   pop rsi
-   pop rax
-   call rax
+   jmp .L.endfn.2
+   xor rax, rax
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret

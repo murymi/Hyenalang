@@ -1,7 +1,6 @@
-import { off } from "process";
-import { fnType, myType } from "./main";
+import { fnType } from "./main";
 import { Token } from "./token";
-import { tokenType } from "./token";
+import { Type, i64, u8 } from "./type";
 
 export enum exprType {
     unary,
@@ -15,13 +14,16 @@ export enum exprType {
     string,
     number,
     get,
-    set
+    set,
+    arrayget,
+    arrayset
 }
 
 export enum identifierType {
     struct,
     variable,
     func,
+    array
     //structvar
 }
 
@@ -45,7 +47,7 @@ export class Expression {
     fntype: fnType;
 
     //
-    datatype: myType;
+    datatype: Type;
 
     //bytes
     bytes: string;
@@ -57,12 +59,16 @@ export class Expression {
     idtype: identifierType;
 
     // custom
-    CustomType: any;
+    //CustomType: any;
 
     // get
     loadaddr:boolean;
 
+    // array get
+    offsetExpr: Expression;
+
     newExprUnary(op: Token, right:Expression):Expression{
+        //console.log(op);
         this.type = exprType.unary;
         this.operator = op;
         this.right = right;
@@ -70,16 +76,34 @@ export class Expression {
         return this;
     }
 
-    newExprGet(offset:number, expr :Expression):Expression{
+    newExprGet(offset:number, expr :Expression, datatype:Type):Expression{
         this.type = exprType.get;
         this.left = expr;
         this.offset = offset;
+        this.loadaddr = false;
+        this.datatype = datatype;
+        return this;
+    }
+
+    newExprGetArrayIndex(offsetExpr:Expression, expr :Expression):Expression{
+        this.type = exprType.arrayget;
+        this.left = expr;
+        this.offsetExpr = offsetExpr;
         this.loadaddr = false;
         return this;
     }
 
     newExprSet(expr: Expression, assign:Expression):Expression{
         this.type = exprType.set;
+        this.left = expr;
+        this.right = assign;
+        this.datatype = expr.datatype;
+        return this;
+    }
+
+
+    newExprSetArrayIndex(expr: Expression, assign:Expression):Expression{
+        this.type = exprType.arrayset;
         this.left = expr;
         this.right = assign;
         return this;
@@ -105,7 +129,7 @@ export class Expression {
         return this;
     }
 
-    newExprIdentifier(name: string,offset:number, datatype: myType, idtype:identifierType):Expression{
+    newExprIdentifier(name: string,offset:number, datatype: Type, idtype:identifierType):Expression{
         this.type = exprType.identifier;
         this.datatype = datatype;
         this.offset = offset;
@@ -121,7 +145,7 @@ export class Expression {
         return this;
     }
 
-    newExprAddr(datatype: myType) :Expression {
+    newExprAddr(datatype: Type) :Expression {
         this.type = exprType.identifier;
         this.datatype = datatype;
         return this;
@@ -142,7 +166,8 @@ export class Expression {
 
     newExprString(value:string):Expression{
         this.type = exprType.string;
-        this.datatype = myType.u8_ptr;
+        //console.log("string type");
+        //this.datatype = myType.u8_ptr;
         this.bytes = value;
         return this;
     }
@@ -150,7 +175,7 @@ export class Expression {
     newExprNumber(val:number):Expression{
         this.type = exprType.number;
         this.val = val;
-        this.datatype = myType.i64
+        this.datatype = i64;
         return this;
     }
 

@@ -1,6 +1,6 @@
-import { Expression, exprType } from "./expr";
-import { myType } from "./main";
+import { Expression } from "./expr";
 import { Token } from "./token";
+import { Type } from "./type";
 
 export enum stmtType {
     vardeclstmt,
@@ -36,10 +36,15 @@ export class Statement {
     else_: Statement | undefined;
 
     // fn
-    params: Token[]|undefined
+    params: { name: string, datatype: Type }[]|undefined
     body: Statement
 
-    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype: any, custom:any) :Statement {
+
+    // var
+    datatype:Type;
+
+
+    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype:Type) :Statement {
         if(initializer === undefined) {
             var zero = new Expression().newExprNumber(0);
             this.initializer = zero;
@@ -49,7 +54,8 @@ export class Statement {
             this.expr = initializer;
         }
         this.initializer.datatype = datatype;
-        this.initializer.CustomType = custom;
+        this.datatype = datatype;
+        //this.initializer.CustomType = custom;
         this.name = name;
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
@@ -87,7 +93,7 @@ export class Statement {
         return this;
     }
 
-    newExternFnStatement(name: string, params: Token[]):Statement {
+    newExternFnStatement(name: string, params: { name: string, datatype: Type }[]):Statement {
         this.name = name;
         this.params = params;
         return this;

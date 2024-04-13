@@ -5,6 +5,7 @@ import { Statement, stmtType } from "./stmt";
 import { fnType } from "./main";
 import { Function } from "./main";
 import { error } from "console";
+import { Type, myType } from "./type";
 
 
 var latestContinueLabel = "";
@@ -94,36 +95,88 @@ function genString(name: string) {
     console.log("   push " + name);
 }
 
-function load() {
-    //console.log("begin load");
+function load(datatype: Type) {
     console.log("   pop rax");
-    console.log("   mov rax, [rax]");
+
+    if (datatype.size === 1) {
+        console.log("   movsx rax, byte ptr [rax]");
+    } else if (datatype.size === 2) {
+        console.log("   movsx rax, word ptr [rax]");
+    } else if (datatype.size === 4) {
+        console.log("   movsxd rax, dword ptr [rax]");
+    } else {
+        if (datatype.size !== 8) {
+            console.log("Invalid load");
+            process.exit(1);
+        }
+        console.log("   mov rax, [rax]");
+    }
+
+
     console.log("   push rax");
-    //console.log("end load");
 }
 
 function loadWoffset(offset: number) {
     console.log("   pop rax");
-    console.log("   mov rax, [rax-" + offset + "]");
+    console.log("   mov rax, [rax+" + offset + "]");
     console.log("   push rax");
 }
 
 function loadaddrWoffset(offset: number) {
     console.log("   pop rax");
-    console.log("   lea rax, [rax-" + offset + "]");
+    //console.log("==========");
+    console.log("   lea rax, [rax+" + offset + "]");
     console.log("   push rax");
 }
 
-function store() {
-    //console.log("begin store");
+function loadWCalcedOffset(datatype:Type) {
+    console.log("");
     console.log("   pop rdi");
     console.log("   pop rax");
-    console.log("   mov [rax], rdi");
-    //console.log("end store");
+    console.log("   imul rdi, 8");
+    console.log("   sub rax, rdi");
+    console.log("push rax");
+    load(datatype);
+    console.log("");
+}
+
+function loadaddrWCalcedOffset() {
+    console.log("   pop rdi");
+    console.log("   pop rax");
+    console.log("   imul rdi, 8");
+    console.log("   sub rax, rdi")
+    console.log("   lea rax, [rax]");
+    console.log("   push rax");
+}
+
+function store(datatype: Type) {
+
+    //console.log("==========================================");
+
+    console.log("   pop rdi");
+    console.log("   pop rax");
+
+
+    if (datatype.size === 1) {
+        console.log("   mov [rax], dil");
+    } else if (datatype.size === 2) {
+        console.log("   mov [rax], di");
+    } else if (datatype.size === 4) {
+        console.log("   mov [rax], edi");
+    } else {
+        if (datatype.size !== 8) {
+            console.log("Invalid store");
+            process.exit(1);
+        }
+        console.log("   mov [rax], rdi");
+    }
+
+    //console.log("push rdi");
 }
 
 function genAddress(stmt: Statement | Expression) {
-    console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
+    //console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
+    console.log("   lea rax, [rbp-" + (stmt.offset + stmt.datatype.size) + "]");
     console.log("   push rax")
 }
 
@@ -145,19 +198,64 @@ function restore(saved: string[]): void {
     }
 }
 
+function genarateAddress(expr: Expression) {
+    //console.log("hello");
+    switch (expr.type) {
+        case exprType.assign:
+            genAddress(expr)
+            generateCode(expr.left as Expression);
+            return;
+        case exprType.arrayset:
+            generateCode(expr.left as Expression);
+            generateCode(expr.right as Expression);
+            loadaddrWCalcedOffset();
+            return;
+        case exprType.set:
+            generateCode(expr.left as Expression);
+            var offset = expr.left?.offset;
+            loadaddrWoffset(offset as number);
+            generateCode(expr.right as Expression);
+            //console.log("==========", expr.right);
+            return;
+    }
+}
+
+function genLvalue(expr: Expression) {
+    // if (expr.datatype.kind === myType.array) {
+    //     console.log("not an lvalue");
+    //     process.exit(1);
+    // }
+    genarateAddress(expr);
+}
 
 function generateCode(expr: Expression) {
     switch (expr.type) {
-        case exprType.set:
+        case exprType.arrayget:
+            //console.log("===========");
             generateCode(expr.left as Expression);
-            // value
-            generateCode(expr.right as Expression);
-            store();
+            //console.log("===========");
+            generateCode(expr.offsetExpr as Expression);
+            if (expr.loadaddr) {
+                //loadaddrWCalcedOffset();
+            } else {
+                loadWCalcedOffset(expr.left?.datatype.base as Type);
+            }
+            break;
+        case exprType.arrayset:
+        case exprType.set:
+            //console.log("===============");
+            genLvalue(expr);
+            //console.log("===============================");
+            store(expr.datatype);
+
             break;
         case exprType.get:
+            //console.log("hoi");
             generateCode(expr.left as Expression);
+            //loadWoffset(expr.offset);
+            //console.log("hii");
             if (expr.loadaddr) {
-                loadaddrWoffset(expr.offset);
+                //loadaddrWoffset(expr.offset);
             } else {
                 loadWoffset(expr.offset);
             }
@@ -176,7 +274,7 @@ function generateCode(expr: Expression) {
             console.log("push rax");
             break;
         case exprType.unary:
-            generateCode(expr.left as Expression);
+            generateCode(expr.right as Expression);
             genUnary();
             break;
         case exprType.primary:
@@ -189,20 +287,21 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             break;
         case exprType.assign:
-
-            genAddress(expr)
-            generateCode(expr.left as Expression);
-            store();
+            genLvalue(expr);
+            store(expr.datatype);
             break;
         case exprType.identifier:
             if (expr.idtype === identifierType.func) {
                 genFnAddress(expr);
             } else if (expr.idtype === identifierType.struct) {
                 genAddress(expr);
+            } else if (expr.idtype === identifierType.array) {
+                //console.log("======================");
+                genAddress(expr);
             }
             else {
                 genAddress(expr);
-                load();
+                load(expr.datatype);
             }
             break;
         case exprType.call:
@@ -216,7 +315,11 @@ function generateCode(expr: Expression) {
                             isCall = true;
                             saved = saveRegisters();
                         }
+
+                        //console.log("gen not load");
                         generateCode(p);
+                        //console.log("end gen not load");
+
                         if (isCall) {
                             restore(saved);
                             console.log("   push rax");
@@ -224,6 +327,8 @@ function generateCode(expr: Expression) {
                         console.log("   pop " + argRegisters[i]);
                         usedRegs.push(argRegisters[i]);
                     });
+                    console.log("   pop r15");
+                    console.log("   call buitin_glibc_caller");
                     break;
                 case fnType.native:
                     expr.params.forEach((p, i) => {
@@ -233,7 +338,10 @@ function generateCode(expr: Expression) {
                             isCall = true;
                             saved = saveRegisters();
                         }
+
                         generateCode(p);
+
+
                         if (isCall) {
                             restore(saved);
                             console.log("   push rax");
@@ -241,14 +349,16 @@ function generateCode(expr: Expression) {
                         console.log("   pop " + argRegisters[i]);
                         usedRegs.push(argRegisters[i]);
                     });
+                    console.log("   pop rax");
+                    console.log("   call rax");
                     break;
                 default: break;
             }
-            console.log("   pop rax");
-            console.log("   call rax");
             break;
         case exprType.string:
+            //console.log("==============");
             genString(expr.name);
+            //console.log("==============");
             break;
         default:
             throw new Error("Unexpected expression");
@@ -278,7 +388,7 @@ function genAlignedCall() {
 }
 
 
-function genStmt(stmt: Statement, labeloffset: number, fnid:number): void {
+function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
@@ -287,10 +397,15 @@ function genStmt(stmt: Statement, labeloffset: number, fnid:number): void {
             genAddress(stmt);
             if (stmt.expr.type === exprType.string) {
                 console.log("   push " + (stmt.expr.name as string));
-            } else {                
-                generateCode(stmt.expr);
+                store(stmt.expr.datatype);
+            } else {
+                if (stmt.expr.datatype.kind !== myType.struct && stmt.expr.datatype.kind !== myType.array) {
+                    generateCode(stmt.expr);
+                    store(stmt.expr.datatype);
+                } else{
+                    console.log("sub rsp, 8")
+                }
             }
-            store();
             break;
         case stmtType.block:
             stmt.stmts.forEach((s, i) => { genStmt(s, i + labeloffset + 1, fnid); })
@@ -316,7 +431,7 @@ function genStmt(stmt: Statement, labeloffset: number, fnid:number): void {
             console.log("   pop rax");
             console.log("   cmp rax, 0");
             console.log("   je .L.break." + labeloffset);
-            genStmt(stmt.then, labeloffset + 1,fnid);
+            genStmt(stmt.then, labeloffset + 1, fnid);
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
             break;
@@ -368,9 +483,9 @@ function genText(fns: Function[]) {
             console.log(fn.name + ":");
             console.log("   push rbp");
             console.log("   mov rbp, rsp");
-            console.log("   sub rsp, " + (fn.localSize * 8 + fn.arity * 8));
+            console.log("   sub rsp, " + (fn.localOffset));
 
-            genArgs(fn.params);
+            //genArgs(fn.params);
 
             genStmt(fn.body, 0, i);
             console.log("   xor rax, rax");
