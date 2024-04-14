@@ -1,6 +1,6 @@
 import { fnType } from "./main";
 import { Token } from "./token";
-import { Type, i64, u8 } from "./type";
+import { Type, i32, i64, u8 } from "./type";
 
 export enum exprType {
     unary,
@@ -175,7 +175,7 @@ export class Expression {
     newExprNumber(val:number):Expression{
         this.type = exprType.number;
         this.val = val;
-        this.datatype = i64;
+        this.datatype = i32;
         return this;
     }
 

@@ -12,6 +12,12 @@ var latestContinueLabel = "";
 var latestBreakLabel = "";
 
 var argRegisters = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
+var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
+var byteArgRegisters = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
+
+
+
 var usedRegs: string[] = [];
 
 function genDivide() {
@@ -87,8 +93,8 @@ function genUnary() {
     genNegate();
 }
 
-function genNumber(a: number) {
-    console.log("   push " + a);
+function genNumber(expr: Expression) {
+    console.log("   push " + expr.val);
 }
 
 function genString(name: string) {
@@ -129,7 +135,7 @@ function loadaddrWoffset(offset: number) {
     console.log("   push rax");
 }
 
-function loadWCalcedOffset(datatype:Type) {
+function loadWCalcedOffset(datatype: Type) {
     console.log("");
     console.log("   pop rdi");
     console.log("   pop rax");
@@ -277,11 +283,8 @@ function generateCode(expr: Expression) {
             generateCode(expr.right as Expression);
             genUnary();
             break;
-        case exprType.primary:
-            genNumber(expr.val);
-            break;
         case exprType.number:
-            genNumber(expr.val);
+            genNumber(expr);
             break;
         case exprType.grouping:
             generateCode(expr.left as Expression);
@@ -308,47 +311,36 @@ function generateCode(expr: Expression) {
             generateCode(expr.callee);
             switch (expr.fntype) {
                 case fnType.extern:
-                    expr.params.forEach((p, i) => {
-                        var saved: string[] = [];
-                        var isCall = false;
-                        if (p.type === exprType.call) {
-                            isCall = true;
-                            saved = saveRegisters();
-                        }
-
-                        //console.log("gen not load");
+                    expr.params.forEach((p) => {
                         generateCode(p);
-                        //console.log("end gen not load");
-
-                        if (isCall) {
-                            restore(saved);
-                            console.log("   push rax");
-                        }
-                        console.log("   pop " + argRegisters[i]);
-                        usedRegs.push(argRegisters[i]);
                     });
+
+                    for (let i = expr.params.length - 1; i >= 0; i--) {
+                        if (expr.params[i].datatype.size === 1) {
+                            console.log("pop " + argRegisters[i]);
+                            console.log("movsx "+ argRegisters[i] + ", "+ byteArgRegisters[i]);
+                        } if (expr.params[i].datatype.size === 2) {
+                            console.log("pop " + argRegisters[i]);
+                            console.log("movsx "+ argRegisters[i] + ", "+ wordArgRegisters[i]);
+                        } if (expr.params[i].datatype.size === 4) {
+                            console.log("pop " + argRegisters[i]);
+                            console.log("movsx "+ argRegisters[i] + ", "+ dwordArgRegisters[i]);
+                        } if (expr.params[i].datatype.size === 8) {
+                            console.log("pop " + argRegisters[i]);
+                        }
+                    }
+
                     console.log("   pop r15");
                     console.log("   call buitin_glibc_caller");
                     break;
                 case fnType.native:
-                    expr.params.forEach((p, i) => {
-                        var saved: string[] = [];
-                        var isCall = false;
-                        if (p.type === exprType.call) {
-                            isCall = true;
-                            saved = saveRegisters();
-                        }
-
+                    expr.params.forEach((p) => {
                         generateCode(p);
-
-
-                        if (isCall) {
-                            restore(saved);
-                            console.log("   push rax");
-                        }
-                        console.log("   pop " + argRegisters[i]);
-                        usedRegs.push(argRegisters[i]);
                     });
+
+                    for (let i = expr.params.length - 1; i >= 0; i--) {
+                        console.log("pop " + argRegisters[i]);
+                    }
                     console.log("   pop rax");
                     console.log("   call rax");
                     break;
@@ -402,7 +394,7 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
                 if (stmt.expr.datatype.kind !== myType.struct && stmt.expr.datatype.kind !== myType.array) {
                     generateCode(stmt.expr);
                     store(stmt.expr.datatype);
-                } else{
+                } else {
                     console.log("sub rsp, 8")
                 }
             }
