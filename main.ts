@@ -252,8 +252,9 @@ extern fn puts(a:*u8) void;
 fn main() void {
     var a:[10]u8;
 
-    return a+50;
+    a[1+1] = 90;
 
+    return a[2];
 }
 
 `

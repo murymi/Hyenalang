@@ -139,20 +139,22 @@ function loadWCalcedOffset(datatype: Type) {
     console.log("");
     console.log("   pop rdi");
     console.log("   pop rax");
-    console.log("   imul rdi, 8");
-    console.log("   sub rax, rdi");
+    console.log("   imul rdi, "+datatype.size);
+    console.log("   add rax, rdi");
     console.log("push rax");
     load(datatype);
     console.log("");
 }
 
-function loadaddrWCalcedOffset() {
+function loadaddrWCalcedOffset(datatype: Type) {
+    //console.log("====================");
     console.log("   pop rdi");
+    console.log("   imul rdi, "+datatype.size);
     console.log("   pop rax");
-    console.log("   imul rdi, 8");
-    console.log("   sub rax, rdi")
+    console.log("   add rax, rdi")
     console.log("   lea rax, [rax]");
     console.log("   push rax");
+    //console.log("=====================");
 }
 
 function store(datatype: Type) {
@@ -213,8 +215,8 @@ function genarateAddress(expr: Expression) {
             return;
         case exprType.arrayset:
             generateCode(expr.left as Expression);
+            loadaddrWCalcedOffset(expr.datatype);
             generateCode(expr.right as Expression);
-            loadaddrWCalcedOffset();
             return;
         case exprType.set:
             generateCode(expr.left as Expression);

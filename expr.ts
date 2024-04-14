@@ -90,6 +90,7 @@ export class Expression {
         this.left = expr;
         this.offsetExpr = offsetExpr;
         this.loadaddr = false;
+        this.datatype = expr.datatype.base;
         return this;
     }
 
@@ -106,6 +107,7 @@ export class Expression {
         this.type = exprType.arrayset;
         this.left = expr;
         this.right = assign;
+        this.datatype = expr.datatype;
         return this;
     }
 

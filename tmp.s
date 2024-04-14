@@ -5,23 +5,41 @@
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 4
-   lea rax, [rbp-4]
+   sub rsp, 10
+   lea rax, [rbp-10]
    push rax
-   push 0
-   pop rdi
-   pop rax
-   mov [rax], edi
-   lea rax, [rbp-4]
+sub rsp, 8
+   lea rax, [rbp-10]
    push rax
-   pop rax
-   movsxd rax, dword ptr [rax]
-   push rax
-   push 50
+   push 1
+   push 1
    pop rdi
    pop rax
    add rax, rdi
    push rax
+   pop rdi
+   imul rdi, 1
+   pop rax
+   add rax, rdi
+   lea rax, [rax]
+   push rax
+   push 90
+   pop rdi
+   pop rax
+   mov [rax], dil
+   lea rax, [rbp-10]
+   push rax
+   push 2
+
+   pop rdi
+   pop rax
+   imul rdi, 1
+   add rax, rdi
+push rax
+   pop rax
+   movsx rax, byte ptr [rax]
+   push rax
+
    pop rax
    jmp .L.endfn.2
    xor rax, rax
