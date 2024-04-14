@@ -232,6 +232,10 @@ export class Parser {
                 
                 var set = new Expression().newExprSet(expr, val);
                 return set;
+            } else if(expr.type === exprType.deref) {
+                //console.log("pinter set detected");
+                expr.loadaddr = true;
+                return new Expression().newExprAddressSet(expr, val);
             } else if (expr.type === exprType.arrayget) {
                 expr.loadaddr = true;
                 return new Expression().newExprSetArrayIndex(expr, val);

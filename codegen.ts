@@ -238,6 +238,13 @@ function genLvalue(expr: Expression) {
 
 function generateCode(expr: Expression) {
     switch (expr.type) {
+        case exprType.address_set:
+            //console.log("set");
+            generateCode(expr.left as Expression);
+            //console.log("set");
+            generateCode(expr.right as Expression);
+            store(expr.datatype);
+            break;
         case exprType.address:
             //console.log("address detected");
             generateCode(expr.left as Expression);
@@ -270,7 +277,9 @@ function generateCode(expr: Expression) {
             break;
         case exprType.deref:
             generateCode(expr.left as Expression);
-            load(expr.datatype);
+            if(!expr.loadaddr) {
+                load(expr.datatype);
+            }
             break;
         case exprType.unary:
             generateCode(expr.right as Expression);

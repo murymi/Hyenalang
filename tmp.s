@@ -5,7 +5,7 @@
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 20
+   sub rsp, 16
    lea rax, [rbp-4]
    push rax
    push 20
@@ -19,20 +19,16 @@ main:
    pop rdi
    pop rax
    mov [rax], rdi
-   lea rax, [rbp-20]
-   push rax
    lea rax, [rbp-16]
    push rax
    pop rax
    mov rax, [rax]
    push rax
-   pop rax
-   movsxd rax, dword ptr [rax]
-   push rax
+   push 78
    pop rdi
    pop rax
    mov [rax], edi
-   lea rax, [rbp-20]
+   lea rax, [rbp-4]
    push rax
    pop rax
    movsxd rax, dword ptr [rax]

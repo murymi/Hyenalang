@@ -17,7 +17,8 @@ export enum exprType {
     set,
     arrayget,
     arrayset,
-    address
+    address,
+    address_set
 }
 
 export enum identifierType {
@@ -67,6 +68,15 @@ export class Expression {
 
     // array get
     offsetExpr: Expression;
+
+    newExprAddressSet(left:Expression, right:Expression) {
+        this.left = left;
+        this.right = right;
+        this.type = exprType.address_set;
+        this.datatype = left.datatype;
+        //console.log(left.datatype);
+        return this;
+    }
 
     newExprAddress(left:Expression):Expression {
         this.type = exprType.address;
@@ -183,6 +193,7 @@ export class Expression {
     }
 
     constructor(){
+        this.loadaddr = false;
     }
  
     // constructor(type: exprType, operator: Token | undefined, left: Expression | undefined, datatype:myType, right?: Expression) {

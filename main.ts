@@ -257,9 +257,9 @@ fn main() void {
 
     var b = &a;
 
-    var c = b.*;
+    b.* = 78;
 
-    return c;
+    return a;
 }
 
 `
