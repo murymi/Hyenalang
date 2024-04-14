@@ -238,33 +238,28 @@ function genLvalue(expr: Expression) {
 
 function generateCode(expr: Expression) {
     switch (expr.type) {
-        case exprType.arrayget:
-            //console.log("===========");
+        case exprType.address:
+            //console.log("address detected");
             generateCode(expr.left as Expression);
-            //console.log("===========");
+            //console.log("address detected");
+            break;
+        case exprType.arrayget:
+            generateCode(expr.left as Expression);
             generateCode(expr.offsetExpr as Expression);
             if (expr.loadaddr) {
-                //loadaddrWCalcedOffset();
             } else {
                 loadWCalcedOffset(expr.left?.datatype.base as Type);
             }
             break;
         case exprType.arrayset:
         case exprType.set:
-            //console.log("===============");
             genLvalue(expr);
-            //console.log("===============================");
             store(expr.datatype);
 
             break;
         case exprType.get:
-            //console.log("hoi");
             generateCode(expr.left as Expression);
-            //loadWoffset(expr.offset);
-            //console.log("hii");
-            if (expr.loadaddr) {
-                //loadaddrWoffset(expr.offset);
-            } else {
+            if (expr.loadaddr) {} else {
                 loadWoffset(expr.offset);
             }
             break;
@@ -275,11 +270,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.deref:
             generateCode(expr.left as Expression);
-            console.log("sub rsp, 8");
-            for (let i = 0; i < expr.depth; i++) {
-                console.log("lea rax, rax");
-            }
-            console.log("push rax");
+            load(expr.datatype);
             break;
         case exprType.unary:
             generateCode(expr.right as Expression);
@@ -306,7 +297,9 @@ function generateCode(expr: Expression) {
             }
             else {
                 genAddress(expr);
-                load(expr.datatype);
+                if(!expr.loadaddr) {
+                    load(expr.datatype);
+                }
             }
             break;
         case exprType.call:

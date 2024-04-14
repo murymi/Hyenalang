@@ -127,12 +127,17 @@ export class Parser {
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
-                var name = this.expect(tokenType.identifier, "expect property name after dot").value as string;
+                var propname = this.advance();
+                if(propname.type === tokenType.identifier || propname.type === tokenType.multiply) {} else {
+                    this.tokenError("expect property name after dot", this.peek());
+                }
+
                 if (expr.datatype.kind === myType.struct) {
-                    //console.log("name", name);
-                    //expr.datatype = u8;
-                    var meta = getOffsetOfMember(expr.datatype, name);
+                    var meta = getOffsetOfMember(expr.datatype, propname.value as string);
                     expr = new Expression().newExprGet(meta.offset, expr, meta.datatype)
+                } else if(expr.datatype.kind === myType.ptr){
+                    //console.log("=======ptr found ==========");
+                    expr = new Expression().newExprDeref(expr);
                 } else {
                     console.log("member access to non struct");
                     process.exit(1);
@@ -164,13 +169,13 @@ export class Parser {
         }
 
         if (this.match([tokenType.andsand])) {
-            var operator = this.previous();
-            var depth = 1;
-            while (this.match([tokenType.andsand])) {
-                depth++;
+            var left = this.unary();
+            if(left.type === exprType.address) {
+                console.log("wtf bro!,, thats unsupported here");
+                process.exit(1);
             }
-            var right = this.unary();
-            return new Expression().newExprDeref(right, depth);
+            left.loadaddr = true;
+            return new Expression().newExprAddress(left);
         }
 
         return this.call();

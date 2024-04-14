@@ -248,13 +248,18 @@ var prog = `
 extern fn printf(a:*u8, b:i64) void;
 extern fn puts(a:*u8) void;
 
+struct foo {
+    x:i8;
+}
 
 fn main() void {
-    var a:[10]u8;
+    var a = 20;
 
-    a[1+1] = 90;
+    var b = &a;
 
-    return a[2];
+    var c = b.*;
+
+    return c;
 }
 
 `

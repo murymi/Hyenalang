@@ -16,7 +16,8 @@ export enum exprType {
     get,
     set,
     arrayget,
-    arrayset
+    arrayset,
+    address
 }
 
 export enum identifierType {
@@ -67,6 +68,13 @@ export class Expression {
     // array get
     offsetExpr: Expression;
 
+    newExprAddress(left:Expression):Expression {
+        this.type = exprType.address;
+        this.left = left;
+        this.datatype = new Type().newPointer(left.datatype);
+        return this;
+    }
+
     newExprUnary(op: Token, right:Expression):Expression{
         //console.log(op);
         this.type = exprType.unary;
@@ -101,7 +109,6 @@ export class Expression {
         this.datatype = expr.datatype;
         return this;
     }
-
 
     newExprSetArrayIndex(expr: Expression, assign:Expression):Expression{
         this.type = exprType.arrayset;
@@ -140,16 +147,10 @@ export class Expression {
         return this;
     }
 
-    newExprDeref(left:Expression, depth:number) :Expression {
+    newExprDeref(left:Expression) :Expression {
         this.left = left;
         this.type = exprType.deref;
-        this.depth = depth;
-        return this;
-    }
-
-    newExprAddr(datatype: Type) :Expression {
-        this.type = exprType.identifier;
-        this.datatype = datatype;
+        this.datatype = left.datatype.base;
         return this;
     }
 
