@@ -16,10 +16,6 @@ var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
 var byteArgRegisters = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
 
-
-
-var usedRegs: string[] = [];
-
 function genDivide() {
     console.log("   cqo");
     console.log("   idiv rdi");
@@ -122,45 +118,7 @@ function load(datatype: Type) {
     console.log("   push rax");
 }
 
-function loadWoffset(offset: number) {
-    console.log("   pop rax");
-    console.log("   mov rax, [rax+" + offset + "]");
-    console.log("   push rax");
-}
-
-function loadaddrWoffset(offset: number) {
-    console.log("   pop rax");
-    //console.log("==========");
-    console.log("   lea rax, [rax+" + offset + "]");
-    console.log("   push rax");
-}
-
-function loadWCalcedOffset(datatype: Type) {
-    console.log("");
-    console.log("   pop rdi");
-    console.log("   pop rax");
-    console.log("   imul rdi, "+datatype.size);
-    console.log("   add rax, rdi");
-    console.log("push rax");
-    load(datatype);
-    console.log("");
-}
-
-function loadaddrWCalcedOffset(datatype: Type) {
-    //console.log("====================");
-    console.log("   pop rdi");
-    console.log("   imul rdi, "+datatype.size);
-    console.log("   pop rax");
-    console.log("   add rax, rdi")
-    console.log("   lea rax, [rax]");
-    console.log("   push rax");
-    //console.log("=====================");
-}
-
 function store(datatype: Type) {
-
-    //console.log("==========================================");
-
     console.log("   pop rdi");
     console.log("   pop rax");
 
@@ -178,12 +136,9 @@ function store(datatype: Type) {
         }
         console.log("   mov [rax], rdi");
     }
-
-    //console.log("push rdi");
 }
 
 function genAddress(stmt: Statement | Expression) {
-    //console.log("   lea rax, [rbp-" + (stmt.offset + 1) * 8 + "]");
     console.log("   lea rax, [rbp-" + (stmt.offset + stmt.datatype.size) + "]");
     console.log("   push rax")
 }
@@ -193,81 +148,46 @@ function genFnAddress(expr: Expression) {
     console.log("   push rax");
 }
 
-function saveRegisters(): string[] {
-    return usedRegs.map((reg) => {
-        console.log("   push " + reg);
-        return reg;
-    })
-}
 
-function restore(saved: string[]): void {
-    for (let i = saved.length - 1; i >= 0; i--) {
-        console.log("   pop " + saved[i]);
-    }
-}
-
-function genarateAddress(expr: Expression) {
-    //console.log("hello");
+function generateAddress(expr: Expression | Statement) {
     switch (expr.type) {
-        case exprType.assign:
-            genAddress(expr)
+        case exprType.identifier:
+            genAddress(expr);
+            break;
+            case exprType.get:
+                genAddress(expr.left as Expression);
+            console.log("pop rax");
+            console.log("add rax, "+ expr.offset);
+            console.log("push rax");
+            break;
+
+        case exprType.deref:
             generateCode(expr.left as Expression);
-            return;
-        case exprType.arrayset:
-            generateCode(expr.left as Expression);
-            loadaddrWCalcedOffset(expr.datatype);
-            generateCode(expr.right as Expression);
-            return;
-        case exprType.set:
-            generateCode(expr.left as Expression);
-            var offset = expr.left?.offset;
-            loadaddrWoffset(offset as number);
-            generateCode(expr.right as Expression);
-            //console.log("==========", expr.right);
-            return;
+            break;
+
+        default:
+            console.log("not an lvalue");
+            process.exit(1);
     }
 }
 
-function genLvalue(expr: Expression) {
-    // if (expr.datatype.kind === myType.array) {
-    //     console.log("not an lvalue");
-    //     process.exit(1);
-    // }
-    genarateAddress(expr);
+function genLvalue(expr: Expression | Statement) {
+    if (expr.datatype.kind === myType.array) {
+        console.log("not an lvalue");
+        process.exit(1);
+    }
+    generateAddress(expr);
 }
 
 function generateCode(expr: Expression) {
     switch (expr.type) {
-        case exprType.address_set:
-            //console.log("set");
-            generateCode(expr.left as Expression);
-            //console.log("set");
-            generateCode(expr.right as Expression);
-            store(expr.datatype);
-            break;
         case exprType.address:
-            //console.log("address detected");
-            generateCode(expr.left as Expression);
-            //console.log("address detected");
-            break;
-        case exprType.arrayget:
-            generateCode(expr.left as Expression);
-            generateCode(expr.offsetExpr as Expression);
-            if (expr.loadaddr) {
-            } else {
-                loadWCalcedOffset(expr.left?.datatype.base as Type);
-            }
-            break;
-        case exprType.arrayset:
-        case exprType.set:
-            genLvalue(expr);
-            store(expr.datatype);
-
+            generateAddress(expr.left as Expression);
             break;
         case exprType.get:
-            generateCode(expr.left as Expression);
-            if (expr.loadaddr) {} else {
-                loadWoffset(expr.offset);
+            generateAddress(expr);
+            if(expr.datatype.kind !== myType.array) {
+                load(expr.datatype);
             }
             break;
         case exprType.binary:
@@ -277,7 +197,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.deref:
             generateCode(expr.left as Expression);
-            if(!expr.loadaddr) {
+            if(expr.datatype.kind !== myType.array){
                 load(expr.datatype);
             }
             break;
@@ -292,23 +212,14 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             break;
         case exprType.assign:
-            genLvalue(expr);
+            genLvalue(expr.left as Expression);
+            generateCode(expr.right as Expression);
             store(expr.datatype);
             break;
         case exprType.identifier:
-            if (expr.idtype === identifierType.func) {
-                genFnAddress(expr);
-            } else if (expr.idtype === identifierType.struct) {
-                genAddress(expr);
-            } else if (expr.idtype === identifierType.array) {
-                //console.log("======================");
-                genAddress(expr);
-            }
-            else {
-                genAddress(expr);
-                if(!expr.loadaddr) {
-                    load(expr.datatype);
-                }
+            generateAddress(expr);
+            if(expr.datatype.kind !== myType.array) {
+                load(expr.datatype);
             }
             break;
         case exprType.call:
@@ -352,9 +263,7 @@ function generateCode(expr: Expression) {
             }
             break;
         case exprType.string:
-            //console.log("==============");
             genString(expr.name);
-            //console.log("==============");
             break;
         default:
             throw new Error("Unexpected expression");
@@ -391,6 +300,8 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             break;
         case stmtType.vardeclstmt:
             genAddress(stmt);
+            //genLvalue(stmt);
+            //store(stmt.datatype);
             if (stmt.expr.type === exprType.string) {
                 console.log("   push " + (stmt.expr.name as string));
                 store(stmt.expr.datatype);
@@ -399,7 +310,7 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
                     generateCode(stmt.expr);
                     store(stmt.expr.datatype);
                 } else {
-                    console.log("sub rsp, 8")
+                    console.log("add rsp, 8")
                 }
             }
             break;

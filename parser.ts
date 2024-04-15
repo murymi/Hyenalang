@@ -77,8 +77,8 @@ export class Parser {
         }
 
         if (this.match([tokenType.string])) {
-            var expr = new Expression().newExprString(this.previous().value as string);
-            return expr;
+            //var expr = new Expression().newExprString(this.previous().value as string);
+            return new Expression();
         }
 
         if (this.match([tokenType.number])) {
@@ -148,7 +148,10 @@ export class Parser {
                 if (expr.datatype.kind === myType.array) {
                     var index = this.expression();
                     this.expect(tokenType.rightsquare, "Expect ]");
-                    expr = new Expression().newExprGetArrayIndex(index, expr);
+                    expr = new Expression().newExprDeref(
+                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), expr, index)
+                    )
+                    //expr = new Expression().newExprGet(0, expr, expr.datatype);
                     //console.log("================");
                 } else {
                     console.log("indexing non array");
@@ -174,7 +177,6 @@ export class Parser {
                 console.log("wtf bro!,, thats unsupported here");
                 process.exit(1);
             }
-            left.loadaddr = true;
             return new Expression().newExprAddress(left);
         }
 
@@ -226,7 +228,7 @@ export class Parser {
                 var n = new Expression().newExprAssign(val, expr.offset);
                 return n;
             } else if (expr.type === exprType.get) {
-                expr.loadaddr = true;
+                // expr.loadaddr = true;
                 //expr.offset = 33;
                 //console.log(expr.offset);
                 
@@ -234,12 +236,13 @@ export class Parser {
                 return set;
             } else if(expr.type === exprType.deref) {
                 //console.log("pinter set detected");
-                expr.loadaddr = true;
+                // expr.loadaddr = true;
                 return new Expression().newExprAddressSet(expr, val);
-            } else if (expr.type === exprType.arrayget) {
-                expr.loadaddr = true;
-                return new Expression().newExprSetArrayIndex(expr, val);
-            }
+            } 
+            // else if (expr.type === exprType.) {
+            //     //expr.loadaddr = true;
+            //     return new Expression().newExprSetArrayIndex(expr, val);
+            // }
 
             this.tokenError("Unexpected assignment", equals);
         }

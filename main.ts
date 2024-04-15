@@ -245,21 +245,21 @@ function compile(text: string) {
 }
 
 var prog = `
-extern fn printf(a:*u8, b:i64) void;
-extern fn puts(a:*u8) void;
 
 struct foo {
-    x:i8;
+    array:[10]u8;
+}
+
+struct bar {
+    x:u8;
+    y:u8;
 }
 
 fn main() void {
-    var a = 20;
+    var a:foo;
+    a.array[0] = 90;
 
-    var b = &a;
-
-    b.* = 78;
-
-    return a;
+    return a.array[0];
 }
 
 `
