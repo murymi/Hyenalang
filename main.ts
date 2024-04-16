@@ -16,6 +16,7 @@ export enum fnType {
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: { name: string, value: string, type: any }[] = [];
+var globals: { name: string, value: Expression|undefined, datatype:Type }[] = [];
 
 
 //class Variable
@@ -89,9 +90,14 @@ export function checkStruct(name: string) {
     return null;
 }
 
+
+
 // size in 8 bytes (for now)
 export function incLocalOffset(name: string, type: Type): number {
-    if (currentFn === -1) return -1;
+    if (currentFn === -1) {
+        return -1;
+    }
+
     for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
         if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
             throw new Error("Redefination of a variable " + name);
@@ -112,17 +118,15 @@ export function incLocalOffset(name: string, type: Type): number {
     return old;
 }
 
-export function addGlobal(name: string, value: string, type: any): void {
+export function addGlobalString(name: string, value: string, type: any): number {
     globalstrings.push({ name: name, value: value, type: type });
+    return globalstrings.length - 1;
 }
 
-// export function addStructMember(name: string, value) {
-//     if(inStruct()){
-//         var curroffset = structs[currentFn].size;
-//         structs[currentStruct].members.push({name:name,offset:curroffset })
-//         structs[currentFn].size += 8;
-//     } 
-// }
+export function addGlobal(name: string, value:Expression|undefined, datatype:Type): void {
+    globals.push({name:name, value:value, datatype:datatype});
+}
+
 
 export function getOffsetOfMember(struct: Type, member: string) {
     for (let m of struct.members) {
@@ -135,25 +139,25 @@ export function getOffsetOfMember(struct: Type, member: string) {
     process.exit(1);
 }
 
-export function getLocalOffset(name: string): { offset: number, datatype: Type } {
+export function getLocalOffset(name: string): { offset: number, datatype: Type, glob:boolean } {
     for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
         if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope <= scopeDepth) {
             var off = functions[currentFn].locals[i].offset + functions[currentFn].arity;
             var type = functions[currentFn].locals[i].datatype;
 
-            return { offset: off, datatype: type }
+            return { offset: off, datatype: type, glob:false }
         }
     }
 
-    // for (let i = functions[currentFn].params.length - 1; i >= 0; i--) {
-    //     if (functions[currentFn].params[i].name === name) {
-    //         return { offset: i, datatype: i64 }
-    //     }
-    // }
+    for(let i = 0; i < globals.length; i++) {
+        if(globals[i].name === name) {
+            return { offset: -2, datatype: globals[i].datatype, glob:true }
+        }
+    }
 
     for (let i = functions.length - 1; i >= 0; i--) {
         if (functions[i].name === name) {
-            return { offset: -1, datatype:i64}
+            return { offset: -1, datatype:i64, glob:true}
         }
     }
 
@@ -241,25 +245,19 @@ function compile(text: string) {
     var parser = new Parser(tokens);
     var stmts = parser.parse();
     //console.log(stmts);
-    genStart(globalstrings, functions);
+    genStart(globalstrings,globals, functions);
 }
 
 var prog = `
+extern fn puts(ptr: *u8) void;
 
-struct foo {
-    array:[10]u8;
-}
 
-struct bar {
-    x:[1]foo;
-}
+var a:i64;
 
-fn ass() u8 {
-    return 100;
-}
+var message = "hello world";
 
 fn main() void {
-    var ret = ass();
+    puts(message);
 }
 
 `

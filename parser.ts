@@ -3,7 +3,7 @@ import { tokenType } from "./token";
 import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { addGlobal, beginScope, endScope, fnType, getFn, getLocalOffset, getOffsetOfMember, getStructMembers, incLocalOffset, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
+import { addGlobal, addGlobalString, beginScope, endScope, fnType, getFn, getLocalOffset, getOffsetOfMember, getStructMembers, incLocalOffset, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
 import { Type, i16, i32, i64, i8, isPtr, myType, u8, voidtype } from "./type";
 
 export class Parser {
@@ -71,14 +71,16 @@ export class Parser {
                 this.previous().value as string,
                 offset,
                 obj.datatype,
-                idtype
+                idtype,
             );
+
+            expr.is_glob = obj.glob;
             return expr;
         }
 
         if (this.match([tokenType.string])) {
-            //var expr = new Expression().newExprString(this.previous().value as string);
-            return new Expression();
+            var expr = new Expression().newExprString(this.previous().value as string);
+            return expr;
         }
 
         if (this.match([tokenType.number])) {
@@ -392,10 +394,13 @@ export class Parser {
         var type: Type | undefined = undefined;
 
         if (this.match([tokenType.equal])) {
+            //console.log("========================");
             initializer = this.expression();
             if (initializer.type === exprType.string) {
-                addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
-                initializer.name = name.value as string;
+                initializer.label = addGlobalString(name.value as string, initializer.bytes as string, initializer.datatype);
+                // initializer.name = "cow";
+                //name.value as string;
+                initializer.labelinitialize = true;
             }
 
             type = initializer.datatype;
@@ -408,8 +413,10 @@ export class Parser {
             initializer = this.expression();
 
             if (initializer.type === exprType.string) {
-                addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
-                initializer.name = name.value as string;
+                initializer.label = addGlobalString(name.value as string, initializer.bytes as string, initializer.datatype);
+                //initializer.name = "cow";
+                //name.value as string;
+                initializer.labelinitialize = true;
             }
         }
 
@@ -420,8 +427,13 @@ export class Parser {
         this.expect(tokenType.semicolon, ";");
 
         var offset = incLocalOffset(name.value as string, type as Type);
+        var is_global = false;
+        if(offset === -1) {
+            addGlobal(name.value as string, initializer, type as Type);
+            is_global = true;
+        }
         //console.log("offset", offset);
-        return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type);
+        return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type, is_global);
     }
 
     // member

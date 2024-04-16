@@ -1,29 +1,40 @@
 .intel_syntax noprefix
 .data
+.align 1
+.L.data.0:
+   .byte 'h'
+   .byte 'e'
+   .byte 'l'
+   .byte 'l'
+   .byte 'o'
+   .byte ' '
+   .byte 'w'
+   .byte 'o'
+   .byte 'r'
+   .byte 'l'
+   .byte 'd'
+   .byte 0
+.align 8
+message:
+.quad .L.data.0
+.bss
+.align 8
+a:
+   .zero 8
 .text
-.global ass
-ass:
-   push rbp
-   mov rbp, rsp
-   sub rsp, 0
-   push 100
-   pop rax
-   jmp .L.endfn.0
-   xor rax, rax
-.L.endfn.0:
-   mov rsp, rbp
-   pop rbp
-   ret
-
 .global main
 main:
    push rbp
    mov rbp, rsp
    sub rsp, 0
-   call ass
-push rax
+push offset message
    pop rax
-   jmp .L.endfn.1
+   mov rax, [rax]
+   push rax
+pop rdi
+   lea r15, [puts]
+   call buitin_glibc_caller
+push rax
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp

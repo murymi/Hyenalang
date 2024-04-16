@@ -42,9 +42,10 @@ export class Statement {
 
     // var
     datatype:Type;
+    is_global:boolean;
 
 
-    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype:Type) :Statement {
+    newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype:Type, is_global:boolean) :Statement {
         if(initializer === undefined) {
             var zero = new Expression().newExprNumber(0);
             this.initializer = zero;
@@ -53,6 +54,7 @@ export class Statement {
             this.initializer = initializer;
             this.expr = initializer;
         }
+        this.is_global = is_global;
         this.initializer.datatype = datatype;
         this.datatype = datatype;
         //this.initializer.CustomType = custom;

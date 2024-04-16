@@ -152,12 +152,16 @@ function genFnAddress(expr: Expression) {
 function generateAddress(expr: Expression | Statement) {
     switch (expr.type) {
         case exprType.identifier:
-            genAddress(expr);
+            if(expr.is_glob) {
+                console.log("push offset "+expr.name);
+            } else {
+                genAddress(expr);
+            }
             break;
-            case exprType.get:
-                genAddress(expr.left as Expression);
+        case exprType.get:
+            genAddress(expr.left as Expression);
             console.log("pop rax");
-            console.log("add rax, "+ expr.offset);
+            console.log("add rax, " + expr.offset);
             console.log("push rax");
             break;
 
@@ -184,9 +188,9 @@ function generateCode(expr: Expression) {
         case exprType.address:
             generateAddress(expr.left as Expression);
             break;
-            case exprType.get:
+        case exprType.get:
             generateAddress(expr);
-            if(expr.datatype.kind !== myType.array) {
+            if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
             }
             break;
@@ -197,7 +201,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.deref:
             generateCode(expr.left as Expression);
-            if(expr.datatype.kind !== myType.array){
+            if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
             }
             break;
@@ -218,7 +222,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.identifier:
             generateAddress(expr);
-            if(expr.datatype.kind !== myType.array) {
+            if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
             }
             break;
@@ -233,19 +237,19 @@ function generateCode(expr: Expression) {
                     for (let i = expr.params.length - 1; i >= 0; i--) {
                         if (expr.params[i].datatype.size === 1) {
                             console.log("pop " + argRegisters[i]);
-                            console.log("movsx "+ argRegisters[i] + ", "+ byteArgRegisters[i]);
+                            console.log("movsx " + argRegisters[i] + ", " + byteArgRegisters[i]);
                         } if (expr.params[i].datatype.size === 2) {
                             console.log("pop " + argRegisters[i]);
-                            console.log("movsx "+ argRegisters[i] + ", "+ wordArgRegisters[i]);
+                            console.log("movsx " + argRegisters[i] + ", " + wordArgRegisters[i]);
                         } if (expr.params[i].datatype.size === 4) {
                             console.log("pop " + argRegisters[i]);
-                            console.log("movsx "+ argRegisters[i] + ", "+ dwordArgRegisters[i]);
+                            console.log("movsx " + argRegisters[i] + ", " + dwordArgRegisters[i]);
                         } if (expr.params[i].datatype.size === 8) {
                             console.log("pop " + argRegisters[i]);
                         }
                     }
 
-                    //console.log("   pop r15");
+                    console.log("   lea r15, ["+expr.callee.name+"]");
                     console.log("   call buitin_glibc_caller");
                     break;
                 case fnType.native:
@@ -257,7 +261,7 @@ function generateCode(expr: Expression) {
                         console.log("pop " + argRegisters[i]);
                     }
                     //console.log("   pop rax");
-                    console.log("   call "+expr.callee.name);
+                    console.log("   call " + expr.callee.name);
                     break;
                 default: break;
             }
@@ -304,7 +308,7 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             //genLvalue(stmt);
             //store(stmt.datatype);
             if (stmt.expr.type === exprType.string) {
-                console.log("   push " + (stmt.expr.name as string));
+                console.log(`   push .L.data.${stmt.expr.label}`);
                 store(stmt.expr.datatype);
             } else {
                 if (stmt.expr.datatype.kind !== myType.struct && stmt.expr.datatype.kind !== myType.array) {
@@ -361,9 +365,10 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
 
 }
 
-function genGlobalStrings(globs: { name: string, value: string }[]) {
+function genGlobalStrings(globs: { name: string, value: string }[]):number {
     console.log(".intel_syntax noprefix");
     console.log(".data");
+    var loffset = 0;
     globs.forEach((glob, i) => {
         console.log(".align 1");
         console.log(".L.data." + i + ":");
@@ -371,16 +376,10 @@ function genGlobalStrings(globs: { name: string, value: string }[]) {
             console.log("   .byte '" + glob.value[i] + "'");
         }
         console.log("   .byte " + 0);
-        console.log(".align 8");
-        console.log(glob.name + ": .quad .L.data." + i);
+        loffset = i;
     })
-}
 
-function genArgs(names: Token[]) {
-    names.forEach((_, i) => {
-        console.log("   lea rax, [rbp-" + (i + 1) * 8 + "]");
-        console.log("   mov [rax], " + argRegisters[i])
-    })
+    return loffset+1;
 }
 
 function genText(fns: Function[]) {
@@ -406,8 +405,45 @@ function genText(fns: Function[]) {
     })
 }
 
-export function genStart(globs: { name: string, value: string }[], fns: Function[]) {
-    genGlobalStrings(globs);
+function genGlobals(globals: { name: string, value: Expression|undefined , datatype:Type}[], labeloffset:number) {
+    globals.forEach((g)=>{
+        if(g.value) {
+ 
+            console.log(".align "+g.value.datatype.align);
+            console.log(g.name+":");
+
+            if(g.value.labelinitialize) {
+                console.log(".quad .L.data."+g.value.label);
+                return;
+            }
+
+            if (g.value.datatype.size === 1) {
+                console.log("   .byte "+g.value.val);
+            } else {
+                console.log("   ."+g.value.datatype.size+"byte "+g.value.val);
+            }
+        }
+    });
+
+    console.log(".bss");
+
+    globals.forEach((g)=>{
+        if(g.value === undefined) {
+ 
+            console.log(".align "+g.datatype.align);
+            console.log(g.name+":");
+            console.log("   .zero "+g.datatype.size);
+        }
+    });
+}
+
+export function genStart(
+    globstrings: { name: string, value: string }[],
+    globals: { name: string, value: Expression | undefined, datatype:Type }[],
+    fns: Function[]
+) {
+    var offset = genGlobalStrings(globstrings);
+    genGlobals(globals, offset);
     genText(fns);
     genAlignedCall();
 }

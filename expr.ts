@@ -60,6 +60,13 @@ export class Expression {
     //fn id
     idtype: identifierType;
 
+    // var
+    labelinitialize:boolean;
+    label: number;
+
+    // var
+    is_glob:boolean;
+
     newExprAddressSet(left:Expression, right:Expression) {
         this.left = left;// a deref
         this.right = right;
@@ -155,6 +162,13 @@ export class Expression {
         this.type = exprType.number;
         this.val = val;
         this.datatype = i32;
+        return this;
+    }
+
+    newExprString(val:string):Expression{
+        this.type = exprType.string;
+        this.bytes = val;
+        this.datatype = new Type().newPointer(u8);
         return this;
     }
 
