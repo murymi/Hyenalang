@@ -184,7 +184,7 @@ function generateCode(expr: Expression) {
         case exprType.address:
             generateAddress(expr.left as Expression);
             break;
-        case exprType.get:
+            case exprType.get:
             generateAddress(expr);
             if(expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
@@ -214,7 +214,7 @@ function generateCode(expr: Expression) {
         case exprType.assign:
             genLvalue(expr.left as Expression);
             generateCode(expr.right as Expression);
-            store(expr.datatype);
+            store(expr.left?.datatype as Type);
             break;
         case exprType.identifier:
             generateAddress(expr);
@@ -223,7 +223,7 @@ function generateCode(expr: Expression) {
             }
             break;
         case exprType.call:
-            generateCode(expr.callee);
+            //generateCode(expr.callee);
             switch (expr.fntype) {
                 case fnType.extern:
                     expr.params.forEach((p) => {
@@ -245,7 +245,7 @@ function generateCode(expr: Expression) {
                         }
                     }
 
-                    console.log("   pop r15");
+                    //console.log("   pop r15");
                     console.log("   call buitin_glibc_caller");
                     break;
                 case fnType.native:
@@ -256,11 +256,12 @@ function generateCode(expr: Expression) {
                     for (let i = expr.params.length - 1; i >= 0; i--) {
                         console.log("pop " + argRegisters[i]);
                     }
-                    console.log("   pop rax");
-                    console.log("   call rax");
+                    //console.log("   pop rax");
+                    console.log("   call "+expr.callee.name);
                     break;
                 default: break;
             }
+            console.log("push rax");
             break;
         case exprType.string:
             genString(expr.name);

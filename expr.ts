@@ -85,8 +85,10 @@ export class Expression {
 
     newExprGet(offset:number, expr :Expression, datatype:Type):Expression{
         this.type = exprType.get;
+        //console.log(offset);
         this.left = expr;
         this.offset = offset;
+        this.left.offset = offset;
         this.datatype = datatype;
         return this;
     }
@@ -135,16 +137,17 @@ export class Expression {
         return this;
     }
 
-    newExprAssign(val:Expression, offset:number):Expression{
+    newExprAssign(left:Expression, val:Expression):Expression{
         this.type = exprType.assign;
-        this.offset = offset;
-        this.left = val;
+        this.right = val;
+        this.left = left;
         return this;
     }
 
-    newExprCall(callee:Expression):Expression{
+    newExprCall(callee:Expression, datatype:Type):Expression{
         this.type = exprType.call;
-        this.datatype = callee.datatype;
+        this.callee = callee;
+        this.datatype = datatype;
         return this;
     }
 

@@ -106,7 +106,8 @@ export class Parser {
         }
         var fntok = this.expect(tokenType.rightparen, ") after params");
         var fn = getFn(callee.name as string);
-        var expr = new Expression().newExprCall(callee);;
+        
+        var expr = new Expression().newExprCall(callee, fn.returnType);;
         expr.callee = callee;
         if (fn.arity !== args.length) {
             this.tokenError(fn.name + " expects " + fn.arity + " args but " + args.length + " provided.", fntok);
@@ -225,7 +226,7 @@ export class Parser {
             equals = this.previous();
             var val = this.assign();
             if (expr.type === exprType.identifier) {
-                var n = new Expression().newExprAssign(val, expr.offset);
+                var n = new Expression().newExprAssign(expr, val);
                 return n;
             } else if (expr.type === exprType.get) {
                 // expr.loadaddr = true;
@@ -240,17 +241,17 @@ export class Parser {
                 return new Expression().newExprAddressSet(expr, val);
             } 
             // else if (expr.type === exprType.) {
-            //     //expr.loadaddr = true;
-            //     return new Expression().newExprSetArrayIndex(expr, val);
-            // }
-
-            this.tokenError("Unexpected assignment", equals);
+                //     //expr.loadaddr = true;
+                //     return new Expression().newExprSetArrayIndex(expr, val);
+                // }
+                
+                this.tokenError("Unexpected assignment", equals);
+            }
+            
+            return expr;
         }
 
-        return expr;
-    }
-
-    expression(): Expression {
+        expression(): Expression {
         return this.assign();
     }
 
@@ -278,7 +279,7 @@ export class Parser {
         endScope();
         return new Statement().newBlockStatement(stmts);
     }
-
+    
     re_turn(): Statement {
         if (this.match([tokenType.semicolon])) {
             var expr = new Expression().newExprNumber(0);
@@ -286,14 +287,14 @@ export class Parser {
             expr.datatype = i64;
             return new Statement().newReturnStatement(expr);
         }
-
+        
         var expr = this.expression();
         this.expect(tokenType.semicolon, ";");
         return new Statement().newReturnStatement(expr);
     }
-
+    
     statement(): Statement {
-
+        
         if (this.match([tokenType.contineu])) {
             this.expect(tokenType.semicolon, ";");
             return new Statement().newContinueStatement();
@@ -303,7 +304,7 @@ export class Parser {
             this.expect(tokenType.semicolon, ";");
             return new Statement().newBreakStatement();
         }
-
+        
         if (this.match([tokenType.leftbrace])) {
             return this.block();
         }
@@ -321,7 +322,7 @@ export class Parser {
             if (this.match([tokenType.else])) {
                 else_ = this.statement();
             }
-
+            
             return new Statement().newIfStatement(cond, then, else_);
         }
 
@@ -330,7 +331,7 @@ export class Parser {
             var cond = this.expression();
             this.expect(tokenType.rightparen, ") after condition");
             var then = this.statement();
-
+            
             return new Statement().newWhileStatement(cond, then);
         }
 
@@ -345,10 +346,11 @@ export class Parser {
             var len = this.expect(tokenType.number, "Expect size of array");
             //console.log(len);
             this.expect(tokenType.rightsquare, "] expected");
-
+            
             return new Type().newArray(this.parseType(), len.value as number);
         }
-
+        
+        //console.log("============================");
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
             is_ptr = true;
@@ -395,6 +397,7 @@ export class Parser {
                 addGlobal(name.value as string, initializer.bytes as string, initializer.datatype);
                 initializer.name = name.value as string;
             }
+
             type = initializer.datatype;
             //type.type = myType.i64;
         } else if (this.match([tokenType.colon])) {
@@ -417,6 +420,7 @@ export class Parser {
         this.expect(tokenType.semicolon, ";");
 
         var offset = incLocalOffset(name.value as string, type as Type);
+        //console.log("offset", offset);
         return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type);
     }
 

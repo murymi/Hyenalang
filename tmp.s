@@ -1,45 +1,31 @@
 .intel_syntax noprefix
 .data
 .text
-.global main
-main:
+.global ass
+ass:
    push rbp
    mov rbp, rsp
-   sub rsp, 10
-   lea rax, [rbp-10]
-   push rax
-add rsp, 8
-   lea rax, [rbp-10]
-   push rax
-pop rax
-add rax, 0
-push rax
-   push 0
-   pop rdi
-   pop rax
-   add rax, rdi
-   push rax
-   push 90
-   pop rdi
-   pop rax
-   mov [rax], dil
-   lea rax, [rbp-10]
-   push rax
-pop rax
-add rax, 0
-push rax
-   push 0
-   pop rdi
-   pop rax
-   add rax, rdi
-   push rax
-   pop rax
-   movsx rax, byte ptr [rax]
-   push rax
+   sub rsp, 0
+   push 100
    pop rax
    jmp .L.endfn.0
    xor rax, rax
 .L.endfn.0:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global main
+main:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 0
+   call ass
+push rax
+   pop rax
+   jmp .L.endfn.1
+   xor rax, rax
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret

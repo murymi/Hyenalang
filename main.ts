@@ -251,15 +251,15 @@ struct foo {
 }
 
 struct bar {
-    x:u8;
-    y:u8;
+    x:[1]foo;
+}
+
+fn ass() u8 {
+    return 100;
 }
 
 fn main() void {
-    var a:foo;
-    a.array[0] = 90;
-
-    return a.array[0];
+    var ret = ass();
 }
 
 `
