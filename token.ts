@@ -191,8 +191,8 @@ export class Lexer {
         if (str === "i16") return new Token(tokenType.i16, str, this.line, this.col);
         if (str === "i32") return new Token(tokenType.i32, str, this.line, this.col);
         if (str === "i64") return new Token(tokenType.i64, str, this.line, this.col);
-        if (str === "legit") return new Token(tokenType.true, str, this.line, this.col);
-        if (str === "cap") return new Token(tokenType.false, str, this.line, this.col);
+        if (str === "true") return new Token(tokenType.true, str, this.line, this.col);
+        if (str === "false") return new Token(tokenType.false, str, this.line, this.col);
         if (str === "bool") return new Token(tokenType.bool, str, this.line, this.col);
         if (str === "eq") return new Token(tokenType.eq, str, this.line, this.col);
         if (str === "lte") return new Token(tokenType.lte, str, this.line, this.col);

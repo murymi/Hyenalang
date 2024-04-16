@@ -14,12 +14,26 @@ push offset a
    pop rax
    movsx rax, byte ptr [rax]
    push rax
+   push 0
+   pop rdi
+   pop rax
+   cmp rax, rdi
+   sete al
+   movzb rax, al
+   push rax
    pop rax
    cmp rax, 0
    je .L.else.1
+   push 0
+   pop rax
+   cmp rax, 0
+   je .L.else.3
    push 10
    pop rax
    jmp .L.endfn.1
+   jmp .L.end.3
+.L.else.3:
+.L.end.3:
    jmp .L.end.1
 .L.else.1:
 .L.end.1:

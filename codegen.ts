@@ -51,6 +51,27 @@ function genGreater() {
     console.log("   push rax");
 }
 
+function genLessEq() {
+    console.log("   cmp rax, rdi");
+    console.log("   setle al");
+    console.log("   movzb rax, al")
+    console.log("   push rax");
+}
+
+function genGreaterEq() {
+    console.log("   cmp rax, rdi");
+    console.log("   setge al");
+    console.log("   movzb rax, al")
+    console.log("   push rax");
+}
+
+function genEq() {
+    console.log("   cmp rax, rdi");
+    console.log("   sete al");
+    console.log("   movzb rax, al")
+    console.log("   push rax");
+}
+
 function genNegate() {
     console.log("   neg rax");
     console.log("   push rax");
@@ -77,6 +98,15 @@ function genBinary(operator: tokenType) {
             break;
         case tokenType.less:
             genLess();
+            break;
+        case tokenType.eq:
+            genEq();
+            break;
+        case tokenType.lte:
+            genLessEq();
+            break;
+        case tokenType.gte:
+            genGreaterEq();
             break;
         default:
             throw new error("unhandled operator");

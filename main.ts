@@ -252,11 +252,13 @@ var prog = `
 extern fn puts(ptr: *u8) void;
 
 
-var a:bool = cap;
+var a:bool = false;
 
 fn main() void {
-    if(a) {
-        return 10;
+    if(a eq 0) {
+        if(false) {
+            return 10;
+        }
     }
     return 5;
 }
