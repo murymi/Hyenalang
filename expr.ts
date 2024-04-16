@@ -165,6 +165,13 @@ export class Expression {
         return this;
     }
 
+    newExprBoolean(val:number):Expression{
+        this.type = exprType.number;
+        this.val = val;
+        this.datatype = u8;
+        return this;
+    }
+
     newExprString(val:string):Expression{
         this.type = exprType.string;
         this.bytes = val;

@@ -4,7 +4,7 @@ import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import { addGlobal, addGlobalString, beginScope, endScope, fnType, getFn, getLocalOffset, getOffsetOfMember, getStructMembers, incLocalOffset, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
-import { Type, i16, i32, i64, i8, isPtr, myType, u8, voidtype } from "./type";
+import { Type, bool, i16, i32, i64, i8, isPtr, myType, u8, voidtype } from "./type";
 
 export class Parser {
     tokens: Token[];
@@ -83,6 +83,14 @@ export class Parser {
             return expr;
         }
 
+        if(this.match([tokenType.false])) {
+            return new Expression().newExprBoolean(0);
+        }
+
+        if(this.match([tokenType.true])) {
+            return new Expression().newExprBoolean(1);
+        }
+
         if (this.match([tokenType.number])) {
             return new Expression().newExprNumber(this.previous().value as number);
         }
@@ -108,7 +116,7 @@ export class Parser {
         }
         var fntok = this.expect(tokenType.rightparen, ") after params");
         var fn = getFn(callee.name as string);
-        
+
         var expr = new Expression().newExprCall(callee, fn.returnType);;
         expr.callee = callee;
         if (fn.arity !== args.length) {
@@ -121,41 +129,33 @@ export class Parser {
 
     // postfix
     call(): Expression {
-        var expr = this.primary();// identifier
-
-        // should return identifier
-
+        var expr = this.primary();
         while (true) {
 
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
                 var propname = this.advance();
-                if(propname.type === tokenType.identifier || propname.type === tokenType.multiply) {} else {
+                if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
                     this.tokenError("expect property name after dot", this.peek());
                 }
 
                 if (expr.datatype.kind === myType.struct) {
                     var meta = getOffsetOfMember(expr.datatype, propname.value as string);
                     expr = new Expression().newExprGet(meta.offset, expr, meta.datatype)
-                } else if(expr.datatype.kind === myType.ptr){
-                    //console.log("=======ptr found ==========");
+                } else if (expr.datatype.kind === myType.ptr) {
                     expr = new Expression().newExprDeref(expr);
                 } else {
                     console.log("member access to non struct");
                     process.exit(1);
                 }
-                // get struct type of expr, find offset of x, get with offset
             } else if (this.match([tokenType.leftsquare])) {
-                // work around
                 if (expr.datatype.kind === myType.array) {
                     var index = this.expression();
                     this.expect(tokenType.rightsquare, "Expect ]");
                     expr = new Expression().newExprDeref(
                         new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), expr, index)
                     )
-                    //expr = new Expression().newExprGet(0, expr, expr.datatype);
-                    //console.log("================");
                 } else {
                     console.log("indexing non array");
                     process.exit(1);
@@ -176,7 +176,7 @@ export class Parser {
 
         if (this.match([tokenType.andsand])) {
             var left = this.unary();
-            if(left.type === exprType.address) {
+            if (left.type === exprType.address) {
                 console.log("wtf bro!,, thats unsupported here");
                 process.exit(1);
             }
@@ -211,7 +211,7 @@ export class Parser {
     comparisson(): Expression {
         var expr = this.term();
 
-        while (this.match([tokenType.less, tokenType.greater])) {
+        while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte, tokenType.eq])) {
             var operator = this.previous();
             var right = this.term();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -231,29 +231,18 @@ export class Parser {
                 var n = new Expression().newExprAssign(expr, val);
                 return n;
             } else if (expr.type === exprType.get) {
-                // expr.loadaddr = true;
-                //expr.offset = 33;
-                //console.log(expr.offset);
-                
                 var set = new Expression().newExprSet(expr, val);
                 return set;
-            } else if(expr.type === exprType.deref) {
-                //console.log("pinter set detected");
-                // expr.loadaddr = true;
+            } else if (expr.type === exprType.deref) {
                 return new Expression().newExprAddressSet(expr, val);
-            } 
-            // else if (expr.type === exprType.) {
-                //     //expr.loadaddr = true;
-                //     return new Expression().newExprSetArrayIndex(expr, val);
-                // }
-                
-                this.tokenError("Unexpected assignment", equals);
             }
-            
-            return expr;
+            this.tokenError("Unexpected assignment", equals);
         }
 
-        expression(): Expression {
+        return expr;
+    }
+
+    expression(): Expression {
         return this.assign();
     }
 
@@ -263,12 +252,6 @@ export class Parser {
         this.expect(tokenType.semicolon, ";");
         var stmt = new Statement().newExprStatement(expr);
         return stmt;
-    }
-
-    printStatement(): Statement {
-        var val = this.expression();
-        this.expect(tokenType.semicolon, ";");
-        return new Statement().newPrintStatement(val);
     }
 
     block(): Statement {
@@ -281,7 +264,7 @@ export class Parser {
         endScope();
         return new Statement().newBlockStatement(stmts);
     }
-    
+
     re_turn(): Statement {
         if (this.match([tokenType.semicolon])) {
             var expr = new Expression().newExprNumber(0);
@@ -289,14 +272,14 @@ export class Parser {
             expr.datatype = i64;
             return new Statement().newReturnStatement(expr);
         }
-        
+
         var expr = this.expression();
         this.expect(tokenType.semicolon, ";");
         return new Statement().newReturnStatement(expr);
     }
-    
+
     statement(): Statement {
-        
+
         if (this.match([tokenType.contineu])) {
             this.expect(tokenType.semicolon, ";");
             return new Statement().newContinueStatement();
@@ -306,7 +289,7 @@ export class Parser {
             this.expect(tokenType.semicolon, ";");
             return new Statement().newBreakStatement();
         }
-        
+
         if (this.match([tokenType.leftbrace])) {
             return this.block();
         }
@@ -324,7 +307,7 @@ export class Parser {
             if (this.match([tokenType.else])) {
                 else_ = this.statement();
             }
-            
+
             return new Statement().newIfStatement(cond, then, else_);
         }
 
@@ -333,7 +316,7 @@ export class Parser {
             var cond = this.expression();
             this.expect(tokenType.rightparen, ") after condition");
             var then = this.statement();
-            
+
             return new Statement().newWhileStatement(cond, then);
         }
 
@@ -348,10 +331,10 @@ export class Parser {
             var len = this.expect(tokenType.number, "Expect size of array");
             //console.log(len);
             this.expect(tokenType.rightsquare, "] expected");
-            
+
             return new Type().newArray(this.parseType(), len.value as number);
         }
-        
+
         //console.log("============================");
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
@@ -373,6 +356,8 @@ export class Parser {
                 return i64;
             case tokenType.u8:
                 return u8;
+            case tokenType.bool:
+                return bool
             case tokenType.identifier:
                 var mems = getStructMembers(tok.value as string);
                 if (mems) {
@@ -428,7 +413,7 @@ export class Parser {
 
         var offset = incLocalOffset(name.value as string, type as Type);
         var is_global = false;
-        if(offset === -1) {
+        if (offset === -1) {
             addGlobal(name.value as string, initializer, type as Type);
             is_global = true;
         }

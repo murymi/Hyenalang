@@ -252,12 +252,13 @@ var prog = `
 extern fn puts(ptr: *u8) void;
 
 
-var a:i64;
-
-var message = "hello world";
+var a:bool = cap;
 
 fn main() void {
-    puts(message);
+    if(a) {
+        return 10;
+    }
+    return 5;
 }
 
 `

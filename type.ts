@@ -35,7 +35,8 @@ export enum myType {
     struct,
 
     ptr,
-    array
+    array,
+    bool
 }
 
 export function alignTo(align: number, n: number): number {
@@ -123,7 +124,7 @@ export var i32 = new Type().newType(myType.i32, 4, 4);
 export var i16 = new Type().newType(myType.i16, 2, 2);
 export var i8 = new Type().newType(myType.i8, 1, 1);
 export var voidtype = new Type().newType(myType.void, 1, 1);
-export var bool = new Type().newType(myType.u8, 1, 1);
+export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
 
 export function getTypeDetail(T: myType) {
