@@ -71,13 +71,16 @@ export class Struct {
     name: string;
     size: number;
     members: { name: string, datatype: Type }[];
+    is_union:boolean;
 
-    constructor(name: string) {
+    constructor(name: string, isunion:boolean) {
         this.name = name;
         this.size = 0;
         this.members = [];
+        this.is_union= isunion;
     }
 }
+
 
 var structs: Struct[] = [];
 
@@ -135,7 +138,7 @@ export function getOffsetOfMember(struct: Type, member: string) {
         }
     }
 
-    console.log("struct  has no member named " + member);
+    console.log("struct or union has no member named " + member);
     process.exit(1);
 }
 
@@ -179,8 +182,8 @@ export function pushFunction(name: string, params: { name: string, datatype: Typ
     return functions.length - 1;
 }
 
-export function pushStruct(name: string) {
-    structs.push(new Struct(name));
+export function pushStruct(name: string, isunion:boolean) {
+    structs.push(new Struct(name, isunion));
     return structs.length - 1;
 }
 
@@ -197,10 +200,10 @@ export function inStruct() {
     return ins_struct;
 }
 
-export function getStructMembers(name: string) {
+export function getStruct(name: string) {
     for (let s of structs){
         if(s.name === name) {
-            return s.members;
+            return s;
         }
     }
     return null;
@@ -251,16 +254,21 @@ function compile(text: string) {
 var prog = `
 extern fn puts(ptr: *u8) void;
 
+var message = "hello world";
 
-var a:bool = false;
+union foo {
+    char:u8;
+    int:i32;
+    long:i64;
+}
 
 fn main() void {
-    if(a eq 0) {
-        if(false) {
-            return 10;
-        }
-    }
-    return 5;
+    var un:foo;
+    un.int = 7;
+    un.long = 90;
+    un.char = 9;
+
+    return un.int;
 }
 
 `

@@ -69,8 +69,12 @@ export enum tokenType {
     bool,
 
     eq,
+    neq,
+
     lte,
     gte,
+
+    union,
 
     eof
 };
@@ -80,12 +84,17 @@ export class Token {
     value: string | number;
     line: number;
     col: number;
+    isfloat:boolean;
 
-    constructor(type: tokenType, value: string | number, line: number, col: number) {
+    constructor(type: tokenType, value: string | number, line: number, col: number, isfloat?:boolean) {
         this.type = type;
         this.value = value;
         this.col = col;
         this.line = line;
+
+        if(isfloat) {
+            this.isfloat = isfloat;
+        }
     }
 }
 
@@ -94,6 +103,7 @@ export class Lexer {
     text: string;
     line: number;
     col: number;
+    tokens: Token[] = [];
 
     constructor(text: string) {
         this.current = 0;
@@ -112,6 +122,11 @@ export class Lexer {
     peek() {
         if (!this.moreTokens()) return "eof";
         return this.text[this.current];
+    }
+
+    peekNext() {
+        if (!this.moreTokens()) return "eof";
+        return this.text[this.current+1];
     }
 
     advance() {
@@ -141,14 +156,19 @@ export class Lexer {
         return this.isAlpha(text) || this.isNumber(text)
     }
 
-    number(): number {
+    number() {
         var start = this.current;
+        var isfloat = false;
         while (this.moreTokens()) {
-            if (!this.isNumber(this.peek())) break;
+            var pk = this.peek();
+            if (!this.isNumber(pk)) {
+                if(pk !== "." && !this.isNumber(this.peekNext()))break;
+                isfloat = true;
+            }
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        return parseFloat(str);
+        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col, isfloat));
     }
 
     readString(): Token {
@@ -159,7 +179,7 @@ export class Lexer {
         }
         this.expect('"');
         var value = this.text.substring(start, this.current - 1);
-        return new Token(tokenType.string, value, this.line, this.col);
+        return new Token(tokenType.string, value, this.line, this.col, true);
     }
 
     identifier(): Token {
@@ -197,6 +217,10 @@ export class Lexer {
         if (str === "eq") return new Token(tokenType.eq, str, this.line, this.col);
         if (str === "lte") return new Token(tokenType.lte, str, this.line, this.col);
         if (str === "gte") return new Token(tokenType.gte, str, this.line, this.col);
+        if (str === "neq") return new Token(tokenType.neq, str, this.line, this.col);
+
+        if (str === "f32") return new Token(tokenType.f32, str, this.line, this.col);
+        if (str === "union") return new Token(tokenType.union, str, this.line, this.col);
 
         return new Token(tokenType.identifier, str, this.line, this.col);
     }
@@ -209,7 +233,6 @@ export class Lexer {
 
 
     lex(): Token[] {
-        var tokens: Token[] = [];
         this.line = 0;
         this.col = 1;
 
@@ -218,7 +241,7 @@ export class Lexer {
 
             //console.log("token => ", char);
             if (this.isNumber(char)) {
-                tokens.push(new Token(tokenType.number, this.number(), this.line, this.col));
+                this.number();
             } else if (this.isSpace(char)) {
                 if (this.advance() === '\n') {
                     this.col = 1; this.line++;
@@ -226,68 +249,68 @@ export class Lexer {
                 continue;
             }
             else if (char === "+") {
-                tokens.push(new Token(tokenType.plus, "+", this.line, this.col));
+                this.tokens.push(new Token(tokenType.plus, "+", this.line, this.col));
                 this.advance();
             } else if (char === "-") {
-                tokens.push(new Token(tokenType.minus, "-", this.line, this.col));
+                this.tokens.push(new Token(tokenType.minus, "-", this.line, this.col));
                 this.advance();
             } else if (char === "/") {
-                tokens.push(new Token(tokenType.divide, "/", this.line, this.col));
+                this.tokens.push(new Token(tokenType.divide, "/", this.line, this.col));
                 this.advance();
             } else if (char === "*") {
-                tokens.push(new Token(tokenType.multiply, "*", this.line, this.col));
+                this.tokens.push(new Token(tokenType.multiply, "*", this.line, this.col));
                 this.advance();
             } else if (char === ",") {
-                tokens.push(new Token(tokenType.comma, ",", this.line, this.col));
+                this.tokens.push(new Token(tokenType.comma, ",", this.line, this.col));
                 this.advance();
             } else if (char === '(') {
-                tokens.push(new Token(tokenType.leftparen, "(", this.line, this.col));
+                this.tokens.push(new Token(tokenType.leftparen, "(", this.line, this.col));
                 this.advance();
             } else if (char === ';') {
-                tokens.push(new Token(tokenType.semicolon, ";", this.line, this.col));
+                this.tokens.push(new Token(tokenType.semicolon, ";", this.line, this.col));
                 this.advance();
             } else if (char === '>') {
-                tokens.push(new Token(tokenType.greater, ">", this.line, this.col));
+                this.tokens.push(new Token(tokenType.greater, ">", this.line, this.col));
                 this.advance();
             } else if (char === '!') {
-                tokens.push(new Token(tokenType.bang, "!", this.line, this.col));
+                this.tokens.push(new Token(tokenType.bang, "!", this.line, this.col));
                 this.advance();
             } else if (char === '<') {
-                tokens.push(new Token(tokenType.less, "<", this.line, this.col));
+                this.tokens.push(new Token(tokenType.less, "<", this.line, this.col));
                 this.advance();
             } else if (char === ')') {
-                tokens.push(new Token(tokenType.rightparen, ")", this.line, this.col));
+                this.tokens.push(new Token(tokenType.rightparen, ")", this.line, this.col));
                 this.advance();
             } else if (char === '&') {
-                tokens.push(new Token(tokenType.andsand, "&", this.line, this.col));
+                this.tokens.push(new Token(tokenType.andsand, "&", this.line, this.col));
                 this.advance();
             } else if (char === '}') {
-                tokens.push(new Token(tokenType.rightbrace, "}", this.line, this.col));
+                this.tokens.push(new Token(tokenType.rightbrace, "}", this.line, this.col));
                 this.advance();
             } else if (char === '{') {
-                tokens.push(new Token(tokenType.leftbrace, "{", this.line, this.col));
+                this.tokens.push(new Token(tokenType.leftbrace, "{", this.line, this.col));
                 this.advance();
             } else if (char === '=') {
-                tokens.push(new Token(tokenType.equal, "=", this.line, this.col));
+                this.tokens.push(new Token(tokenType.equal, "=", this.line, this.col));
                 this.advance();
             } else if (char === ':') {
-                tokens.push(new Token(tokenType.colon, ":", this.line, this.col));
+                this.tokens.push(new Token(tokenType.colon, ":", this.line, this.col));
                 this.advance();
             } else if (char === '[') {
-                tokens.push(new Token(tokenType.leftsquare, "[", this.line, this.col));
+                this.tokens.push(new Token(tokenType.leftsquare, "[", this.line, this.col));
                 this.advance();
             } else if (char === ']') {
-                tokens.push(new Token(tokenType.rightsquare, "]", this.line, this.col));
+                this.tokens.push(new Token(tokenType.rightsquare, "]", this.line, this.col));
                 this.advance();
             } else if (char === '.') {
-                tokens.push(new Token(tokenType.dot, ".", this.line, this.col));
+                this.tokens.push(new Token(tokenType.dot, ".", this.line, this.col));
                 this.advance();
             } else if (char === '"') {
-                tokens.push(this.readString());
+                this.tokens.push(this.readString());
             } else if (this.isAlpha(char)) {
-                tokens.push(this.identifier());
+                this.tokens.push(this.identifier());
             } else if (char === "eof") {
-                tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
+                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
                 break;
             } else {
                 //console.log(char);
@@ -296,6 +319,6 @@ export class Lexer {
 
         }
 
-        return tokens;
+        return this.tokens;
     }
 }

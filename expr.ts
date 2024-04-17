@@ -1,6 +1,6 @@
 import { fnType } from "./main";
 import { Token } from "./token";
-import { Type, i32, i64, u8 } from "./type";
+import { Type, f32, i32, i64, u8 } from "./type";
 
 export enum exprType {
     unary,
@@ -92,10 +92,9 @@ export class Expression {
 
     newExprGet(offset:number, expr :Expression, datatype:Type):Expression{
         this.type = exprType.get;
-        //console.log(offset);
         this.left = expr;
         this.offset = offset;
-        this.left.offset = offset;
+        //this.left.offset = offset;
         this.datatype = datatype;
         return this;
     }
@@ -158,10 +157,15 @@ export class Expression {
         return this;
     }
 
-    newExprNumber(val:number):Expression{
+    newExprNumber(val:number, isfloat?:boolean):Expression{
         this.type = exprType.number;
         this.val = val;
         this.datatype = i32;
+        if(isfloat){
+            if(isfloat) {
+                this.datatype = f32;
+            }
+        }
         return this;
     }
 

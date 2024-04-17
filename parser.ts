@@ -3,8 +3,8 @@ import { tokenType } from "./token";
 import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { addGlobal, addGlobalString, beginScope, endScope, fnType, getFn, getLocalOffset, getOffsetOfMember, getStructMembers, incLocalOffset, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
-import { Type, bool, i16, i32, i64, i8, isPtr, myType, u8, voidtype } from "./type";
+import { addGlobal, addGlobalString, beginScope, endScope, fnType, getFn, getLocalOffset, getOffsetOfMember, getStruct, incLocalOffset, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
+import { Type, bool, f32, i16, i32, i64, i8, myType, u8, voidtype } from "./type";
 
 export class Parser {
     tokens: Token[];
@@ -92,7 +92,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.number])) {
-            return new Expression().newExprNumber(this.previous().value as number);
+            return new Expression().newExprNumber(this.previous().value as number, this.previous().isfloat);
         }
 
         if (this.match([tokenType.leftparen])) {
@@ -211,7 +211,19 @@ export class Parser {
     comparisson(): Expression {
         var expr = this.term();
 
-        while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte, tokenType.eq])) {
+        while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte ])) {
+            var operator = this.previous();
+            var right = this.term();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+
+        return expr;
+    }
+
+    reletional():Expression {
+        var expr = this.comparisson();
+
+        while (this.match([tokenType.neq, tokenType.eq ])) {
             var operator = this.previous();
             var right = this.term();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -221,7 +233,7 @@ export class Parser {
     }
 
     assign(): Expression {
-        var expr = this.comparisson();
+        var expr = this.reletional();
 
         var equals: Token;
         if (this.match([tokenType.equal])) {
@@ -357,11 +369,18 @@ export class Parser {
             case tokenType.u8:
                 return u8;
             case tokenType.bool:
-                return bool
+                return bool;
+            case tokenType.f32:
+                return f32;
             case tokenType.identifier:
-                var mems = getStructMembers(tok.value as string);
-                if (mems) {
-                    return new Type().newStruct(mems)
+                var struc = getStruct(tok.value as string);
+                if (struc) {
+                    if(struc.is_union) {
+                        var un = new Type().newUnion(struc.members);
+                        //console.log(un);
+                        return un;
+                    } 
+                    return new Type().newStruct(struc.members);
                 }
                 break;
             default:
@@ -474,9 +493,9 @@ export class Parser {
         return new Statement().newNativeFnStatement(name.value as string);
     }
 
-    structDeclaration(): Statement {
-        var name = this.expect(tokenType.identifier, "expect struct name").value as string;
-        var currstruct = pushStruct(name);
+    structDeclaration(isunion:boolean): Statement {
+        var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;
+        var currstruct = pushStruct(name, isunion);
         this.expect(tokenType.leftbrace, "Expect struct body");
         var strucmembers: Statement[] = [];
         setCurrentStruct(currstruct);
@@ -509,8 +528,8 @@ export class Parser {
             return this.nativeFuncDeclaration();
         }
 
-        if (this.match([tokenType.struct])) {
-            return this.structDeclaration();
+        if (this.match([tokenType.struct, tokenType.union])) {
+            return this.structDeclaration(this.previous().type === tokenType.union ? true : false);
         }
 
         return this.statement();

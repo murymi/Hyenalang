@@ -83,7 +83,6 @@ export class Type {
         this.base = base;
         this.size = base.size * len;
         this.align = base.align;
-        //console.log("=========", this.size);
         return this;
     }
 
@@ -107,6 +106,34 @@ export class Type {
         return this;
     }
 
+    newUnion(mems: {name: string, datatype:Type}[]) {
+        this.members = [];
+        this.kind = myType.struct;
+        var offt = 0;
+        this.align = 0;
+        var lagest = 0;
+        mems.forEach((m) => {
+            offt = alignTo(m.datatype.align, offt);
+            //offt += m.datatype.size;
+            
+            if (this.align < m.datatype.align) {
+                this.align = m.datatype.align;
+            }
+
+            if (lagest < m.datatype.size) {
+                lagest = m.datatype.align;
+            }
+        });
+        
+        mems.forEach((m)=>{
+            this.members.push({ name: m.name, offset: offt, type: m.datatype });
+        })
+
+        this.size = alignTo(this.align, lagest);
+        //console.log(offt);
+        return this;
+    }
+
     newType(t: myType, size: number, align: number) {
         this.kind = t;
         this.size = size;
@@ -123,43 +150,14 @@ export var i64 = new Type().newType(myType.i64, 8, 8);
 export var i32 = new Type().newType(myType.i32, 4, 4);
 export var i16 = new Type().newType(myType.i16, 2, 2);
 export var i8 = new Type().newType(myType.i8, 1, 1);
+export var u64 = new Type().newType(myType.u64, 8, 8);
+export var u32 = new Type().newType(myType.u32, 4, 4);
+export var u16 = new Type().newType(myType.u16, 2, 2);
 export var voidtype = new Type().newType(myType.void, 1, 1);
 export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
+export var f32 = new Type().newType(myType.f32, 4, 4);
 
-export function getTypeDetail(T: myType) {
-    switch (T) {
-        case myType.u8_ptr:
-        case myType.u16_ptr:
-        case myType.u32_ptr:
-        case myType.u64_ptr:
-        case myType.i8_ptr:
-        case myType.i16_ptr:
-        case myType.i32_ptr:
-        case myType.i64_ptr:
-        case myType.void_ptr:
-            return { size: 8, align: 8 }
-        default:
-            return false;
-    }
-}
-
-export function isPtr(T: myType): boolean {
-    switch (T) {
-        case myType.u8_ptr:
-        case myType.u16_ptr:
-        case myType.u32_ptr:
-        case myType.u64_ptr:
-        case myType.i8_ptr:
-        case myType.i16_ptr:
-        case myType.i32_ptr:
-        case myType.i64_ptr:
-        case myType.void_ptr:
-            return true;
-        default:
-            return false;
-    }
-}
 
 function typeError(message: string, tok: Token | undefined) {
     if (tok) {
