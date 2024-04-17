@@ -33,6 +33,7 @@ export enum myType {
     void_ptr,
 
     struct,
+    enum,
 
     ptr,
     array,
@@ -68,6 +69,9 @@ export class Type {
     arrayLen: number;
     members: { name: string, offset: number, type: Type }[];
     returnType: myType;
+
+    enumvalues:{name:string, value:number}[];
+    name:string;
 
     newPointer(base: Type) {
         this.base = base;
@@ -134,6 +138,15 @@ export class Type {
         return this;
     }
 
+    newEnum(name:string, mems:{name:string, value:number}[]) {
+        this.kind = myType.enum;
+        this.size = 4;
+        this.align = 4;
+        this.enumvalues = mems;
+        this.name = name;
+        return this;
+    }
+
     newType(t: myType, size: number, align: number) {
         this.kind = t;
         this.size = size;
@@ -157,6 +170,7 @@ export var voidtype = new Type().newType(myType.void, 1, 1);
 export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
 export var f32 = new Type().newType(myType.f32, 4, 4);
+export var enm = new Type().newType(myType.enum, 4, 4);
 
 
 function typeError(message: string, tok: Token | undefined) {

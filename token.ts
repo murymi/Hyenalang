@@ -75,6 +75,7 @@ export enum tokenType {
     gte,
 
     union,
+    enum,
 
     eof
 };
@@ -221,6 +222,7 @@ export class Lexer {
 
         if (str === "f32") return new Token(tokenType.f32, str, this.line, this.col);
         if (str === "union") return new Token(tokenType.union, str, this.line, this.col);
+        if (str === "enum") return new Token(tokenType.enum, str, this.line, this.col);
 
         return new Token(tokenType.identifier, str, this.line, this.col);
     }

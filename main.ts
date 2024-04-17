@@ -3,7 +3,7 @@ import { Parser } from "./parser";
 import { genStart } from "./codegen";
 import { Statement } from "./stmt";
 import { Expression } from "./expr";
-import { Type, alignTo, i64 } from "./type";
+import { Type, alignTo, enm, i32, i64 } from "./type";
 
 export enum fnType {
     extern,
@@ -81,10 +81,35 @@ export class Struct {
     }
 }
 
+export class Enum {
+    name: string;
+    values:{name:string, value:number}[];
+
+    constructor(name:string, values:{name:string, value:number}[]) {
+        this.name = name;
+        this.values = values;
+    }
+}
+
 
 var structs: Struct[] = [];
 
 var functions: Function[] = [];
+
+var enums: Type[] = [];
+
+export function pushEnum(en:Type) {
+    enums.push(en);
+}
+
+export function getEnum(name:string) {
+    for(let e of enums){
+        if(e.name === name) {
+            return e;
+        }
+    }
+    return null;
+} 
 
 export function checkStruct(name: string) {
     for (let s of structs) {
@@ -155,6 +180,12 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
     for(let i = 0; i < globals.length; i++) {
         if(globals[i].name === name) {
             return { offset: -2, datatype: globals[i].datatype, glob:true }
+        }
+    }
+
+    for(let e of enums) {
+        if(e.name === name) {
+            return { offset: -3, datatype: e, glob:false }
         }
     }
 
@@ -252,23 +283,12 @@ function compile(text: string) {
 }
 
 var prog = `
-extern fn puts(ptr: *u8) void;
-
-var message = "hello world";
-
-union foo {
-    char:u8;
-    int:i32;
-    long:i64;
+enum day {
+    a = 30, b, c, d
 }
 
 fn main() void {
-    var un:foo;
-    un.int = 7;
-    un.long = 90;
-    un.char = 9;
-
-    return un.int;
+    var a:day = day.f;
 }
 
 `
