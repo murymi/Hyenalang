@@ -359,7 +359,6 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             break
         case stmtType.ifStmt:
             generateCode(stmt.cond);
-            console.log("   pop rax");
             console.log("   cmp rax, 0");
             console.log("   je .L.else." + labeloffset);
             genStmt(stmt.then, labeloffset + 1, fnid);
@@ -375,7 +374,6 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             latestContinueLabel = ".L.continue." + labeloffset;
             console.log(".L.continue." + labeloffset + ":");
             generateCode(stmt.cond);
-            //console.log("   pop rax");
             console.log("   cmp rax, 0");
             console.log("   je .L.break." + labeloffset);
             genStmt(stmt.then, labeloffset + 1, fnid);
@@ -392,7 +390,6 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             break;
         case stmtType.ret:
             generateCode(stmt.expr);
-            //console.log("   pop rax");
             console.log(`   jmp .L.endfn.${fnid}`);
             break;
         default: break;

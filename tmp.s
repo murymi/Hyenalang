@@ -7,13 +7,17 @@
    .byte 'l'
    .byte 'l'
    .byte 'o'
-   .byte ','
    .byte ' '
-   .byte 'W'
-   .byte 'o'
+   .byte 'H'
+   .byte 'y'
+   .byte 'e'
+   .byte 'n'
+   .byte 'a'
+   .byte ' '
+   .byte 'u'
+   .byte 's'
+   .byte 'e'
    .byte 'r'
-   .byte 'l'
-   .byte 'd'
    .byte 0
 .bss
 .text
