@@ -14,6 +14,7 @@ import {
     getLocalOffset,
     getOffsetOfMember,
     getStruct,
+    getcurrFn,
     incLocalOffset,
     pushEnum,
     pushFunction,
@@ -607,8 +608,15 @@ export class Parser {
             return this.enumDeclaration();
         }
 
+        if(getcurrFn() >= 0) {
+            return this.statement();
+        }
+
+        this.tokenError("unexpected token", this.peek());
         return this.statement();
     }
+
+
 
     parse(): Statement[] {
         var stmts: Statement[] = [];

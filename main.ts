@@ -234,6 +234,8 @@ export function setCurrentFuction(n: number) {
     currentFn = n;
 }
 
+export function getcurrFn(){ return currentFn; }
+
 export function resetCurrentFunction(body: Statement) {
     functions[currentFn].body = body;
     //console.log(functions[currentFn]);

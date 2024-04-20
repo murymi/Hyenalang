@@ -19,6 +19,9 @@
    .byte '
 '
    .byte 0
+.align 4
+c:
+   .4byte 90
 .bss
 .text
 .global main
