@@ -1,27 +1,5 @@
 .intel_syntax noprefix
 .data
-.align 1
-.L.data.0:
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
-   .byte ' '
-   .byte 'w'
-   .byte 'o'
-   .byte 'r'
-   .byte 'l'
-   .byte 'd'
-   .byte ' '
-   .byte '%'
-   .byte 'd'
-   .byte '
-'
-   .byte 0
-.align 4
-c:
-   .4byte 90
 .bss
 .text
 .global main
@@ -29,24 +7,15 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 8
-   lea rax, [rbp-4]
+   lea rax, [rbp-1]
 push rax
-   mov rax, 10
-push rax
-   mov rax, 8
+   mov rax, 248
+   not rax
    pop rdi
-   imul rax, rdi
-   pop rdi
-   mov [rdi], eax
-lea rax, .L.data.0
-push rax
-   lea rax, [rbp-4]
-   movsxd rax, dword ptr [rax]
-push rax
-pop rsi
-pop rdi
-   lea r15, printf
-   call buitin_glibc_caller
+   mov [rdi], al
+   lea rax, [rbp-1]
+   movsx rax, byte ptr [rax]
+   jmp .L.endfn.1
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp

@@ -218,6 +218,13 @@ export class Parser {
             return new Expression().newExprUnary(operator, right);
         }
 
+
+        if (this.match([tokenType.bitnot])) {
+            var operator = this.previous();
+            var right = this.unary();
+            return new Expression().newExprUnary(operator, right);
+        }
+
         if (this.match([tokenType.andsand])) {
             var left = this.unary();
             if (left.type === exprType.address) {
@@ -264,7 +271,7 @@ export class Parser {
         return expr;
     }
 
-    reletional(): Expression {
+    relational(): Expression {
         var expr = this.comparisson();
 
         while (this.match([tokenType.neq, tokenType.eq])) {
@@ -276,8 +283,58 @@ export class Parser {
         return expr;
     }
 
+    BitwiseAnd():Expression {
+        var expr = this.relational();
+        if(this.match([tokenType.bitand])) {
+            var operator = this.previous();
+            var right = this.relational();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+        return expr;
+    }
+
+    bitwiseXor():Expression {
+        var expr = this.BitwiseAnd();
+        if(this.match([tokenType.bitxor])) {
+            var operator = this.previous();
+            var right = this.BitwiseAnd();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+        return expr;
+    }
+
+    bitwiseOr():Expression {
+        var expr = this.bitwiseXor();
+        if(this.match([tokenType.bitor])) {
+            var operator = this.previous();
+            var right = this.bitwiseXor();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+        return expr;
+    }
+
+    logicalAnd():Expression {
+        var expr = this.bitwiseOr();
+        if(this.match([tokenType.and])) {
+            var operator = this.previous();
+            var right = this.bitwiseOr();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+        return expr;
+    }
+
+    logicalOr():Expression {
+        var expr = this.logicalAnd();
+        if(this.match([tokenType.or])) {
+            var operator = this.previous();
+            var right = this.logicalAnd();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+        return expr;
+    }
+
     assign(): Expression {
-        var expr = this.reletional();
+        var expr = this.logicalOr();
 
         var equals: Token;
         if (this.match([tokenType.equal])) {

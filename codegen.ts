@@ -95,6 +95,21 @@ function popf32(xmm: number) {
     console.log("add rsp, 8");
 }
 
+function genBitAnd() {
+    console.log("   and rax, rdi");
+}
+
+function genBitOr() {
+    console.log("   or rax, rdi");
+}
+
+function genBitXor() {
+    console.log("   xor rax, rdi");
+}
+
+function genBitNot() {
+    console.log("   not rax");
+}
 
 function genBinary(operator: tokenType, datatype: Type) {
 
@@ -131,14 +146,32 @@ function genBinary(operator: tokenType, datatype: Type) {
         case tokenType.neq:
             genNotEq();
             break;
+        case tokenType.bitnot:
+            genBitNot();
+            break;
+        case tokenType.bitand:
+            genBitAnd();
+            break;
+        case tokenType.bitxor:
+            genBitXor();
+            break;
+        case tokenType.bitor:
+            genBitOr();
+            break;
         default:
             throw new error("unhandled operator");
     }
 }
 
-function genUnary() {
-    //console.log("   pop rax");
-    genNegate();
+function genUnary(operator:Token) {
+    switch(operator.type) {
+        case tokenType.minus:
+            genNegate();
+            break;
+        case tokenType.bitnot:
+            genBitNot();
+            break;
+    }
 }
 
 function genNumber(expr: Expression) {
@@ -149,10 +182,6 @@ function genNumber(expr: Expression) {
         console.log("   mov rax, " + expr.val);
     }
 
-}
-
-function genString(name: string) {
-    console.log("   mov rax, " + name);
 }
 
 function load(datatype: Type) {
@@ -264,7 +293,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.unary:
             generateCode(expr.right as Expression);
-            genUnary();
+            genUnary(expr.operator as Token);
             break;
         case exprType.number:
             genNumber(expr);

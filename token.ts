@@ -78,6 +78,13 @@ export enum tokenType {
     enum,
 
     at,
+    and,
+    or,
+
+    bitxor,
+    bitand,
+    bitor,
+    bitnot,
 
     eof
 };
@@ -87,15 +94,15 @@ export class Token {
     value: string | number;
     line: number;
     col: number;
-    isfloat:boolean;
+    isfloat: boolean;
 
-    constructor(type: tokenType, value: string | number, line: number, col: number, isfloat?:boolean) {
+    constructor(type: tokenType, value: string | number, line: number, col: number, isfloat?: boolean) {
         this.type = type;
         this.value = value;
         this.col = col;
         this.line = line;
 
-        if(isfloat) {
+        if (isfloat) {
             this.isfloat = isfloat;
         }
     }
@@ -129,7 +136,7 @@ export class Lexer {
 
     peekNext() {
         if (!this.moreTokens()) return "eof";
-        return this.text[this.current+1];
+        return this.text[this.current + 1];
     }
 
     advance() {
@@ -165,7 +172,7 @@ export class Lexer {
         while (this.moreTokens()) {
             var pk = this.peek();
             if (!this.isNumber(pk)) {
-                if(pk !== "." && !this.isNumber(this.peekNext()))break;
+                if (pk !== "." && !this.isNumber(this.peekNext())) break;
                 isfloat = true;
             }
             this.advance();
@@ -175,7 +182,7 @@ export class Lexer {
     }
 
     getEscape() {
-        switch(this.peekNext()) {
+        switch (this.peekNext()) {
             case "n": return '\n';
             case "t": return '\t';
             case "r": return '\r';
@@ -192,8 +199,8 @@ export class Lexer {
         var start = this.current;
         var value = "";
         while (this.moreTokens() && this.peek() !== '"' && this.peek() !== "\n") {
-            if(this.peek() === "\\") {
-                value+= this.getEscape();
+            if (this.peek() === "\\") {
+                value += this.getEscape();
                 this.advance();
             } else {
                 value += this.peek();
@@ -244,6 +251,8 @@ export class Lexer {
         if (str === "f32") return new Token(tokenType.f32, str, this.line, this.col);
         if (str === "union") return new Token(tokenType.union, str, this.line, this.col);
         if (str === "enum") return new Token(tokenType.enum, str, this.line, this.col);
+        if (str === "and") return new Token(tokenType.and, str, this.line, this.col);
+        if (str === "or") return new Token(tokenType.or, str, this.line, this.col);
 
         return new Token(tokenType.identifier, str, this.line, this.col);
     }
@@ -303,6 +312,19 @@ export class Lexer {
                 this.advance();
             } else if (char === '<') {
                 this.tokens.push(new Token(tokenType.less, "<", this.line, this.col));
+                this.advance();
+            }
+            else if (char === '^') {
+                this.tokens.push(new Token(tokenType.bitor, "^", this.line, this.col));
+                this.advance();
+            } else if (char === '&') {
+                this.tokens.push(new Token(tokenType.bitand, "&", this.line, this.col));
+                this.advance();
+            } else if (char === '|') {
+                this.tokens.push(new Token(tokenType.bitor, "|", this.line, this.col));
+                this.advance();
+            } else if (char === '~') {
+                this.tokens.push(new Token(tokenType.bitnot, "~", this.line, this.col));
                 this.advance();
             } else if (char === ')') {
                 this.tokens.push(new Token(tokenType.rightparen, ")", this.line, this.col));
