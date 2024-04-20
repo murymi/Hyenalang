@@ -213,10 +213,7 @@ function store(datatype: Type) {
 }
 
 function genAddress(stmt: Statement | Expression) {
-    //console.log("======================", stmt.offset, stmt.datatype.size);
-
     console.log("   lea rax, [rbp-" + (stmt.datatype.size + stmt.offset) + "]");
-    //console.log("   push rax")
 }
 
 
@@ -232,7 +229,8 @@ function generateAddress(expr: Expression | Statement) {
             }
             break;
         case exprType.get:
-            genAddress(expr.left as Expression);
+            generateAddress(expr.left as Expression);
+            //console.log(expr.left);
             //generateAddress(expr.left as Expression);
             //console.log("pop rax");
             console.log("add rax, " + expr.offset);

@@ -1,31 +1,29 @@
 .intel_syntax noprefix
 .data
-.align 1
-.L.data.0:
-   .byte 'c'
-   .byte '	'
-   .byte 'o'
-   .byte 'w'
-   .byte '
-'
-   .byte 0
 .bss
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
-   lea rax, [rbp-8]
+   sub rsp, 2
+   lea rax, [rbp-2]
 push rax
-lea rax, .L.data.0
+add rsp, 8
+   lea rax, [rbp-2]
+add rax, 0
+add rax, 0
+add rax, 1
+push rax
+   mov rax, 2
    pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-8]
-   mov rax, [rax]
-push rax
-pop rdi
-   call puts
+   mov [rdi], al
+   lea rax, [rbp-2]
+add rax, 0
+add rax, 0
+add rax, 1
+   movsx rax, byte ptr [rax]
+   jmp .L.endfn.1
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp

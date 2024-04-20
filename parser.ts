@@ -2,8 +2,25 @@ import { Token } from "./token";
 import { tokenType } from "./token";
 import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
-import { Statement, stmtType } from "./stmt";
-import { Enum, Struct, addGlobal, addGlobalString, beginScope, endScope, fnType, getEnum, getFn, getLocalOffset, getOffsetOfMember, getStruct, incLocalOffset, pushEnum, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
+import { Statement } from "./stmt";
+import {
+    Struct,
+    addGlobal,
+    beginScope,
+    endScope,
+    fnType,
+    getEnum,
+    getFn,
+    getLocalOffset,
+    getOffsetOfMember,
+    getStruct,
+    incLocalOffset,
+    pushEnum,
+    pushFunction,
+    pushStruct,
+    resetCurrentFunction,
+    setCurrentFuction
+} from "./main";
 import { Type, bool, f32, i16, i32, i64, i8, myType, u16, u32, u64, u8, voidtype } from "./type";
 
 export class Parser {
@@ -83,11 +100,11 @@ export class Parser {
             return expr;
         }
 
-        if(this.match([tokenType.false])) {
+        if (this.match([tokenType.false])) {
             return new Expression().newExprBoolean(0);
         }
 
-        if(this.match([tokenType.true])) {
+        if (this.match([tokenType.true])) {
             return new Expression().newExprBoolean(1);
         }
 
@@ -142,12 +159,13 @@ export class Parser {
 
                 if (expr.datatype.kind === myType.struct) {
                     var meta = getOffsetOfMember(expr.datatype, propname.value as string);
-                    expr = new Expression().newExprGet(meta.offset, expr, meta.datatype)
+                    expr = new Expression().newExprGet(meta.offset, expr, meta.datatype);
+                    //console.log("=================");
                 } else if (expr.datatype.kind === myType.ptr) {
                     expr = new Expression().newExprDeref(expr);
-                } else if(expr.datatype.kind === myType.enum) {
-                    var val = expr.datatype.enumvalues.find((e)=> e.name === propname.value);
-                    if(val) {
+                } else if (expr.datatype.kind === myType.enum) {
+                    var val = expr.datatype.enumvalues.find((e) => e.name === propname.value);
+                    if (val) {
                         return new Expression().newExprNumber(val.value);
                     }
                     console.log(`enum ${expr.name} has no field named ${propname.value}`);
@@ -218,7 +236,7 @@ export class Parser {
     comparisson(): Expression {
         var expr = this.term();
 
-        while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte ])) {
+        while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte])) {
             var operator = this.previous();
             var right = this.term();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -227,10 +245,10 @@ export class Parser {
         return expr;
     }
 
-    reletional():Expression {
+    reletional(): Expression {
         var expr = this.comparisson();
 
-        while (this.match([tokenType.neq, tokenType.eq ])) {
+        while (this.match([tokenType.neq, tokenType.eq])) {
             var operator = this.previous();
             var right = this.term();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -384,14 +402,14 @@ export class Parser {
             case tokenType.identifier:
                 var struc = getStruct(tok.value as string);
                 if (struc) {
-                    if(struc.is_union) {
+                    if (struc.is_union) {
                         var un = new Type().newUnion(struc.members);
                         return un;
-                    } 
+                    }
                     return new Type().newStruct(struc.members);
                 }
                 var en = getEnum(tok.value as string);
-                if(en) {
+                if (en) {
                     return en;
                 }
                 break;
@@ -403,7 +421,7 @@ export class Parser {
         return i64;
     }
 
-    varDeclaration(isdata:boolean): Statement {
+    varDeclaration(isdata: boolean): Statement {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression | undefined;
         var type: Type | undefined = undefined;
@@ -488,19 +506,19 @@ export class Parser {
         return new Statement().newNativeFnStatement(name.value as string);
     }
 
-    structDeclaration(isunion:boolean): Statement {
+    structDeclaration(isunion: boolean): Statement {
         var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;
         this.expect(tokenType.leftbrace, "Expect struct body");
         var strucmembers: { name: string, datatype: Type }[] = [];
 
         while (!this.check(tokenType.rightbrace)) {
-            var member: { name: string, datatype: Type } = {name:"", datatype:u8 };
+            var member: { name: string, datatype: Type } = { name: "", datatype: u8 };
             member.name = this.expect(tokenType.identifier, "Expect member name").value as string;
             this.expect(tokenType.colon, "expect : after name");
             member.datatype = this.parseType();
 
             strucmembers.push(member);
-            if(this.check(tokenType.comma)) {
+            if (this.check(tokenType.comma)) {
                 this.advance();
             } else {
                 break;
@@ -513,31 +531,31 @@ export class Parser {
         return new Statement().newStructDeclStatement();
     }
 
-    enumDeclaration():Statement {
+    enumDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "expect enum name").value as string;
         //var currstruct = pushStruct(name, isunion);
         this.expect(tokenType.leftbrace, "Expect enum body");
-        var enumvalues: {name:string, value:number}[] = [];
-        
-        if(this.check(tokenType.rightbrace)) {
+        var enumvalues: { name: string, value: number }[] = [];
+
+        if (this.check(tokenType.rightbrace)) {
             this.advance();
             //console.log("=======================");
             return new Statement();
         }
 
         var currval = 0;
-        while(!this.check(tokenType.leftbrace)) {
+        while (!this.check(tokenType.leftbrace)) {
             var tok = this.expect(tokenType.identifier, "expect enum field");
-            
-            if(this.match([tokenType.equal])) {
+
+            if (this.match([tokenType.equal])) {
                 var custom = this.expect(tokenType.number, "expect field value");
-                enumvalues.push({name: tok.value as string, value: custom.value as number});
+                enumvalues.push({ name: tok.value as string, value: custom.value as number });
                 currval = custom.value as number + 1;
             } else {
-                enumvalues.push({name: tok.value as string, value: currval });
+                enumvalues.push({ name: tok.value as string, value: currval });
                 currval++;
             }
-            if(!this.check(tokenType.comma)) {
+            if (!this.check(tokenType.comma)) {
                 break;
             }
             this.advance();
@@ -567,7 +585,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.enum])) {
-            
+
             return this.enumDeclaration();
         }
 

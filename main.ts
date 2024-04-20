@@ -261,13 +261,25 @@ var prog = `
 
 extern fn puts(m:*u8) void;
 
-struct cow {
+struct pig {
     age:u8,
-    color:u32
+    du:u8
+}
+
+struct goat {
+    p:pig
+}
+
+struct cow {
+    g:goat
 }
 
 fn main() void {
     var c:cow;
+
+    c.g.p.du = 2;
+
+    return c.g.p.du;
 }
 
 `
