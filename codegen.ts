@@ -16,6 +16,11 @@ var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
 var byteArgRegisters = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
 
+var l = 1;
+function incLabel() {
+    return l++;
+}
+
 function genDivide() {
     console.log("   cqo");
     console.log("   idiv rdi");
@@ -363,7 +368,7 @@ function genAlignedCall() {
 }
 
 
-function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
+function genStmt(stmt: Statement, fnid: number): void {
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
@@ -384,28 +389,30 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             }
             break;
         case stmtType.block:
-            stmt.stmts.forEach((s, i) => { genStmt(s, i + labeloffset + 1, fnid); })
+            stmt.stmts.forEach((s, i) => { genStmt(s, fnid); })
             break
         case stmtType.ifStmt:
+            var labeloffset = incLabel();
             generateCode(stmt.cond);
             console.log("   cmp rax, 0");
             console.log("   je .L.else." + labeloffset);
-            genStmt(stmt.then, labeloffset + 1, fnid);
+            genStmt(stmt.then, fnid);
             console.log("   jmp .L.end." + labeloffset);
             console.log(".L.else." + labeloffset + ":");
             if (stmt.else_) {
-                genStmt(stmt.else_, labeloffset + 1, fnid);
+                genStmt(stmt.else_, fnid);
             }
             console.log(".L.end." + labeloffset + ":");
             break;
         case stmtType.whileStmt:
+            var labeloffset = incLabel();
             latestBreakLabel = ".L.break." + labeloffset;
             latestContinueLabel = ".L.continue." + labeloffset;
             console.log(".L.continue." + labeloffset + ":");
             generateCode(stmt.cond);
             console.log("   cmp rax, 0");
             console.log("   je .L.break." + labeloffset);
-            genStmt(stmt.then, labeloffset + 1, fnid);
+            genStmt(stmt.then, fnid);
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
             break;
@@ -445,7 +452,8 @@ function genGlobalStrings(globs: { value: string }[]): number {
 
 function genText(fns: Function[]) {
     console.log(".text");
-    fns.forEach((fn, i) => {
+    var i = incLabel();
+    fns.forEach((fn) => {
         if (fn.type === fnType.native) {
             console.log(".global " + fn.name);
             console.log(fn.name + ":");
@@ -455,7 +463,7 @@ function genText(fns: Function[]) {
 
             //genArgs(fn.params);
 
-            genStmt(fn.body, 0, i);
+            genStmt(fn.body, 0);
             console.log("   xor rax, rax");
             console.log(`.L.endfn.${i}:`);
             console.log("   mov rsp, rbp");
@@ -466,7 +474,7 @@ function genText(fns: Function[]) {
     })
 }
 
-function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type }[], labeloffset: number) {
+function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type }[]) {
     globals.forEach((g) => {
         if (g.value) {
 
@@ -504,7 +512,7 @@ export function genStart(
     fns: Function[]
 ) {
     var offset = genGlobalStrings(globstrings);
-    genGlobals(globals, offset);
+    genGlobals(globals);
     genText(fns);
     genAlignedCall();
 }
