@@ -5,7 +5,7 @@ import { Statement, stmtType } from "./stmt";
 import { fnType } from "./main";
 import { Function } from "./main";
 import { error } from "console";
-import { Type, f32, myType } from "./type";
+import { Type, alignTo, f32, myType } from "./type";
 
 
 var latestContinueLabel = "";
@@ -422,7 +422,7 @@ function genText(fns: Function[]) {
             console.log(fn.name + ":");
             console.log("   push rbp");
             console.log("   mov rbp, rsp");
-            console.log("   sub rsp, " + (fn.localOffset));
+            console.log("   sub rsp, " + alignTo(8, fn.localOffset));
 
             //genArgs(fn.params);
 

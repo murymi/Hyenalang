@@ -77,6 +77,8 @@ export enum tokenType {
     union,
     enum,
 
+    at,
+
     eof
 };
 
@@ -172,14 +174,33 @@ export class Lexer {
         this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col, isfloat));
     }
 
+    getEscape() {
+        switch(this.peekNext()) {
+            case "n": return '\n';
+            case "t": return '\t';
+            case "r": return '\r';
+            case "0": return '\0';
+            case "b": return '\b';
+        }
+
+        console.log(`unsupported escape sequence \\${this.peekNext()}`);
+        process.exit(1);
+    }
+
     readString(): Token {
         this.advance();
         var start = this.current;
-        while (this.moreTokens() && this.peek() !== '"') {
+        var value = "";
+        while (this.moreTokens() && this.peek() !== '"' && this.peek() !== "\n") {
+            if(this.peek() === "\\") {
+                value+= this.getEscape();
+                this.advance();
+            } else {
+                value += this.peek();
+            }
             this.advance();
         }
         this.expect('"');
-        var value = this.text.substring(start, this.current - 1);
         return new Token(tokenType.string, value, this.line, this.col, true);
     }
 
@@ -235,7 +256,7 @@ export class Lexer {
 
 
     lex(): Token[] {
-        this.line = 0;
+        this.line = 1;
         this.col = 1;
 
         while (true) {
@@ -261,6 +282,9 @@ export class Lexer {
                 this.advance();
             } else if (char === "*") {
                 this.tokens.push(new Token(tokenType.multiply, "*", this.line, this.col));
+                this.advance();
+            } else if (char === "@") {
+                this.tokens.push(new Token(tokenType.at, "@", this.line, this.col));
                 this.advance();
             } else if (char === ",") {
                 this.tokens.push(new Token(tokenType.comma, ",", this.line, this.col));

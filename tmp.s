@@ -2,22 +2,22 @@
 .data
 .align 1
 .L.data.0:
-   .byte 'H'
+   .byte 'h'
    .byte 'e'
    .byte 'l'
    .byte 'l'
    .byte 'o'
    .byte ' '
-   .byte 'H'
-   .byte 'y'
-   .byte 'e'
-   .byte 'n'
-   .byte 'a'
-   .byte ' '
-   .byte 'u'
-   .byte 's'
-   .byte 'e'
+   .byte 'w'
+   .byte 'o'
    .byte 'r'
+   .byte 'l'
+   .byte 'd'
+   .byte ' '
+   .byte '%'
+   .byte 'd'
+   .byte '
+'
    .byte 0
 .bss
 .text
@@ -25,11 +25,24 @@
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
+   sub rsp, 8
+   lea rax, [rbp-4]
+push rax
+   mov rax, 10
+push rax
+   mov rax, 8
+   pop rdi
+   imul rax, rdi
+   pop rdi
+   mov [rdi], eax
 lea rax, .L.data.0
 push rax
+   lea rax, [rbp-4]
+   movsxd rax, dword ptr [rax]
+push rax
+pop rsi
 pop rdi
-   lea r15, puts
+   lea r15, printf
    call buitin_glibc_caller
    xor rax, rax
 .L.endfn.1:

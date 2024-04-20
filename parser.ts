@@ -119,6 +119,24 @@ export class Parser {
 
         }
 
+        if(this.match([tokenType.at])) {
+            var what = this.expect(tokenType.identifier, "expect option");
+            
+            switch(what.value) {
+                case "sizeof":
+                case "alignof":
+                    this.expect(tokenType.leftparen, "expect ( ");
+                    var size = 0;
+                    if(this.check(tokenType.identifier) || this.check(tokenType.number)) {
+                        size = what.value === "sizeof"? this.expression().datatype.size : this.expression().datatype.align;
+                    } else {
+                        size = size = what.value === "sizeof"? this.parseType().size : this.parseType().align
+                    }
+                    this.expect(tokenType.rightparen, "expect ) ");
+                    return new Expression().newExprNumber(size, false);   
+            }
+        }
+
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
 
