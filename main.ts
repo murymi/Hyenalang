@@ -15,7 +15,7 @@ export enum fnType {
 //var localSize = 0;
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
-var globalstrings: { name: string, value: string, type: any }[] = [];
+var globalstrings: { value: string }[] = [];
 var globals: { name: string, value: Expression|undefined, datatype:Type }[] = [];
 
 
@@ -146,8 +146,8 @@ export function incLocalOffset(name: string, type: Type): number {
     return old;
 }
 
-export function addGlobalString(name: string, value: string, type: any): number {
-    globalstrings.push({ name: name, value: value, type: type });
+export function addGlobalString( value: string): number {
+    globalstrings.push({ value: value });
     return globalstrings.length - 1;
 }
 
@@ -283,12 +283,9 @@ function compile(text: string) {
 }
 
 var prog = `
-enum day {
-    a = 30, b, c, d
-}
 
+var y = "hello world";
 fn main() void {
-    var a:day = day.f;
 }
 
 `

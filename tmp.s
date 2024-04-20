@@ -1,22 +1,5 @@
 .intel_syntax noprefix
 .data
-.align 1
-.L.data.0:
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
-   .byte ' '
-   .byte 'w'
-   .byte 'o'
-   .byte 'r'
-   .byte 'l'
-   .byte 'd'
-   .byte 0
-.align 8
-message:
-.quad .L.data.0
 .bss
 .align 4
 .fuckfloatfool: .zero 4
@@ -25,15 +8,30 @@ message:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
-push offset message
-pop rax
-   mov rax, [rax]
+   sub rsp, 160
+   lea rax, [rbp-160]
 push rax
-pop rdi
-   call puts
+add rsp, 8
+   mov rax, 10
+push rax
+   lea rax, [rbp-160]
+add rax, 0
+   pop rdi
+   add rax, rdi
+push rax
+   mov rax, 30
+   pop rdi
+   mov [rdi], eax
+   mov rax, 10
+push rax
+   lea rax, [rbp-160]
+add rax, 0
+   pop rdi
+   add rax, rdi
+   movsxd rax, dword ptr [rax]
+   jmp .L.endfn.0
    xor rax, rax
-.L.endfn.1:
+.L.endfn.0:
    mov rsp, rbp
    pop rbp
    ret

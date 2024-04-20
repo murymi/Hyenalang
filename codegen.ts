@@ -423,7 +423,7 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
 
 }
 
-function genGlobalStrings(globs: { name: string, value: string }[]):number {
+function genGlobalStrings(globs: { value: string }[]):number {
     console.log(".intel_syntax noprefix");
     console.log(".data");
     var loffset = 0;
@@ -499,7 +499,7 @@ function genGlobals(globals: { name: string, value: Expression|undefined , datat
 }
 
 export function genStart(
-    globstrings: { name: string, value: string }[],
+    globstrings: { value: string }[],
     globals: { name: string, value: Expression | undefined, datatype:Type }[],
     fns: Function[]
 ) {

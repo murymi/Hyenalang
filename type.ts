@@ -106,7 +106,6 @@ export class Type {
         });
 
         this.size = alignTo(this.align, offt);
-        //console.log(offt);
         return this;
     }
 

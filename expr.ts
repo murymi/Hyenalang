@@ -1,4 +1,4 @@
-import { fnType } from "./main";
+import { addGlobalString, fnType } from "./main";
 import { Token } from "./token";
 import { Type, f32, i32, i64, u8 } from "./type";
 
@@ -180,6 +180,8 @@ export class Expression {
         this.type = exprType.string;
         this.bytes = val;
         this.datatype = new Type().newPointer(u8);
+        this.label = addGlobalString(val);
+        this.labelinitialize = true;
         return this;
     }
 

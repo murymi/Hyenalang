@@ -403,36 +403,20 @@ export class Parser {
         return i64;
     }
 
-    varDeclaration(): Statement {
+    varDeclaration(isdata:boolean): Statement {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression | undefined;
         var type: Type | undefined = undefined;
 
         if (this.match([tokenType.equal])) {
-            //console.log("========================");
             initializer = this.expression();
-            if (initializer.type === exprType.string) {
-                initializer.label = addGlobalString(name.value as string, initializer.bytes as string, initializer.datatype);
-                // initializer.name = "cow";
-                //name.value as string;
-                initializer.labelinitialize = true;
-            }
-
             type = initializer.datatype;
-            //type.type = myType.i64;
         } else if (this.match([tokenType.colon])) {
             type = this.parseType()
         }
 
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
-
-            if (initializer.type === exprType.string) {
-                initializer.label = addGlobalString(name.value as string, initializer.bytes as string, initializer.datatype);
-                //initializer.name = "cow";
-                //name.value as string;
-                initializer.labelinitialize = true;
-            }
         }
 
         if (type === undefined) {
@@ -512,7 +496,7 @@ export class Parser {
         setCurrentStruct(currstruct);
         while (!this.check(tokenType.rightbrace)) {
             var tok = this.peek();
-            var member = this.varDeclaration();
+            var member = this.varDeclaration(true);
             if (member.type !== stmtType.vardeclstmt) {
                 this.tokenError("Expect var declararion", tok);
             }
@@ -564,7 +548,7 @@ export class Parser {
 
     declaration(): Statement {
         if (this.match([tokenType.var])) {
-            return this.varDeclaration();
+            return this.varDeclaration(false);
         }
 
         if (this.match([tokenType.extern])) {
