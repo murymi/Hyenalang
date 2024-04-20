@@ -73,10 +73,10 @@ export class Struct {
     members: { name: string, datatype: Type }[];
     is_union:boolean;
 
-    constructor(name: string, isunion:boolean) {
+    constructor(name: string, isunion:boolean, members: { name: string, datatype: Type }[]) {
         this.name = name;
         this.size = 0;
-        this.members = [];
+        this.members = members;
         this.is_union= isunion;
     }
 }
@@ -213,23 +213,11 @@ export function pushFunction(name: string, params: { name: string, datatype: Typ
     return functions.length - 1;
 }
 
-export function pushStruct(name: string, isunion:boolean) {
-    structs.push(new Struct(name, isunion));
-    return structs.length - 1;
+export function pushStruct(struc:Struct) {
+    structs.push(struc);
 }
 
 var currentFn: number = -1;
-var currentStruct: number = -1;
-var ins_struct = false;
-
-export function setCurrentStruct(n: number) {
-    ins_struct = true;
-    currentStruct = n;
-}
-
-export function inStruct() {
-    return ins_struct;
-}
 
 export function getStruct(name: string) {
     for (let s of structs){
@@ -238,19 +226,6 @@ export function getStruct(name: string) {
         }
     }
     return null;
-}
-
-export function resetCurrentStruct(members: Statement[]) {
-    members.forEach((m) => {
-        structs[currentStruct].members.push({ name: m.name, datatype: m.initializer?.datatype as Type/*default:m.expr*/ })
-        //structs[currentStruct].size += m.initializer;
-    });
-
-    //console.log(structs[currentStruct]);
-
-
-    ins_struct = false;
-    currentStruct = -1;
 }
 
 export function setCurrentFuction(n: number) {
@@ -286,10 +261,13 @@ var prog = `
 
 extern fn puts(m:*u8) void;
 
+struct cow {
+    age:u8,
+    color:u32
+}
 
 fn main() void {
-    var x = "c\tow\n";
-    puts(x);
+    var c:cow;
 }
 
 `

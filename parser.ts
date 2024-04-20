@@ -3,8 +3,8 @@ import { tokenType } from "./token";
 import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { Enum, addGlobal, addGlobalString, beginScope, endScope, fnType, getEnum, getFn, getLocalOffset, getOffsetOfMember, getStruct, incLocalOffset, pushEnum, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
-import { Type, bool, f32, i16, i32, i64, i8, myType, u8, voidtype } from "./type";
+import { Enum, Struct, addGlobal, addGlobalString, beginScope, endScope, fnType, getEnum, getFn, getLocalOffset, getOffsetOfMember, getStruct, incLocalOffset, pushEnum, pushFunction, pushStruct, resetCurrentFunction, resetCurrentStruct, setCurrentFuction, setCurrentStruct } from "./main";
+import { Type, bool, f32, i16, i32, i64, i8, myType, u16, u32, u64, u8, voidtype } from "./type";
 
 export class Parser {
     tokens: Token[];
@@ -348,13 +348,9 @@ export class Parser {
         if (this.match([tokenType.leftsquare])) {
             is_array = true;
             var len = this.expect(tokenType.number, "Expect size of array");
-            //console.log(len);
             this.expect(tokenType.rightsquare, "] expected");
-
             return new Type().newArray(this.parseType(), len.value as number);
         }
-
-        //console.log("============================");
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
             is_ptr = true;
@@ -375,6 +371,12 @@ export class Parser {
                 return i64;
             case tokenType.u8:
                 return u8;
+            case tokenType.u16:
+                return u16;
+            case tokenType.u32:
+                return u32;
+            case tokenType.u64:
+                return u64;
             case tokenType.bool:
                 return bool;
             case tokenType.f32:
@@ -384,7 +386,6 @@ export class Parser {
                 if (struc) {
                     if(struc.is_union) {
                         var un = new Type().newUnion(struc.members);
-                        //console.log(un);
                         return un;
                     } 
                     return new Type().newStruct(struc.members);
@@ -395,7 +396,6 @@ export class Parser {
                 }
                 break;
             default:
-                //throw new Error("unhandled case");
                 break;
         }
 
@@ -490,23 +490,26 @@ export class Parser {
 
     structDeclaration(isunion:boolean): Statement {
         var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;
-        var currstruct = pushStruct(name, isunion);
         this.expect(tokenType.leftbrace, "Expect struct body");
-        var strucmembers: Statement[] = [];
-        setCurrentStruct(currstruct);
+        var strucmembers: { name: string, datatype: Type }[] = [];
+
         while (!this.check(tokenType.rightbrace)) {
-            var tok = this.peek();
-            var member = this.varDeclaration(true);
-            if (member.type !== stmtType.vardeclstmt) {
-                this.tokenError("Expect var declararion", tok);
-            }
+            var member: { name: string, datatype: Type } = {name:"", datatype:u8 };
+            member.name = this.expect(tokenType.identifier, "Expect member name").value as string;
+            this.expect(tokenType.colon, "expect : after name");
+            member.datatype = this.parseType();
 
             strucmembers.push(member);
+            if(this.check(tokenType.comma)) {
+                this.advance();
+            } else {
+                break;
+            }
+
         }
 
-
         this.expect(tokenType.rightbrace, "Expect } after struct body");
-        resetCurrentStruct(strucmembers);
+        pushStruct(new Struct(name, isunion, strucmembers));
         return new Statement().newStructDeclStatement();
     }
 
