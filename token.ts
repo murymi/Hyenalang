@@ -175,7 +175,7 @@ export class Lexer {
     readString(): Token {
         this.advance();
         var start = this.current;
-        while (this.moreTokens() && this.peek() !== '"' && this.peek() !== '\n') {
+        while (this.moreTokens() && this.peek() !== '"') {
             this.advance();
         }
         this.expect('"');

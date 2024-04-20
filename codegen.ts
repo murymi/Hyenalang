@@ -325,7 +325,8 @@ function generateCode(expr: Expression) {
             //store(expr.callee.datatype);
             break;
         case exprType.string:
-            genString(expr.name);
+            //genString(expr.name);
+            console.log(`lea rax, .L.data.${expr.label}`);
             break;
         default:
             throw new Error("Unexpected expression");
@@ -366,7 +367,8 @@ function genStmt(stmt: Statement, labeloffset: number, fnid: number): void {
             //genLvalue(stmt);
             //store(stmt.datatype);
             if (stmt.expr.type === exprType.string) {
-                console.log(`   push .L.data.${stmt.expr.label}`);
+                console.log(`lea rax, .L.data.${stmt.expr.label}`)
+                //console.log("=============");
                 store(stmt.expr.datatype);
             } else {
                 if (stmt.expr.datatype.kind !== myType.struct && stmt.expr.datatype.kind !== myType.array) {
@@ -484,9 +486,6 @@ function genGlobals(globals: { name: string, value: Expression|undefined , datat
     });
 
     console.log(".bss");
-
-    console.log(".align 4");
-    console.log(".fuckfloatfool: .zero 4");
 
     globals.forEach((g)=>{
         if(g.value === undefined) {

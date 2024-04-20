@@ -1,37 +1,33 @@
 .intel_syntax noprefix
 .data
+.align 1
+.L.data.0:
+   .byte 'c'
+   .byte '	'
+   .byte 'o'
+   .byte 'w'
+   .byte '
+'
+   .byte 0
 .bss
-.align 4
-.fuckfloatfool: .zero 4
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 160
-   lea rax, [rbp-160]
+   sub rsp, 8
+   lea rax, [rbp-8]
 push rax
-add rsp, 8
-   mov rax, 10
-push rax
-   lea rax, [rbp-160]
-add rax, 0
+lea rax, .L.data.0
    pop rdi
-   add rax, rdi
+   mov [rdi], rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
 push rax
-   mov rax, 30
-   pop rdi
-   mov [rdi], eax
-   mov rax, 10
-push rax
-   lea rax, [rbp-160]
-add rax, 0
-   pop rdi
-   add rax, rdi
-   movsxd rax, dword ptr [rax]
-   jmp .L.endfn.0
+pop rdi
+   call puts
    xor rax, rax
-.L.endfn.0:
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret

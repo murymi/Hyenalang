@@ -284,8 +284,12 @@ function compile(text: string) {
 
 var prog = `
 
-var y = "hello world";
+extern fn puts(m:*u8) void;
+
+
 fn main() void {
+    var x = "c\tow\n";
+    puts(x);
 }
 
 `
