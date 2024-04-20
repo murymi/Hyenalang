@@ -4,6 +4,8 @@ import { genStart } from "./codegen";
 import { Statement } from "./stmt";
 import { Expression } from "./expr";
 import { Type, alignTo, enm, i32, i64 } from "./type";
+import { WriteStream, createWriteStream, openSync, readFile, unlink } from "fs";
+import { ChildProcess, spawn } from "child_process";
 
 export enum fnType {
     extern,
@@ -246,42 +248,38 @@ export function endScope() {
     scopeDepth--;
 }
 
-function compile(text: string) {
-    var lexer = new Lexer(text);
+function compile(path: string) {
+    readFile(path,{ encoding: "utf-8" }, (err, data)=> {
+        if(err) {
+            console.log("failed to open file");
+            process.exit(1);
+        }
+        
+        var lexer = new Lexer(data);
 
-    var tokens = lexer.lex();
-    //console.log(tokens);
-    var parser = new Parser(tokens);
-    var stmts = parser.parse();
-    //console.log(stmts);
-    genStart(globalstrings,globals, functions);
+        var tokens = lexer.lex();
+        var parser = new Parser(tokens);
+        var stmts = parser.parse();
+        var bitstream = createWriteStream("./tmp.s");
+        var orig = console.log;        
+        console.log = (data)=> {
+            bitstream.write(`${data}\n`);
+        }
+        genStart(globalstrings,globals, functions);
+        bitstream.end();
+        console.log = orig;
+        spawn("make", ["bin"]);
+    })
+
 }
 
-var prog = `
-
-extern fn puts(m:*u8) void;
-
-struct pig {
-    age:u8,
-    du:u8
+if(process.argv.length < 3) {
+    console.error("Usage: make FILE=<file name>");
+} else {
+    if(process.argv[2] === "") {
+        console.error("Usage: make FILE=<file name>");
+        process.exit();
+    }
+    compile(process.argv[2]);
 }
-
-struct goat {
-    p:pig
-}
-
-struct cow {
-    g:goat
-}
-
-fn main() void {
-    var c:cow;
-
-    c.g.p.du = 2;
-
-    return c.g.p.du;
-}
-
-`
-compile(prog);
 

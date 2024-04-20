@@ -285,26 +285,22 @@ function generateCode(expr: Expression) {
             }
             break;
         case exprType.call:
-            //generateCode(expr.callee);
-            switch (expr.fntype) {
-                case fnType.extern:
-                case fnType.native:
-                    expr.params.forEach((p) => {
-                        generateCode(p);
-                        push();
-                    });
+            expr.params.forEach((p) => {
+                generateCode(p);
+                push();
+            });
 
-                    for (let i = expr.params.length - 1; i >= 0; i--) {
-                        //console.log("pop " + argRegisters[i]);
-                        pop(argRegisters[i]);
-                    }
-                    //console.log("   pop rax");
-                    console.log("   call " + expr.callee.name);
-                    break;
-                default: break;
+            for (let i = expr.params.length - 1; i >= 0; i--) {
+                //console.log("pop " + argRegisters[i]);
+                pop(argRegisters[i]);
             }
-            //console.log("push rax");
-            //store(expr.callee.datatype);
+
+            if (expr.fntype === fnType.extern) {
+                console.log("   lea r15, " + expr.callee.name);
+                console.log("   call buitin_glibc_caller");
+            } else {
+                console.log("   call " + expr.callee.name);
+            }
             break;
         case exprType.string:
             //genString(expr.name);
@@ -484,6 +480,6 @@ export function genStart(
     var offset = genGlobalStrings(globstrings);
     genGlobals(globals, offset);
     genText(fns);
-    //genAlignedCall();
+    genAlignedCall();
 }
 
