@@ -120,21 +120,21 @@ export class Parser {
 
         }
 
-        if(this.match([tokenType.at])) {
+        if (this.match([tokenType.at])) {
             var what = this.expect(tokenType.identifier, "expect option");
-            
-            switch(what.value) {
+
+            switch (what.value) {
                 case "sizeof":
                 case "alignof":
                     this.expect(tokenType.leftparen, "expect ( ");
                     var size = 0;
-                    if(this.check(tokenType.identifier) || this.check(tokenType.number)) {
-                        size = what.value === "sizeof"? this.expression().datatype.size : this.expression().datatype.align;
+                    if (this.check(tokenType.identifier) || this.check(tokenType.number)) {
+                        size = what.value === "sizeof" ? this.expression().datatype.size : this.expression().datatype.align;
                     } else {
-                        size = size = what.value === "sizeof"? this.parseType().size : this.parseType().align
+                        size = size = what.value === "sizeof" ? this.parseType().size : this.parseType().align
                     }
                     this.expect(tokenType.rightparen, "expect ) ");
-                    return new Expression().newExprNumber(size, false);   
+                    return new Expression().newExprNumber(size, false);
             }
         }
 
@@ -176,7 +176,7 @@ export class Parser {
                     this.tokenError("expect property name after dot", this.peek());
                 }
 
-                if (expr.datatype.kind === myType.struct) {
+                if (expr.datatype.kind === myType.struct || expr.datatype.kind === myType.slice) {
                     var meta = getOffsetOfMember(expr.datatype, propname.value as string);
                     expr = new Expression().newExprGet(meta.offset, expr, meta.datatype);
                     //console.log("=================");
@@ -198,9 +198,16 @@ export class Parser {
                     var index = this.expression();
                     this.expect(tokenType.rightsquare, "Expect ]");
                     expr = new Expression().newExprDeref(
-                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), expr, index)
+                        new Expression().newExprBinary(
+                            new Token(tokenType.plus, "+", 0, 0), expr,
+                            new Expression().newExprBinary(
+                                new Token(tokenType.multiply, "*", 0, 0),
+                                new Expression().newExprNumber(expr.datatype.size),
+                                index
+                            )
+                        )
                     )
-                } else if(expr.datatype.kind === myType.slice) {
+                } else if (expr.datatype.kind === myType.slice) {
                     var index = this.expression();
                     this.expect(tokenType.rightsquare, "Expect ]");
 
@@ -210,7 +217,12 @@ export class Parser {
 
                     ///expr = new Expression().newExprGet(0, expr,)
                     expr = new Expression().newExprDeref(
-                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex, index)
+                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex, 
+                        new Expression().newExprBinary(
+                            new Token(tokenType.multiply, "*", 0, 0),
+                            new Expression().newExprNumber(expr.datatype.size),
+                            index
+                        ))
                     )
                     //console.error("=====================");
                 } else {
@@ -296,9 +308,9 @@ export class Parser {
         return expr;
     }
 
-    BitwiseAnd():Expression {
+    BitwiseAnd(): Expression {
         var expr = this.relational();
-        if(this.match([tokenType.bitand])) {
+        if (this.match([tokenType.bitand])) {
             var operator = this.previous();
             var right = this.relational();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -306,9 +318,9 @@ export class Parser {
         return expr;
     }
 
-    bitwiseXor():Expression {
+    bitwiseXor(): Expression {
         var expr = this.BitwiseAnd();
-        if(this.match([tokenType.bitxor])) {
+        if (this.match([tokenType.bitxor])) {
             var operator = this.previous();
             var right = this.BitwiseAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -316,9 +328,9 @@ export class Parser {
         return expr;
     }
 
-    bitwiseOr():Expression {
+    bitwiseOr(): Expression {
         var expr = this.bitwiseXor();
-        if(this.match([tokenType.bitor])) {
+        if (this.match([tokenType.bitor])) {
             var operator = this.previous();
             var right = this.bitwiseXor();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -326,9 +338,9 @@ export class Parser {
         return expr;
     }
 
-    logicalAnd():Expression {
+    logicalAnd(): Expression {
         var expr = this.bitwiseOr();
-        if(this.match([tokenType.and])) {
+        if (this.match([tokenType.and])) {
             var operator = this.previous();
             var right = this.bitwiseOr();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -336,9 +348,9 @@ export class Parser {
         return expr;
     }
 
-    logicalOr():Expression {
+    logicalOr(): Expression {
         var expr = this.logicalAnd();
-        if(this.match([tokenType.or])) {
+        if (this.match([tokenType.or])) {
             var operator = this.previous();
             var right = this.logicalAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -456,8 +468,8 @@ export class Parser {
             var ptr = new Type().newArray(this.parseType(), len.value as number);
             ///var def = 0
             var holder = new Type().newStruct([
-                {name:"ptr", datatype:ptr, default:undefined},
-                {name:"len", datatype:u64, default: new Expression().newExprNumber(len.value as number, false)}
+                { name: "ptr", datatype: ptr, default: undefined },
+                { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) }
             ])
             holder.kind = myType.slice;
             return holder;
@@ -601,10 +613,10 @@ export class Parser {
     structDeclaration(isunion: boolean): Statement {
         var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;
         this.expect(tokenType.leftbrace, "Expect struct body");
-        var strucmembers: { name: string, datatype: Type, default:Expression|undefined }[] = [];
+        var strucmembers: { name: string, datatype: Type, default: Expression | undefined }[] = [];
 
         while (!this.check(tokenType.rightbrace)) {
-            var member: { name: string, datatype: Type, default:Expression|undefined } = { name: "", datatype: u8 , default:undefined};
+            var member: { name: string, datatype: Type, default: Expression | undefined } = { name: "", datatype: u8, default: undefined };
             member.name = this.expect(tokenType.identifier, "Expect member name").value as string;
             this.expect(tokenType.colon, "expect : after name");
             member.datatype = this.parseType();
@@ -681,7 +693,7 @@ export class Parser {
             return this.enumDeclaration();
         }
 
-        if(getcurrFn() >= 0) {
+        if (getcurrFn() >= 0) {
             return this.statement();
         }
 

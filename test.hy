@@ -1,7 +1,18 @@
-extern fn printf(str:*u8) void;
+extern fn printf(str:*u8, num:u64, num:u64) void;
 
 fn main() void {
-    var a:[20]u8;
-    a[0] = 70;
-    return a[0];
+    var numbers:[10]u64;
+    var i = 0;
+
+    while(i < numbers.len) {
+        numbers[i] = i;
+        i = i + 1;
+    }
+
+    i = 0;
+
+    while(i < numbers.len) {
+        printf("[%d] %d\n", i, numbers[i]);
+        i = i + 1;
+    }
 }

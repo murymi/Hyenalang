@@ -11,4 +11,4 @@ main:
 	$(V_AT)node main.js $(FILE)
 
 bin:
-	$(V_AT)gcc -static -o tmp tmp.s
+	$(V_AT)gcc -g -static -o tmp tmp.s

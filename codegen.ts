@@ -358,8 +358,9 @@ function generateCode(expr: Expression) {
             });
 
             for (let i = expr.params.length - 1; i >= 0; i--) {
-                //console.log("pop " + argRegisters[i]);
                 pop(argRegisters[i]);
+                //console.log(`movsx  ${argRegisters[i]}, ${dwordArgRegisters[i]}`);
+                
             }
 
             if (expr.fntype === fnType.extern) {
