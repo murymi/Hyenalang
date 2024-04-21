@@ -72,10 +72,10 @@ export class Function {
 export class Struct {
     name: string;
     size: number;
-    members: { name: string, datatype: Type }[];
+    members: { name: string, datatype: Type, default:Expression|undefined }[];
     is_union:boolean;
 
-    constructor(name: string, isunion:boolean, members: { name: string, datatype: Type }[]) {
+    constructor(name: string, isunion:boolean, members: { name: string, datatype: Type, default:Expression|undefined }[]) {
         this.name = name;
         this.size = 0;
         this.members = members;

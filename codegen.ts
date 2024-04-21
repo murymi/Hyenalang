@@ -83,21 +83,21 @@ function genNegate() {
 }
 
 function push() {
-    console.log("push rax");
+    console.log("   push rax");
 }
 
 function pop(reg: string) {
-    console.log(`pop ${reg}`);
+    console.log(`   pop ${reg}`);
 }
 
 function pushf32() {
-    console.log("sub rsp, 8");
-    console.log("movss [rsp], xmm0");
+    console.log("   sub rsp, 8");
+    console.log("   movss [rsp], xmm0");
 }
 
 function popf32(xmm: number) {
-    console.log(`movss xmm${xmm}, [rsp]`);
-    console.log("add rsp, 8");
+    console.log(`   movss xmm${xmm}, [rsp]`);
+    console.log("   add rsp, 8");
 }
 
 function genBitAnd() {
@@ -229,7 +229,7 @@ function load(datatype: Type) {
         console.log("   movsx rax, word ptr [rax]");
     } else if (datatype.size === 4) {
         if (datatype === f32) {
-            console.log("movss xmm0, dword ptr [rax]");
+            console.log("   movss xmm0, dword ptr [rax]");
         } else {
             console.log("   movsxd rax, dword ptr [rax]");
         }
@@ -254,7 +254,7 @@ function store(datatype: Type) {
         console.log("   mov [rdi], ax");
     } else if (datatype.size === 4) {
         if (datatype === f32) {
-            console.log("movss [rdi], xmm0");
+            console.log("   movss [rdi], xmm0");
         } else {
             console.log("   mov [rdi], eax");
         }
@@ -277,7 +277,7 @@ function generateAddress(expr: Expression | Statement) {
     switch (expr.type) {
         case exprType.identifier:
             if (expr.is_glob) {
-                console.log("push offset " + expr.name);
+                console.log("   push offset " + expr.name);
                 pop("rax");
             } else {
                 genAddress(expr);
@@ -371,7 +371,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.string:
             //genString(expr.name);
-            console.log(`lea rax, .L.data.${expr.label}`);
+            console.log(`   lea rax, .L.data.${expr.label}`);
             break;
         default:
             throw new Error("Unexpected expression");
@@ -407,13 +407,24 @@ function genStmt(stmt: Statement, fnid: number): void {
             generateCode(stmt.expr);
             break;
         case stmtType.vardeclstmt:
+            //console.error(stmt.expr);
             if (stmt.expr.type === exprType.string) {
                 genAddress(stmt);
                 push();
                 console.log(`   lea rax, .L.data.${stmt.expr.label}`)
                 store(stmt.expr.datatype);
             } else {
-                if (stmt.expr.datatype.kind !== myType.struct && stmt.expr.datatype.kind !== myType.array) {
+                if (stmt.expr.datatype.kind === myType.slice) {
+                    for(let item of stmt.defaults) {
+                        generateCode(item);
+                    }
+                } else if (stmt.expr.datatype.kind == myType.array) {
+                    // for(let item of stmt.datatype.members) {
+                    //     if(item.default) {
+                    //         
+                    //     }
+                    // }
+                } else {
                     genAddress(stmt);
                     push();
                     generateCode(stmt.expr);
@@ -451,11 +462,11 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.braek:
             if (latestBreakLabel === "") throw new Error("Stray break");
-            console.log("jmp " + latestBreakLabel);
+            console.log("   jmp " + latestBreakLabel);
             break;
         case stmtType.contineu:
             if (latestContinueLabel === "") throw new Error("Stray continue");
-            console.log("jmp " + latestContinueLabel);
+            console.log("   jmp " + latestContinueLabel);
             break;
         case stmtType.ret:
             generateCode(stmt.expr);

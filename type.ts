@@ -34,6 +34,7 @@ export enum myType {
 
     struct,
     enum,
+    slice,
 
     ptr,
     array,
@@ -67,7 +68,7 @@ export class Type {
 
     base: Type;
     arrayLen: number;
-    members: { name: string, offset: number, type: Type }[];
+    members: { name: string, offset: number, type: Type, default:Expression|undefined }[];
     returnType: myType;
 
     enumvalues:{name:string, value:number}[];
@@ -90,14 +91,14 @@ export class Type {
         return this;
     }
 
-    newStruct(mems: { name: string, datatype: Type }[]) {
+    newStruct(mems: { name: string, datatype: Type, default:Expression|undefined }[]) {
         this.members = [];
         this.kind = myType.struct;
         var offt = 0;
         this.align = 0;
         mems.forEach((m) => {
             offt = alignTo(m.datatype.align, offt);
-            this.members.push({ name: m.name, offset: offt, type: m.datatype });
+            this.members.push({ name: m.name, offset: offt, type: m.datatype , default:m.default});
             offt += m.datatype.size;
 
             if (this.align < m.datatype.align) {
@@ -109,7 +110,7 @@ export class Type {
         return this;
     }
 
-    newUnion(mems: {name: string, datatype:Type}[]) {
+    newUnion(mems: {name: string, datatype:Type, default:Expression|undefined}[]) {
         this.members = [];
         this.kind = myType.struct;
         var offt = 0;
@@ -129,7 +130,7 @@ export class Type {
         });
         
         mems.forEach((m)=>{
-            this.members.push({ name: m.name, offset: offt, type: m.datatype });
+            this.members.push({ name: m.name, offset: offt, type: m.datatype, default:m.default });
         })
 
         this.size = alignTo(this.align, lagest);

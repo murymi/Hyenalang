@@ -1,5 +1,7 @@
 extern fn puts(str:*u8) void;
 
 fn main() void {
-    puts("Hello Hyena user");
+    if(false or true) {
+        puts("Hello Hyena user");
+    }
 }

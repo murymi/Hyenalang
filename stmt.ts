@@ -1,6 +1,6 @@
-import { Expression } from "./expr";
+import { Expression, identifierType } from "./expr";
 import { Token } from "./token";
-import { Type } from "./type";
+import { Type, myType, voidtype } from "./type";
 
 export enum stmtType {
     vardeclstmt,
@@ -44,18 +44,49 @@ export class Statement {
     datatype:Type;
     is_global:boolean;
 
+    // struct
+    defaults:Expression[]
+
+    makeStructInitializer(off:number, datatype:Type):Expression[] {
+        var exprid = new Expression().newExprIdentifier(
+            "",
+            off,
+            datatype,
+            identifierType.struct
+        );
+
+        var initExpr:Expression[] = [];
+        for(let mem of datatype.members) {
+            if(mem.default) {
+                var expr = new Expression().newExprGet(mem.offset, exprid, mem.type);
+                var set = new Expression().newExprSet(expr, mem.default);
+                initExpr.push(set);
+            }
+        }
+        return initExpr;
+    }
+
 
     newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype:Type, is_global:boolean) :Statement {
         if(initializer === undefined) {
-            var zero = new Expression().newExprNumber(0);
-            this.initializer = zero;
-            this.expr = zero;
+            if(datatype.kind === myType.slice) {
+                this.defaults = this.makeStructInitializer(offset, datatype);
+                //console.error(this.defaults);
+                this.expr = new Expression();
+                this.expr.datatype = voidtype;
+                this.expr.datatype.kind = myType.slice;
+            } else {
+                var zero = new Expression().newExprNumber(0);
+                this.initializer = zero;
+                this.expr = zero;
+                this.initializer.datatype = datatype;
+            }
         } else {
             this.initializer = initializer;
             this.expr = initializer;
+            this.initializer.datatype = datatype;
         }
         this.is_global = is_global;
-        this.initializer.datatype = datatype;
         this.datatype = datatype;
         //this.initializer.CustomType = custom;
         this.name = name;

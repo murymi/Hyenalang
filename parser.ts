@@ -200,6 +200,19 @@ export class Parser {
                     expr = new Expression().newExprDeref(
                         new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), expr, index)
                     )
+                } else if(expr.datatype.kind === myType.slice) {
+                    var index = this.expression();
+                    this.expect(tokenType.rightsquare, "Expect ]");
+
+
+                    var meta = getOffsetOfMember(expr.datatype, "ptr");
+                    var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
+
+                    ///expr = new Expression().newExprGet(0, expr,)
+                    expr = new Expression().newExprDeref(
+                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex, index)
+                    )
+                    //console.error("=====================");
                 } else {
                     console.log("indexing non array");
                     process.exit(1);
@@ -437,17 +450,20 @@ export class Parser {
     }
 
     parseType(): Type {
-        var is_ptr = false;
-        var is_array = false;
         if (this.match([tokenType.leftsquare])) {
-            is_array = true;
             var len = this.expect(tokenType.number, "Expect size of array");
             this.expect(tokenType.rightsquare, "] expected");
-            return new Type().newArray(this.parseType(), len.value as number);
+            var ptr = new Type().newArray(this.parseType(), len.value as number);
+            ///var def = 0
+            var holder = new Type().newStruct([
+                {name:"ptr", datatype:ptr, default:undefined},
+                {name:"len", datatype:u64, default: new Expression().newExprNumber(len.value as number, false)}
+            ])
+            holder.kind = myType.slice;
+            return holder;
         }
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
-            is_ptr = true;
             return new Type().newPointer(this.parseType());
         }
 
@@ -585,10 +601,10 @@ export class Parser {
     structDeclaration(isunion: boolean): Statement {
         var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;
         this.expect(tokenType.leftbrace, "Expect struct body");
-        var strucmembers: { name: string, datatype: Type }[] = [];
+        var strucmembers: { name: string, datatype: Type, default:Expression|undefined }[] = [];
 
         while (!this.check(tokenType.rightbrace)) {
-            var member: { name: string, datatype: Type } = { name: "", datatype: u8 };
+            var member: { name: string, datatype: Type, default:Expression|undefined } = { name: "", datatype: u8 , default:undefined};
             member.name = this.expect(tokenType.identifier, "Expect member name").value as string;
             this.expect(tokenType.colon, "expect : after name");
             member.datatype = this.parseType();

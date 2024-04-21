@@ -6,14 +6,29 @@
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
-   lea rax, [rbp-1]
-push rax
-   mov rax, 248
-   not rax
+   sub rsp, 32
+   lea rax, [rbp-32]
+   add rax, 24
+   push rax
+   mov rax, 20
+   pop rdi
+   mov [rdi], rax
+   mov rax, 0
+   push rax
+   lea rax, [rbp-32]
+   add rax, 0
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 70
    pop rdi
    mov [rdi], al
-   lea rax, [rbp-1]
+   mov rax, 0
+   push rax
+   lea rax, [rbp-32]
+   add rax, 0
+   pop rdi
+   add rax, rdi
    movsx rax, byte ptr [rax]
    jmp .L.endfn.0
    xor rax, rax
