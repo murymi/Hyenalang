@@ -15,9 +15,9 @@ push rax
    mov [rdi], al
    lea rax, [rbp-1]
    movsx rax, byte ptr [rax]
-   jmp .L.endfn.1
+   jmp .L.endfn.0
    xor rax, rax
-.L.endfn.1:
+.L.endfn.0:
    mov rsp, rbp
    pop rbp
    ret

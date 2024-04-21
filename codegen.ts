@@ -4,7 +4,7 @@ import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import { fnType } from "./main";
 import { Function } from "./main";
-import { error } from "console";
+import { count, error } from "console";
 import { Type, alignTo, f32, myType } from "./type";
 
 
@@ -16,7 +16,7 @@ var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
 var byteArgRegisters = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
 
-var l = 1;
+var l = 0;
 function incLabel() {
     return l++;
 }
@@ -116,6 +116,33 @@ function genBitNot() {
     console.log("   not rax");
 }
 
+function genLogicalAnd() {
+    var label = incLabel();
+    console.log(`   cmp rax, 0`);
+    console.log(`   je .L.fail.${label}`);
+    console.log(`   cmp rdi, 0`);
+    console.log(`   je .L.fail.${label}`);
+    console.log(`   mov rax, 1`);
+    console.log(`   jmp .L.finish.${label}`);
+    console.log(`.L.fail.${label}:`);
+    console.log(`   xor rax, rax`);
+    console.log(`.L.finish.${label}:`);
+}
+
+function genLogicalOr() {
+    var label = incLabel();
+    console.log(`   cmp rax, 0`);
+    console.log(`   je .L.step2.${label}`);
+    console.log(`   mov rax, 1`);
+    console.log(`   jmp .L.finish.${label}`);
+    console.log(`.L.step2.${label}:`);
+    console.log(`   cmp rdi, 0`);
+    console.log(`   je .L.finish.${label}`);
+    console.log(`   mov rax, 1`);
+    console.log(`.L.finish.${label}:`);
+    
+}
+
 function genBinary(operator: tokenType, datatype: Type) {
 
     console.log("   pop rdi");
@@ -162,6 +189,12 @@ function genBinary(operator: tokenType, datatype: Type) {
             break;
         case tokenType.bitor:
             genBitOr();
+            break;
+        case tokenType.and:
+            genLogicalAnd();
+            break
+        case tokenType.or:
+            genLogicalOr();
             break;
         default:
             throw new error("unhandled operator");
