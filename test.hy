@@ -1,4 +1,4 @@
-extern fn printf(str:*u8, num:u64, num:u64) void;
+extern fn printf(str:*u8, num:u64) void;
 
 
 struct foo {
@@ -7,10 +7,22 @@ struct foo {
 }
 
 fn main() void {
-    var a:foo;
-    a.y = 90;
-    a.x = 89;
-    var c = a;
+    var a:[10]u64;
 
-    printf("%d %d", c.y, c.x);
+    var i = 0;
+
+    while(i < a.len) {
+        a[i] = i;
+        i = i + 1;
+    }
+
+    var b = a;
+
+    i = 0;
+    while(i < b.len) {
+        printf("%d\n", b[i]);
+        i = i + 1;
+    }
+
+    return @sizeof(b);
 }

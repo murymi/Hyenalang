@@ -277,15 +277,17 @@ function store(datatype: Type) {
     }
 }
 
-function storeStruct(datatype:Type) {
+function storeStruct(datatype: Type) {
     var copied = 0;
     console.log("   pop rdi");
+    // todo: use simd
     while (copied < datatype.size) {
-        console.log(`   mov rcx, [rax+${copied}]`);
-        console.log(`   mov [rdi+${copied}], rcx`);
+        console.log(`   movq rcx, [rax+${copied}]`);
+        console.log(`   movq [rdi+${copied}], rcx`);
         copied += 8;
     }
 }
+
 
 function genAddress(stmt: Statement | Expression) {
     console.log("   lea rax, [rbp-" + (stmt.datatype.size + stmt.offset) + "]");
@@ -324,6 +326,20 @@ function genLvalue(expr: Expression | Statement) {
     generateAddress(expr);
 }
 
+function genAssign(expr: Expression) {
+    genLvalue(expr.left as Expression);
+    push();
+    generateCode(expr.right as Expression);
+    store(expr.left?.datatype as Type);
+}
+
+function genAssignLarge(expr: Expression) {
+    genLvalue(expr.left as Expression);
+    push();
+    genLvalue(expr.right as Expression);
+    storeStruct(expr.left?.datatype as Type);
+}
+
 function generateCode(expr: Expression) {
     switch (expr.type) {
         case exprType.address:
@@ -360,22 +376,18 @@ function generateCode(expr: Expression) {
         case exprType.assign:
             switch (expr.datatype.kind) {
                 case myType.slice:
-                    for (let item of expr.defaults) {
-                        generateCode(item);
-                    }
-                    break
+                    //for (let item of expr.defaults) { generateCode(item); }
+                    //break;
                 case myType.struct:
-                    //console.error("wahhhhhh");
-                    genLvalue(expr.left as Expression);
-                    push();
-                    genLvalue(expr.right as Expression);
-                    storeStruct(expr.left?.datatype as Type);
+                    if (expr.datatype.size > 8) {
+                        genAssignLarge(expr);
+                    } else {
+                        genAssign(expr);
+                    }
                     break;
-                    default:
-                    genLvalue(expr.left as Expression);
-                    push();
-                    generateCode(expr.right as Expression);
-                    store(expr.left?.datatype as Type);
+                default:
+                    genAssign(expr);
+
             }
             break;
         case exprType.identifier:
@@ -442,9 +454,20 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.vardeclstmt:
             if (stmt.expr.datatype.kind === myType.slice) {
-                if (stmt.defaults) {
-                    for (let item of stmt.defaults) { generateCode(item); }
+                // if (stmt.defaults) {
+                //     for (let item of stmt.defaults) { generateCode(item); }
+                // }
+                if (stmt.initializer) {
+                    genAddress(stmt);
+                    push();
+                    generateAddress(stmt.initializer);
+                    storeStruct(stmt.expr.datatype);
+                } else {
+                    if(stmt.defaults) {
+                        for (let item of stmt.defaults) { generateCode(item); }
+                    }
                 }
+                
             } else if (stmt.expr.datatype.kind == myType.array) {
                 // for(let item of stmt.datatype.members) {
                 //     if(item.default) {
@@ -452,7 +475,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 //     }
                 // }
             } else if (stmt.expr.datatype.kind === myType.struct) {
-                if(stmt.initializer) {
+                if (stmt.initializer) {
                     genAddress(stmt);
                     push();
                     generateAddress(stmt.initializer);

@@ -157,10 +157,12 @@ export class Statement {
             }
         } else {
             if (datatype.kind === myType.slice) {
-                this.defaults = Statement.makeSliceCopy(offset, initializer);
-                this.expr = new Expression();
-                this.expr.datatype = voidtype;
-                this.expr.datatype.kind = myType.slice;
+                // this.defaults = Statement.makeSliceCopy(offset, initializer);
+                // this.expr = new Expression();
+                // this.expr.datatype = voidtype;
+                // this.expr.datatype.kind = myType.slice;
+                this.initializer = initializer;
+                this.expr = initializer;
             } else {
                 this.initializer = initializer;
                 this.expr = initializer;
