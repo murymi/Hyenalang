@@ -165,7 +165,7 @@ export function getOffsetOfMember(struct: Type, member: string) {
         }
     }
 
-    console.log("struct or union has no member named " + member);
+    console.error("struct or union has no member named " + member);
     process.exit(1);
 }
 
@@ -238,7 +238,7 @@ export function getcurrFn(){ return currentFn; }
 
 export function resetCurrentFunction(body: Statement) {
     functions[currentFn].body = body;
-    //console.log(functions[currentFn]);
+    //console.error(functions[currentFn]);
     currentFn = -1;
 }
 
@@ -253,7 +253,7 @@ export function endScope() {
 function compile(path: string) {
     readFile(path,{ encoding: "utf-8" }, (err, data)=> {
         if(err) {
-            console.log("failed to open file");
+            console.error("failed to open file");
             process.exit(1);
         }
         
@@ -264,9 +264,7 @@ function compile(path: string) {
         var stmts = parser.parse();
         var bitstream = createWriteStream("./tmp.s");
         var orig = console.log;        
-        console.log = (data)=> {
-            bitstream.write(`${data}\n`);
-        }
+        console.log = (data)=> {bitstream.write(`${data}\n`);}
         genStart(globalstrings,globals, functions);
         bitstream.end();
         console.log = orig;

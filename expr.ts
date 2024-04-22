@@ -1,6 +1,6 @@
 import { addGlobalString, fnType } from "./main";
 import { Token } from "./token";
-import { Type, f32, i32, i64, u8 } from "./type";
+import { Type, f32, i32, i64, myType, u8 } from "./type";
 
 export enum exprType {
     unary,
@@ -66,6 +66,9 @@ export class Expression {
 
     // var
     is_glob:boolean;
+
+    //struct
+    defaults:Expression[]
 
     newExprAddressSet(left:Expression, right:Expression) {
         this.left = left;// a deref
@@ -180,6 +183,7 @@ export class Expression {
         this.type = exprType.string;
         this.bytes = val;
         this.datatype = new Type().newPointer(u8);
+        this.datatype.kind = myType.string;
         this.label = addGlobalString(val);
         this.labelinitialize = true;
         return this;

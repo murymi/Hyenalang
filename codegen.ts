@@ -140,7 +140,7 @@ function genLogicalOr() {
     console.log(`   je .L.finish.${label}`);
     console.log(`   mov rax, 1`);
     console.log(`.L.finish.${label}:`);
-    
+
 }
 
 function genBinary(operator: tokenType, datatype: Type) {
@@ -201,8 +201,8 @@ function genBinary(operator: tokenType, datatype: Type) {
     }
 }
 
-function genUnary(operator:Token) {
-    switch(operator.type) {
+function genUnary(operator: Token) {
+    switch (operator.type) {
         case tokenType.minus:
             genNegate();
             break;
@@ -360,7 +360,7 @@ function generateCode(expr: Expression) {
             for (let i = expr.params.length - 1; i >= 0; i--) {
                 pop(argRegisters[i]);
                 //console.log(`movsx  ${argRegisters[i]}, ${dwordArgRegisters[i]}`);
-                
+
             }
 
             if (expr.fntype === fnType.extern) {
@@ -408,29 +408,21 @@ function genStmt(stmt: Statement, fnid: number): void {
             generateCode(stmt.expr);
             break;
         case stmtType.vardeclstmt:
-            //console.error(stmt.expr);
-            if (stmt.expr.type === exprType.string) {
+            if (stmt.expr.datatype.kind === myType.slice) {
+                for (let item of stmt.defaults) {
+                    generateCode(item);
+                }
+            } else if (stmt.expr.datatype.kind == myType.array) {
+                // for(let item of stmt.datatype.members) {
+                //     if(item.default) {
+                //         
+                //     }
+                // }
+            } else {
                 genAddress(stmt);
                 push();
-                console.log(`   lea rax, .L.data.${stmt.expr.label}`)
+                generateCode(stmt.expr);
                 store(stmt.expr.datatype);
-            } else {
-                if (stmt.expr.datatype.kind === myType.slice) {
-                    for(let item of stmt.defaults) {
-                        generateCode(item);
-                    }
-                } else if (stmt.expr.datatype.kind == myType.array) {
-                    // for(let item of stmt.datatype.members) {
-                    //     if(item.default) {
-                    //         
-                    //     }
-                    // }
-                } else {
-                    genAddress(stmt);
-                    push();
-                    generateCode(stmt.expr);
-                    store(stmt.expr.datatype);
-                }
             }
             break;
         case stmtType.block:

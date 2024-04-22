@@ -35,6 +35,7 @@ export enum myType {
     struct,
     enum,
     slice,
+    string,
 
     ptr,
     array,
@@ -134,7 +135,7 @@ export class Type {
         })
 
         this.size = alignTo(this.align, lagest);
-        //console.log(offt);
+        //console.error(offt);
         return this;
     }
 
@@ -158,7 +159,7 @@ export class Type {
     }
 }
 
-//console.log(myType.i64);
+//console.error(myType.i64);
 export var i64 = new Type().newType(myType.i64, 8, 8);
 export var i32 = new Type().newType(myType.i32, 4, 4);
 export var i16 = new Type().newType(myType.i16, 2, 2);
@@ -175,15 +176,15 @@ export var enm = new Type().newType(myType.enum, 4, 4);
 
 function typeError(message: string, tok: Token | undefined) {
     if (tok) {
-        console.log(message + ": [ line:" + tok.line + " col:" + tok.col + " ]");
+        console.error(message + ": [ line:" + tok.line + " col:" + tok.col + " ]");
     } else {
-        console.log(message);
+        console.error(message);
     }
     process.exit();
 }
 
 function generateCode(expr: Expression) {
-    //console.log(expr);
+    //console.error(expr);
     switch (expr.type) {
         case exprType.binary:
             //if(expr.left)

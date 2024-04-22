@@ -1,6 +1,6 @@
 import { Expression, identifierType } from "./expr";
 import { Token } from "./token";
-import { Type, myType, voidtype } from "./type";
+import { Type, myType, u64, u8, voidtype } from "./type";
 
 export enum stmtType {
     vardeclstmt,
@@ -66,6 +66,20 @@ export class Statement {
         return initExpr;
     }
 
+    newStructVarStatement(offset:number, defaults:Expression[]) {
+
+    }
+
+    newStringVarStatement(offset:number, defaults:Expression[], datatype:Type, is_global:boolean) {
+        this.is_global = is_global;
+        this.defaults = defaults;
+        this.type = stmtType.vardeclstmt;
+        this.offset = offset;
+        this.expr = new Expression();
+        this.expr.datatype = datatype;
+        this.expr.datatype.kind = myType.slice;
+        return this;
+    }
 
     newVarstatement(name : string, initializer: Expression|undefined, offset: number, datatype:Type, is_global:boolean) :Statement {
         if(initializer === undefined) {

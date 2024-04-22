@@ -190,7 +190,7 @@ export class Lexer {
             case "b": return '\b';
         }
 
-        console.log(`unsupported escape sequence \\${this.peekNext()}`);
+        console.error(`unsupported escape sequence \\${this.peekNext()}`);
         process.exit(1);
     }
 
@@ -258,7 +258,7 @@ export class Lexer {
     }
 
     tokenError(message: string): void {
-        console.log(message + " - [ line: " + this.line + " col: " + this.col + " ]");
+        console.error(message + " - [ line: " + this.line + " col: " + this.col + " ]");
         process.exit();
     }
 
@@ -271,7 +271,7 @@ export class Lexer {
         while (true) {
             let char = this.peek();
 
-            //console.log("token => ", char);
+            //console.error("token => ", char);
             if (this.isNumber(char)) {
                 this.number();
             } else if (this.isSpace(char)) {
@@ -361,7 +361,7 @@ export class Lexer {
                 this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
                 break;
             } else {
-                //console.log(char);
+                //console.error(char);
                 this.tokenError("unexpected token " + char);
             }
 

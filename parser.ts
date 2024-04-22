@@ -62,7 +62,7 @@ export class Parser {
     }
 
     tokenError(message: string, token: Token): void {
-        console.log(message + " - [ line: " + token.line + " col: " + token.col + " ]");
+        console.error(message + " - [ line: " + token.line + " col: " + token.col + " ]");
         process.exit();
     }
 
@@ -179,7 +179,7 @@ export class Parser {
                 if (expr.datatype.kind === myType.struct || expr.datatype.kind === myType.slice) {
                     var meta = getOffsetOfMember(expr.datatype, propname.value as string);
                     expr = new Expression().newExprGet(meta.offset, expr, meta.datatype);
-                    //console.log("=================");
+                    //console.error("=================");
                 } else if (expr.datatype.kind === myType.ptr) {
                     expr = new Expression().newExprDeref(expr);
                 } else if (expr.datatype.kind === myType.enum) {
@@ -187,10 +187,10 @@ export class Parser {
                     if (val) {
                         return new Expression().newExprNumber(val.value);
                     }
-                    console.log(`enum ${expr.name} has no field named ${propname.value}`);
+                    console.error(`enum ${expr.name} has no field named ${propname.value}`);
                     process.exit(1);
                 } else {
-                    console.log("member access to non struct");
+                    console.error("member access to non struct");
                     process.exit(1);
                 }
             } else if (this.match([tokenType.leftsquare])) {
@@ -216,17 +216,17 @@ export class Parser {
                     var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
 
                     ///expr = new Expression().newExprGet(0, expr,)
+                    //console.error(expr.datatype.members[0].type.base.size);
                     expr = new Expression().newExprDeref(
-                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex, 
-                        new Expression().newExprBinary(
-                            new Token(tokenType.multiply, "*", 0, 0),
-                            new Expression().newExprNumber(expr.datatype.size),
-                            index
-                        ))
+                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex,
+                            new Expression().newExprBinary(
+                                new Token(tokenType.multiply, "*", 0, 0),
+                                new Expression().newExprNumber(expr.datatype.members[1].type.base.size),
+                                index
+                            ))
                     )
-                    //console.error("=====================");
                 } else {
-                    console.log("indexing non array");
+                    console.error("indexing non array");
                     process.exit(1);
                 }
             } else {
@@ -253,7 +253,7 @@ export class Parser {
         if (this.match([tokenType.andsand])) {
             var left = this.unary();
             if (left.type === exprType.address) {
-                console.log("wtf bro!,, thats unsupported here");
+                console.error("wtf bro!,, thats unsupported here");
                 process.exit(1);
             }
             return new Expression().newExprAddress(left);
@@ -468,8 +468,8 @@ export class Parser {
             var ptr = new Type().newArray(this.parseType(), len.value as number);
             ///var def = 0
             var holder = new Type().newStruct([
-                { name: "ptr", datatype: ptr, default: undefined },
-                { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) }
+                { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) },
+                { name: "ptr", datatype: ptr, default: undefined }
             ])
             holder.kind = myType.slice;
             return holder;
@@ -525,14 +525,47 @@ export class Parser {
         return i64;
     }
 
+    makeStringInitializerFromPtr(off:number, string: Expression, datatype: Type) {
+        var exprid = new Expression().newExprIdentifier(
+            "",
+            off,
+            datatype,
+            identifierType.struct
+        );
+
+        var initExpr:Expression[] = [];
+        var expr = new Expression().newExprGet(datatype.members[1].offset, exprid, datatype.members[1].type);
+        var set = new Expression().newExprSet(expr, string);
+        initExpr.push(set);
+        
+        var expr2 = new Expression().newExprGet(datatype.members[0].offset, exprid, datatype.members[0].type);
+        var set2 = new Expression().newExprSet(expr2, new Expression().newExprNumber(string.bytes.length, false));
+        initExpr.push(set2);
+        
+        return initExpr;
+    }
+
     varDeclaration(isdata: boolean): Statement {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression | undefined;
         var type: Type | undefined = undefined;
 
+        //var defaults:Expression[];
+        var is_string:boolean = false;
+
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
-            type = initializer.datatype;
+            if (initializer.datatype.kind === myType.string) {
+                is_string = true;
+                type = new Type().newStruct([
+                    { name: "len", datatype: u64, default: undefined },
+                    { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
+                ])
+
+            } else {
+                type = initializer.datatype;
+            }
+
         } else if (this.match([tokenType.colon])) {
             type = this.parseType()
         }
@@ -553,7 +586,16 @@ export class Parser {
             addGlobal(name.value as string, initializer, type as Type);
             is_global = true;
         }
-        //console.log("offset", offset);
+
+        if(is_string) {
+            return new Statement().newStringVarStatement(
+                offset,
+                this.makeStringInitializerFromPtr(offset, initializer as Expression, type as Type),
+                type as Type,
+                is_global
+            )
+        }
+        //console.error("offset", offset);
         return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type, is_global);
     }
 
@@ -643,7 +685,7 @@ export class Parser {
 
         if (this.check(tokenType.rightbrace)) {
             this.advance();
-            //console.log("=======================");
+            //console.error("=======================");
             return new Statement();
         }
 
