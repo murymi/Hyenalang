@@ -21,6 +21,10 @@
    .byte '
 '
    .byte 0
+.align 8
+cow:
+   .quad 11
+   .quad .L.data.0
 .bss
 .text
 .global main
@@ -29,15 +33,21 @@ main:
    mov rbp, rsp
    sub rsp, 32
    lea rax, [rbp-16]
-   add rax, 8
+   add rax, 0
    push rax
-   lea rax, .L.data.0
+   push offset cow
+   pop rax
+   add rax, 0
+   mov rax, [rax]
    pop rdi
    mov [rdi], rax
    lea rax, [rbp-16]
-   add rax, 0
+   add rax, 8
    push rax
-   mov rax, 11
+   push offset cow
+   pop rax
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    mov [rdi], rax
    lea rax, [rbp-32]

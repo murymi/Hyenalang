@@ -116,13 +116,7 @@ export class Statement {
                     ),
                     u64
                 ),
-                new Expression().newExprGet(
-                    0,
-                    new Expression().newExprIdentifier(
-                        "", from.offset, from.datatype, identifierType.variable
-                    ),
-                    u64
-                )
+                new Expression().newExprGet(0, from, u64)
             )
         );
 
@@ -135,13 +129,7 @@ export class Statement {
                     ),
                     new Type().newPointer(u8)
                 ),
-                new Expression().newExprGet(
-                    8,
-                    new Expression().newExprIdentifier(
-                        "", from.offset, from.datatype, identifierType.variable
-                    ),
-                    new Type().newPointer(u8)
-                )
+                new Expression().newExprGet(8, from, new Type().newPointer(u8))
             )
         );
 
