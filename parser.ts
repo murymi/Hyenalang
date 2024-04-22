@@ -525,24 +525,52 @@ export class Parser {
         return i64;
     }
 
-    makeStringInitializerFromPtr(off:number, string: Expression, datatype: Type) {
-        var exprid = new Expression().newExprIdentifier(
-            "",
-            off,
-            datatype,
-            identifierType.struct
+
+    makeSliceCopy(from: Expression, to:Expression): Expression[] {
+        var xpr: Expression[] = [];
+        // x.ptr = x.ptr
+        // x.len = x.len
+
+        // identifier, get = identifier, get, 
+        xpr.push(
+            new Expression().newExprSet(
+                new Expression().newExprGet(
+                    0,
+                    new Expression().newExprIdentifier(
+                        to.name, to.offset, from.datatype, identifierType.variable
+                        ),
+                    u64
+                ),
+                new Expression().newExprGet(
+                    0,
+                    new Expression().newExprIdentifier(
+                        from.name, from.offset, from.datatype, identifierType.variable
+                        ),
+                    u64
+                )
+            )
         );
 
-        var initExpr:Expression[] = [];
-        var expr = new Expression().newExprGet(datatype.members[1].offset, exprid, datatype.members[1].type);
-        var set = new Expression().newExprSet(expr, string);
-        initExpr.push(set);
-        
-        var expr2 = new Expression().newExprGet(datatype.members[0].offset, exprid, datatype.members[0].type);
-        var set2 = new Expression().newExprSet(expr2, new Expression().newExprNumber(string.bytes.length, false));
-        initExpr.push(set2);
-        
-        return initExpr;
+        xpr.push(
+            new Expression().newExprSet(
+                new Expression().newExprGet(
+                    8,
+                    new Expression().newExprIdentifier(
+                        to.name, to.offset, from.datatype, identifierType.variable
+                        ),
+                    new Type().newPointer(u8)
+                ),
+                new Expression().newExprGet(
+                    8,
+                    new Expression().newExprIdentifier(
+                        from.name, from.offset, from.datatype, identifierType.variable
+                        ),
+                    new Type().newPointer(u8)
+                )
+            )
+        );
+
+        return xpr;
     }
 
     varDeclaration(isdata: boolean): Statement {
@@ -551,7 +579,7 @@ export class Parser {
         var type: Type | undefined = undefined;
 
         //var defaults:Expression[];
-        var is_string:boolean = false;
+        var is_string: boolean = false;
 
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
@@ -562,6 +590,10 @@ export class Parser {
                     { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
                 ])
 
+            } else if (initializer.datatype.kind === myType.slice) {
+                //console.error(initializer);
+                type = initializer.datatype;
+                //initializer = new Expression().newExprDeref(initializer);
             } else {
                 type = initializer.datatype;
             }
@@ -587,7 +619,7 @@ export class Parser {
             is_global = true;
         }
 
-        if(is_string) {
+        if (is_string) {
             return new Statement().newStringVarStatement(
                 name.value as string,
                 offset,

@@ -233,12 +233,14 @@ function load(datatype: Type) {
         } else {
             console.log("   movsxd rax, dword ptr [rax]");
         }
-    } else {
-        if (datatype.size !== 8) {
-            console.error("Invalid load");
-            process.exit(1);
-        }
+    } else if(datatype.size === 8){
         console.log("   mov rax, [rax]");
+    } else if (datatype.kind === myType.slice) {
+        console.error("Invalid load");
+        process.exit(1);
+    } else {
+        console.error("Invalid load");
+        process.exit(1);
     }
 
 }
@@ -407,8 +409,8 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.vardeclstmt:
             if (stmt.expr.datatype.kind === myType.slice) {
-                for (let item of stmt.defaults) {
-                    generateCode(item);
+                if(stmt.defaults) {
+                    for (let item of stmt.defaults) { generateCode(item);}
                 }
             } else if (stmt.expr.datatype.kind == myType.array) {
                 // for(let item of stmt.datatype.members) {

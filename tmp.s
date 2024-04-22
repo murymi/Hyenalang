@@ -14,17 +14,58 @@
    .byte 'l'
    .byte 'd'
    .byte 0
-.align 8
-cow:
-   .quad 11
-   .quad .L.data.0
+.align 1
+.L.data.1:
+   .byte '%'
+   .byte 's'
+   .byte '
+'
+   .byte 0
 .bss
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
+   sub rsp, 32
+   lea rax, [rbp-16]
+   add rax, 8
+   push rax
+   lea rax, .L.data.0
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-16]
+   add rax, 0
+   push rax
+   mov rax, 11
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-32]
+   add rax, 0
+   push rax
+   lea rax, [rbp-16]
+   add rax, 0
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-32]
+   add rax, 8
+   push rax
+   lea rax, [rbp-16]
+   add rax, 8
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   lea rax, .L.data.1
+   push rax
+   lea rax, [rbp-32]
+   add rax, 8
+   mov rax, [rax]
+   push rax
+   pop rsi
+   pop rdi
+   lea r15, printf
+   call buitin_glibc_caller
    xor rax, rax
 .L.endfn.0:
    mov rsp, rbp
