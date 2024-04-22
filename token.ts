@@ -36,6 +36,7 @@ export enum tokenType {
     rightsquare,
 
     andsand,
+    mod,
 
     u8,
     u16,
@@ -353,7 +354,10 @@ export class Lexer {
             } else if (char === '.') {
                 this.tokens.push(new Token(tokenType.dot, ".", this.line, this.col));
                 this.advance();
-            } else if (char === '"') {
+            }   else if (char === '%') {
+                this.tokens.push(new Token(tokenType.mod, "%", this.line, this.col));
+                this.advance();
+            }  else if (char === '"') {
                 this.tokens.push(this.readString());
             } else if (this.isAlpha(char)) {
                 this.tokens.push(this.identifier());

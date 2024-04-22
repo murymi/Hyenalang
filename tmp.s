@@ -14,13 +14,6 @@
    .byte 'l'
    .byte 'd'
    .byte 0
-.align 1
-.L.data.1:
-   .byte '%'
-   .byte 's'
-   .byte '
-'
-   .byte 0
 .align 8
 cow:
    .quad 11
@@ -31,67 +24,15 @@ cow:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 32
-   lea rax, [rbp-16]
-   add rax, 0
+   sub rsp, 0
+   mov rax, 0
    push rax
-   push offset cow
-   pop rax
-   add rax, 0
-   mov rax, [rax]
+   mov rax, 5
    pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-16]
-   add rax, 8
-   push rax
-   push offset cow
-   pop rax
-   add rax, 8
-   mov rax, [rax]
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-32]
-   add rax, 0
-   push rax
-   lea rax, [rbp-16]
-   add rax, 0
-   mov rax, [rax]
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-32]
-   add rax, 8
-   push rax
-   lea rax, [rbp-16]
-   add rax, 8
-   mov rax, [rax]
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-32]
-   add rax, 0
-   push rax
-   lea rax, [rbp-16]
-   add rax, 0
-   mov rax, [rax]
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-32]
-   add rax, 8
-   push rax
-   lea rax, [rbp-16]
-   add rax, 8
-   mov rax, [rax]
-   pop rdi
-   mov [rdi], rax
-   lea rax, .L.data.1
-   push rax
-   lea rax, [rbp-32]
-   add rax, 8
-   mov rax, [rax]
-   push rax
-   pop rsi
-   pop rdi
-   lea r15, printf
-   call buitin_glibc_caller
+   cqo
+   idiv rdi
+   mov rax, rdx
+   jmp .L.endfn.0
    xor rax, rax
 .L.endfn.0:
    mov rsp, rbp

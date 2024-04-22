@@ -264,7 +264,7 @@ export class Parser {
 
     factor(): Expression {
         var expr = this.unary();
-        while (this.match([tokenType.divide, tokenType.multiply])) {
+        while (this.match([tokenType.divide, tokenType.multiply, tokenType.mod ])) {
             var operator = this.previous();
             var right = this.unary();
             expr = new Expression().newExprBinary(operator, expr, right);

@@ -26,6 +26,12 @@ function genDivide() {
     console.log("   idiv rdi");
 }
 
+function genMod() {
+    console.log("   cqo");
+    console.log("   idiv rdi");
+    console.log("   mov rax, rdx");
+}
+
 function genMultiply() {
     console.log("   imul rax, rdi");
 }
@@ -195,6 +201,9 @@ function genBinary(operator: tokenType, datatype: Type) {
             break
         case tokenType.or:
             genLogicalOr();
+            break;
+        case tokenType.mod:
+            genMod();
             break;
         default:
             throw new error("unhandled operator");
