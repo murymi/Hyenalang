@@ -138,6 +138,8 @@ export class Parser {
             }
         }
 
+
+
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
 

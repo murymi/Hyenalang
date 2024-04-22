@@ -1,8 +1,16 @@
-extern fn printf(str:*u8, num:u64) void;
+extern fn printf(str:*u8, num:u64, num:u64) void;
 
 
-var cow = "hello world";
+struct foo {
+    x: u64,
+    y: u64
+}
 
 fn main() void {
-    return 5 % 1;
+    var a:foo;
+    a.y = 90;
+    a.x = 89;
+    var c = a;
+
+    printf("%d %d", c.y, c.x);
 }

@@ -145,6 +145,10 @@ export class Statement {
                 this.expr = new Expression();
                 this.expr.datatype = voidtype;
                 this.expr.datatype.kind = myType.slice;
+            } else if(datatype.kind === myType.struct) {
+                this.expr = new Expression();
+                this.expr.datatype = voidtype;
+                this.expr.datatype.kind = myType.struct;
             } else {
                 var zero = new Expression().newExprNumber(0);
                 this.initializer = zero;

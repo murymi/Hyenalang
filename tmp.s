@@ -2,37 +2,54 @@
 .data
 .align 1
 .L.data.0:
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
+   .byte '%'
+   .byte 'd'
    .byte ' '
-   .byte 'w'
-   .byte 'o'
-   .byte 'r'
-   .byte 'l'
+   .byte '%'
    .byte 'd'
    .byte 0
-.align 8
-cow:
-   .quad 11
-   .quad .L.data.0
 .bss
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
-   mov rax, 0
+   sub rsp, 32
+   lea rax, [rbp-16]
+   add rax, 8
    push rax
-   mov rax, 5
+   mov rax, 90
    pop rdi
-   cqo
-   idiv rdi
-   mov rax, rdx
-   jmp .L.endfn.0
+   mov [rdi], rax
+   lea rax, [rbp-16]
+   add rax, 0
+   push rax
+   mov rax, 89
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-32]
+   push rax
+   lea rax, [rbp-16]
+   pop rdi
+   mov rcx, [rax+0]
+   mov [rdi+0], rcx
+   mov rcx, [rax+8]
+   mov [rdi+8], rcx
+   lea rax, .L.data.0
+   push rax
+   lea rax, [rbp-32]
+   add rax, 8
+   mov rax, [rax]
+   push rax
+   lea rax, [rbp-32]
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   pop rdx
+   pop rsi
+   pop rdi
+   lea r15, printf
+   call buitin_glibc_caller
    xor rax, rax
 .L.endfn.0:
    mov rsp, rbp

@@ -269,12 +269,21 @@ function store(datatype: Type) {
         } else {
             console.log("   mov [rdi], eax");
         }
-    } else {
-        if (datatype.size !== 8) {
-            console.log("Invalid store");
-            process.exit(1);
-        }
+    } else if (datatype.size === 8) {
         console.log("   mov [rdi], rax");
+    } else {
+        console.error("Invalid load");
+        process.exit(1);
+    }
+}
+
+function storeStruct(datatype:Type) {
+    var copied = 0;
+    console.log("   pop rdi");
+    while (copied < datatype.size) {
+        console.log(`   mov rcx, [rax+${copied}]`);
+        console.log(`   mov [rdi+${copied}], rcx`);
+        copied += 8;
     }
 }
 
@@ -351,11 +360,18 @@ function generateCode(expr: Expression) {
         case exprType.assign:
             switch (expr.datatype.kind) {
                 case myType.slice:
-                    for(let item of expr.defaults) {
+                    for (let item of expr.defaults) {
                         generateCode(item);
                     }
                     break
-                default:
+                case myType.struct:
+                    //console.error("wahhhhhh");
+                    genLvalue(expr.left as Expression);
+                    push();
+                    genLvalue(expr.right as Expression);
+                    storeStruct(expr.left?.datatype as Type);
+                    break;
+                    default:
                     genLvalue(expr.left as Expression);
                     push();
                     generateCode(expr.right as Expression);
@@ -435,6 +451,13 @@ function genStmt(stmt: Statement, fnid: number): void {
                 //         
                 //     }
                 // }
+            } else if (stmt.expr.datatype.kind === myType.struct) {
+                if(stmt.initializer) {
+                    genAddress(stmt);
+                    push();
+                    generateAddress(stmt.initializer);
+                    storeStruct(stmt.expr.datatype);
+                }
             } else {
                 genAddress(stmt);
                 push();
