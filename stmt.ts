@@ -1,4 +1,5 @@
 import { Expression, identifierType } from "./expr";
+import { addGlobal } from "./main";
 import { Token } from "./token";
 import { Type, myType, u64, u8, voidtype } from "./type";
 
@@ -70,14 +71,37 @@ export class Statement {
 
     }
 
-    newStringVarStatement(offset:number, defaults:Expression[], datatype:Type, is_global:boolean) {
+    makeStringInitializerFromPtr(off:number, string: Expression, datatype: Type) {
+        var exprid = new Expression().newExprIdentifier(
+            "",
+            off,
+            datatype,
+            identifierType.struct
+        );
+
+        var initExpr:Expression[] = [];
+        var expr = new Expression().newExprGet(datatype.members[1].offset, exprid, datatype.members[1].type);
+        var set = new Expression().newExprSet(expr, string);
+        initExpr.push(set);
+        
+        var expr2 = new Expression().newExprGet(datatype.members[0].offset, exprid, datatype.members[0].type);
+        var set2 = new Expression().newExprSet(expr2, new Expression().newExprNumber(string.bytes.length, false));
+        initExpr.push(set2);
+        
+        return initExpr;
+    }
+
+    newStringVarStatement(name:string, offset:number,str:Expression, datatype:Type, is_global:boolean) {
         this.is_global = is_global;
-        this.defaults = defaults;
+        this.defaults = this.makeStringInitializerFromPtr(offset, str, datatype);
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
         this.expr = new Expression();
         this.expr.datatype = datatype;
         this.expr.datatype.kind = myType.slice;
+        if(is_global) {
+            addGlobal(name, str, datatype);
+        }
         return this;
     }
 
@@ -106,6 +130,9 @@ export class Statement {
         this.name = name;
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
+        if(is_global) {
+            addGlobal(name, undefined, datatype);
+        }
         return this;
     }
 

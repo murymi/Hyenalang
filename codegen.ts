@@ -235,7 +235,7 @@ function load(datatype: Type) {
         }
     } else {
         if (datatype.size !== 8) {
-            console.log("Invalid load");
+            console.error("Invalid load");
             process.exit(1);
         }
         console.log("   mov rax, [rax]");
@@ -271,8 +271,6 @@ function genAddress(stmt: Statement | Expression) {
     console.log("   lea rax, [rbp-" + (stmt.datatype.size + stmt.offset) + "]");
 }
 
-
-
 function generateAddress(expr: Expression | Statement) {
     switch (expr.type) {
         case exprType.identifier:
@@ -293,14 +291,14 @@ function generateAddress(expr: Expression | Statement) {
             break;
 
         default:
-            console.log("not an lvalue");
+            console.error("not an lvalue");
             process.exit(1);
     }
 }
 
 function genLvalue(expr: Expression | Statement) {
     if (expr.datatype.kind === myType.array) {
-        console.log("not an lvalue");
+        console.error("not an lvalue");
         process.exit(1);
     }
     generateAddress(expr);
@@ -515,11 +513,18 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
     globals.forEach((g) => {
         if (g.value) {
 
-            console.log(".align " + g.value.datatype.align);
+            console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
 
-            if (g.value.labelinitialize) {
-                console.log(".quad .L.data." + g.value.label);
+            // if (g.value.labelinitialize) {
+            //     console.log(`   .quad ${g.value.bytes.length}`);
+            //     console.log("   .quad .L.data." + g.value.label);
+            //     return;
+            // }
+
+            if(g.datatype.kind === myType.slice) {
+                console.log(`   .quad ${g.value.bytes.length}`);
+                console.log("   .quad .L.data." + g.value.label);
                 return;
             }
 

@@ -582,15 +582,16 @@ export class Parser {
 
         var offset = incLocalOffset(name.value as string, type as Type);
         var is_global = false;
+
         if (offset === -1) {
-            addGlobal(name.value as string, initializer, type as Type);
             is_global = true;
         }
 
         if(is_string) {
             return new Statement().newStringVarStatement(
+                name.value as string,
                 offset,
-                this.makeStringInitializerFromPtr(offset, initializer as Expression, type as Type),
+                initializer as Expression,
                 type as Type,
                 is_global
             )
