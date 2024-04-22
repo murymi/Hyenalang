@@ -105,7 +105,7 @@ export class Statement {
         return this;
     }
 
-    makeSliceCopy(to: number, from: Expression): Expression[] {
+    static makeSliceCopy(to: number, from: Expression): Expression[] {
         var xpr: Expression[] = [];
         xpr.push(
             new Expression().newExprSet(
@@ -153,7 +153,7 @@ export class Statement {
             }
         } else {
             if (datatype.kind === myType.slice) {
-                this.defaults = this.makeSliceCopy(offset, initializer);
+                this.defaults = Statement.makeSliceCopy(offset, initializer);
                 this.expr = new Expression();
                 this.expr.datatype = voidtype;
                 this.expr.datatype.kind = myType.slice;

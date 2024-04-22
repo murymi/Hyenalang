@@ -150,6 +150,7 @@ export class Expression {
         this.type = exprType.assign;
         this.right = val;
         this.left = left;
+        this.datatype = left.datatype
         return this;
     }
 

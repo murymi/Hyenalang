@@ -66,6 +66,22 @@ main:
    mov rax, [rax]
    pop rdi
    mov [rdi], rax
+   lea rax, [rbp-32]
+   add rax, 0
+   push rax
+   lea rax, [rbp-16]
+   add rax, 0
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-32]
+   add rax, 8
+   push rax
+   lea rax, [rbp-16]
+   add rax, 8
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
    lea rax, .L.data.1
    push rax
    lea rax, [rbp-32]

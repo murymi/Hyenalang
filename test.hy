@@ -8,5 +8,7 @@ fn main() void {
 
     var c = b;
 
+    c = b;
+
     printf("%s\n", c.ptr);
 }

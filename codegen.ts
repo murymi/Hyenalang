@@ -233,7 +233,7 @@ function load(datatype: Type) {
         } else {
             console.log("   movsxd rax, dword ptr [rax]");
         }
-    } else if(datatype.size === 8){
+    } else if (datatype.size === 8) {
         console.log("   mov rax, [rax]");
     } else if (datatype.kind === myType.slice) {
         console.error("Invalid load");
@@ -340,10 +340,18 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             break;
         case exprType.assign:
-            genLvalue(expr.left as Expression);
-            push();
-            generateCode(expr.right as Expression);
-            store(expr.left?.datatype as Type);
+            switch (expr.datatype.kind) {
+                case myType.slice:
+                    for(let item of expr.defaults) {
+                        generateCode(item);
+                    }
+                    break
+                default:
+                    genLvalue(expr.left as Expression);
+                    push();
+                    generateCode(expr.right as Expression);
+                    store(expr.left?.datatype as Type);
+            }
             break;
         case exprType.identifier:
             generateAddress(expr);
@@ -409,8 +417,8 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.vardeclstmt:
             if (stmt.expr.datatype.kind === myType.slice) {
-                if(stmt.defaults) {
-                    for (let item of stmt.defaults) { generateCode(item);}
+                if (stmt.defaults) {
+                    for (let item of stmt.defaults) { generateCode(item); }
                 }
             } else if (stmt.expr.datatype.kind == myType.array) {
                 // for(let item of stmt.datatype.members) {
@@ -524,7 +532,7 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
             //     return;
             // }
 
-            if(g.datatype.kind === myType.slice) {
+            if (g.datatype.kind === myType.slice) {
                 console.log(`   .quad ${g.value.bytes.length}`);
                 console.log("   .quad .L.data." + g.value.label);
                 return;

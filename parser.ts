@@ -366,8 +366,16 @@ export class Parser {
             equals = this.previous();
             var val = this.assign();
             if (expr.type === exprType.identifier) {
-                var n = new Expression().newExprAssign(expr, val);
-                return n;
+                switch(expr.datatype.kind) {
+                    case myType.slice:
+                        var off = expr.offset;
+                        var expr = new Expression().newExprAssign(expr, val);
+                        expr.defaults = Statement.makeSliceCopy(off, val);
+                        return expr;
+                    default:
+                       return new Expression().newExprAssign(expr, val);
+
+                }
             } else if (expr.type === exprType.get) {
                 var set = new Expression().newExprSet(expr, val);
                 return set;
