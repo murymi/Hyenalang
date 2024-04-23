@@ -341,7 +341,7 @@ function genAssignLarge(expr: Expression) {
     storeStruct(expr.left?.datatype as Type);
 }
 
-function storeSliceWithIndex(
+function storeSliceFromArrayWithIndex(
     to: Expression | Statement,
     from: Expression,
     begin: Expression,
@@ -362,6 +362,36 @@ function storeSliceWithIndex(
     //console.error("==============")
     generateAddress(from);
     console.log("add rax, 8");
+    console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
+    console.log("add rax, rdx");
+    pop("rdi");
+    console.log("mov [rdi], rax");
+}
+
+function storeSliceFromSliceWithIndex(
+    to: Expression | Statement,
+    from: Expression,
+    begin: Expression,
+    end: Expression,
+    v: boolean
+) {
+    generateCode(begin);
+    console.log("mov rdx, rax");
+    push();
+    generateCode(end);
+    pop("rdi");
+    genSubtract();
+    console.log("mov rcx, rax");
+    v ? genAddress(to) : genLvalue(to);
+    console.log("mov [rax], rcx");
+    console.log("add rax, 8");
+    push();
+    //console.error("==============")
+    generateAddress(from);
+    console.log("add rax, 8");
+
+    console.log("mov rax, [rax]");
+    
     console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
     console.log("add rax, rdx");
     pop("rdi");
@@ -480,7 +510,13 @@ function declareSlice(stmt: Statement) {
         switch (stmt.initializer.type) {
             case exprType.ssld:
                 //console.error("---------------");
-                storeSliceWithIndex(stmt, stmt.initializer.id,
+                storeSliceFromArrayWithIndex(stmt, stmt.initializer.id,
+                    stmt.initializer.left as Expression,
+                    stmt.initializer.right as Expression, true
+                )
+                break;
+            case exprType.asld:
+                storeSliceFromSliceWithIndex(stmt, stmt.initializer.id,
                     stmt.initializer.left as Expression,
                     stmt.initializer.right as Expression, true
                 )

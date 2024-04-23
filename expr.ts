@@ -18,6 +18,7 @@ export enum exprType {
     //arrayget,
     //arrayset,
     address,
+    asld,
     ssld
     //address_set
 }
@@ -194,7 +195,7 @@ export class Expression {
         return this;
     }
 
-    newExprSlideSlice(expr:Expression, begin:Expression, end:Expression) {
+    newExprSlideArray(expr:Expression, begin:Expression, end:Expression) {
         this.type = exprType.ssld;
         this.left = begin;
         this.right = end;

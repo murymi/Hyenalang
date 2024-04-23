@@ -6,21 +6,18 @@ struct foo {
     y: u64
 }
 
-var a:[10]u8;
+var a = "hello world";
 
 fn main() void {
+
+    var b = a[0:5];
+
+    var c = b[1:5];
+
     var i = 0;
-    while(i < a.len) {
-        a[i] = i;
-        i = i + 1;
-    }
 
-    var b = a[0:8];
-
-    i = 0;
-
-    while(i < b.len) {
-        printf("%d\n", b[i]);
+    while(i < c.len) {
+        printf("%c\n", c[i]);
         i = i + 1;
     }
 }

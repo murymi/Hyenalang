@@ -225,12 +225,22 @@ export class Parser {
         )
     }
 
+    parseArraySlide(expr: Expression, index: Expression): Expression {
+        //console.error("==========================");
+        var end = this.expression();
+        //console.log(this.peek());
+        this.expect(tokenType.rightsquare, "Expect ] ");
+        return new Expression().newExprSlideArray(expr, index, end);
+    }
+
     parseSliceSlide(expr: Expression, index: Expression): Expression {
         //console.error("==========================");
         var end = this.expression();
         //console.log(this.peek());
         this.expect(tokenType.rightsquare, "Expect ] ");
-        return new Expression().newExprSlideSlice(expr, index, end);
+        var s = new Expression().newExprSlideArray(expr, index, end);
+        s.type = exprType.asld;
+        return s;
     }
 
     index(expr: Expression): Expression {
@@ -251,7 +261,7 @@ export class Parser {
             case myType.array:
                 switch (t.type) {
                     case tokenType.colon:
-                        return this.parseSliceSlide(expr, index)
+                        return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
                         return this.parseSliceIndex(expr, index);
                     default:
