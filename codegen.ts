@@ -5,7 +5,7 @@ import { Statement, stmtType } from "./stmt";
 import { fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
-import { Type, alignTo, f32, myType } from "./type";
+import { Type, alignTo, f32, myType, u64 } from "./type";
 
 
 var latestContinueLabel = "";
@@ -294,6 +294,7 @@ function genAddress(stmt: Statement | Expression) {
 }
 
 function generateAddress(expr: Expression | Statement) {
+    //console.error(expr);
     switch (expr.type) {
         case exprType.identifier:
             if (expr.is_glob) {
@@ -340,6 +341,37 @@ function genAssignLarge(expr: Expression) {
     storeStruct(expr.left?.datatype as Type);
 }
 
+function storeSliceWithIndex(
+    to: Expression | Statement,
+    from: Expression,
+    begin: Expression,
+    end: Expression,
+    v: boolean
+) {
+    generateCode(begin);
+    console.log("mov rdx, rax");
+    push();
+    generateCode(end);
+    pop("rdi");
+    genSubtract();
+
+    console.log("mov rcx, rax");
+
+    v ? genAddress(to) : genLvalue(to);
+    console.log("mov [rax], rcx");
+    console.log("add rax, 8");
+    push();
+
+    genLvalue(from);
+    console.log("add rax, 8");
+    console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
+    console.log("add rax, rdx");
+    pop("rdi");
+
+    console.log("mov [rdi], rax");
+
+}
+
 function generateCode(expr: Expression) {
     switch (expr.type) {
         case exprType.address:
@@ -376,8 +408,8 @@ function generateCode(expr: Expression) {
         case exprType.assign:
             switch (expr.datatype.kind) {
                 case myType.slice:
-                    //for (let item of expr.defaults) { generateCode(item); }
-                    //break;
+                //for (let item of expr.defaults) { generateCode(item); }
+                //break;
                 case myType.struct:
                     if (expr.datatype.size > 8) {
                         genAssignLarge(expr);
@@ -446,6 +478,29 @@ function genAlignedCall() {
     console.log("   ret")
 }
 
+function declareSlice(stmt: Statement) {
+    if (stmt.initializer) {
+        switch (stmt.initializer.type) {
+            case exprType.ssld:
+                storeSliceWithIndex(stmt, stmt.initializer.id,
+                    stmt.initializer.left as Expression,
+                    stmt.initializer.right as Expression, true
+                )
+                break;
+            default:
+                genAddress(stmt);
+                push();
+                generateAddress(stmt.initializer);
+                storeStruct(stmt.expr.datatype);
+        }
+    } else {
+        if (stmt.defaults) {
+            for (let item of stmt.defaults) { generateCode(item); }
+        }
+    }
+
+}
+
 
 function genStmt(stmt: Statement, fnid: number): void {
     switch (stmt.type) {
@@ -457,17 +512,9 @@ function genStmt(stmt: Statement, fnid: number): void {
                 // if (stmt.defaults) {
                 //     for (let item of stmt.defaults) { generateCode(item); }
                 // }
-                if (stmt.initializer) {
-                    genAddress(stmt);
-                    push();
-                    generateAddress(stmt.initializer);
-                    storeStruct(stmt.expr.datatype);
-                } else {
-                    if(stmt.defaults) {
-                        for (let item of stmt.defaults) { generateCode(item); }
-                    }
-                }
-                
+
+                declareSlice(stmt);
+
             } else if (stmt.expr.datatype.kind == myType.array) {
                 // for(let item of stmt.datatype.members) {
                 //     if(item.default) {

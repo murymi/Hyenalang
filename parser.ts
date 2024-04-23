@@ -165,6 +165,70 @@ export class Parser {
         return expr;
     }
 
+    parseGet(expr:Expression):Expression {
+        var propname = this.advance();
+        if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
+            this.tokenError("expect property name after dot", this.peek());
+        }
+
+        if (expr.datatype.kind === myType.struct || expr.datatype.kind === myType.slice) {
+            var meta = getOffsetOfMember(expr.datatype, propname.value as string);
+            return new Expression().newExprGet(meta.offset, expr, meta.datatype);
+            //console.error("=================");
+        } else if (expr.datatype.kind === myType.ptr) {
+            return new Expression().newExprDeref(expr);
+        } else if (expr.datatype.kind === myType.enum) {
+            var val = expr.datatype.enumvalues.find((e) => e.name === propname.value);
+            if (val) {
+                return new Expression().newExprNumber(val.value);
+            }
+            console.error(`enum ${expr.name} has no field named ${propname.value}`);
+            process.exit(1);
+        } else {
+            console.error("member access to non struct");
+            process.exit(1);
+        }
+    }
+
+    parseArrayIndex(expr:Expression):Expression {
+        var index = this.expression();
+        this.expect(tokenType.rightsquare, "Expect ]");
+        return new Expression().newExprDeref(
+            new Expression().newExprBinary(
+                new Token(tokenType.plus, "+", 0, 0), expr,
+                new Expression().newExprBinary(
+                    new Token(tokenType.multiply, "*", 0, 0),
+                    new Expression().newExprNumber(expr.datatype.size),
+                    index
+                )
+            )
+        )
+    }
+
+    parseSliceIndex(expr: Expression, index: Expression): Expression {
+        var meta = getOffsetOfMember(expr.datatype, "ptr");
+        var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
+
+        ///expr = new Expression().newExprGet(0, expr,)
+        //console.error(expr.datatype.members[0].type.base.size);
+        return new Expression().newExprDeref(
+            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex,
+                new Expression().newExprBinary(
+                    new Token(tokenType.multiply, "*", 0, 0),
+                    new Expression().newExprNumber(expr.datatype.members[1].type.base.size),
+                    index
+                ))
+        )
+    }
+
+    parseSliceSlide(expr:Expression, index:Expression):Expression {
+        //console.error("==========================");
+        var end = this.expression();
+        //console.log(this.peek());
+        this.expect(tokenType.rightsquare, "Expect ] ");
+        return new Expression().newExprSlideSlice(expr, index, end);
+    }
+
     // postfix
     call(): Expression {
         var expr = this.primary();
@@ -173,60 +237,25 @@ export class Parser {
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
-                var propname = this.advance();
-                if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
-                    this.tokenError("expect property name after dot", this.peek());
-                }
-
-                if (expr.datatype.kind === myType.struct || expr.datatype.kind === myType.slice) {
-                    var meta = getOffsetOfMember(expr.datatype, propname.value as string);
-                    expr = new Expression().newExprGet(meta.offset, expr, meta.datatype);
-                    //console.error("=================");
-                } else if (expr.datatype.kind === myType.ptr) {
-                    expr = new Expression().newExprDeref(expr);
-                } else if (expr.datatype.kind === myType.enum) {
-                    var val = expr.datatype.enumvalues.find((e) => e.name === propname.value);
-                    if (val) {
-                        return new Expression().newExprNumber(val.value);
-                    }
-                    console.error(`enum ${expr.name} has no field named ${propname.value}`);
-                    process.exit(1);
-                } else {
-                    console.error("member access to non struct");
-                    process.exit(1);
-                }
+                expr = this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
                 if (expr.datatype.kind === myType.array) {
-                    var index = this.expression();
-                    this.expect(tokenType.rightsquare, "Expect ]");
-                    expr = new Expression().newExprDeref(
-                        new Expression().newExprBinary(
-                            new Token(tokenType.plus, "+", 0, 0), expr,
-                            new Expression().newExprBinary(
-                                new Token(tokenType.multiply, "*", 0, 0),
-                                new Expression().newExprNumber(expr.datatype.size),
-                                index
-                            )
-                        )
-                    )
+                    expr = this.parseArrayIndex(expr);
                 } else if (expr.datatype.kind === myType.slice) {
+                    //console.error(this.peek());
                     var index = this.expression();
-                    this.expect(tokenType.rightsquare, "Expect ]");
+                    var t = this.advance();
+                    switch (t.type) {
+                        case tokenType.colon:
+                            expr = this.parseSliceSlide(expr, index)
+                            break;
+                        case tokenType.rightsquare:
+                            expr = this.parseSliceIndex(expr, index);
+                            break;
+                        default:
+                            this.tokenError("Expect ]", t);
 
-
-                    var meta = getOffsetOfMember(expr.datatype, "ptr");
-                    var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
-
-                    ///expr = new Expression().newExprGet(0, expr,)
-                    //console.error(expr.datatype.members[0].type.base.size);
-                    expr = new Expression().newExprDeref(
-                        new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex,
-                            new Expression().newExprBinary(
-                                new Token(tokenType.multiply, "*", 0, 0),
-                                new Expression().newExprNumber(expr.datatype.members[1].type.base.size),
-                                index
-                            ))
-                    )
+                    }
                 } else {
                     console.error("indexing non array");
                     process.exit(1);
@@ -266,7 +295,7 @@ export class Parser {
 
     factor(): Expression {
         var expr = this.unary();
-        while (this.match([tokenType.divide, tokenType.multiply, tokenType.mod ])) {
+        while (this.match([tokenType.divide, tokenType.multiply, tokenType.mod])) {
             var operator = this.previous();
             var right = this.unary();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -368,14 +397,14 @@ export class Parser {
             equals = this.previous();
             var val = this.assign();
             if (expr.type === exprType.identifier) {
-                switch(expr.datatype.kind) {
+                switch (expr.datatype.kind) {
                     case myType.slice:
                         var off = expr.offset;
                         var expr = new Expression().newExprAssign(expr, val);
                         expr.defaults = Statement.makeSliceCopy(off, val);
                         return expr;
                     default:
-                       return new Expression().newExprAssign(expr, val);
+                        return new Expression().newExprAssign(expr, val);
 
                 }
             } else if (expr.type === exprType.get) {
@@ -536,7 +565,7 @@ export class Parser {
     }
 
 
-    makeSliceCopy(from: Expression, to:Expression): Expression[] {
+    makeSliceCopy(from: Expression, to: Expression): Expression[] {
         var xpr: Expression[] = [];
         // x.ptr = x.ptr
         // x.len = x.len
@@ -548,14 +577,14 @@ export class Parser {
                     0,
                     new Expression().newExprIdentifier(
                         to.name, to.offset, from.datatype, identifierType.variable
-                        ),
+                    ),
                     u64
                 ),
                 new Expression().newExprGet(
                     0,
                     new Expression().newExprIdentifier(
                         from.name, from.offset, from.datatype, identifierType.variable
-                        ),
+                    ),
                     u64
                 )
             )
@@ -567,14 +596,14 @@ export class Parser {
                     8,
                     new Expression().newExprIdentifier(
                         to.name, to.offset, from.datatype, identifierType.variable
-                        ),
+                    ),
                     new Type().newPointer(u8)
                 ),
                 new Expression().newExprGet(
                     8,
                     new Expression().newExprIdentifier(
                         from.name, from.offset, from.datatype, identifierType.variable
-                        ),
+                    ),
                     new Type().newPointer(u8)
                 )
             )
@@ -601,8 +630,8 @@ export class Parser {
                 ])
 
             } else if (initializer.datatype.kind === myType.slice) {
-                //console.error(initializer);
                 type = initializer.datatype;
+                //console.error("===================================", type);
                 //initializer = new Expression().newExprDeref(initializer);
             } else {
                 type = initializer.datatype;

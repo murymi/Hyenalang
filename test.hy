@@ -7,22 +7,19 @@ struct foo {
 }
 
 fn main() void {
-    var a:[10]u64;
-
+    var a:[10]u8;
     var i = 0;
-
     while(i < a.len) {
-        a[i] = i;
+        a[i] = i*2;
         i = i + 1;
     }
 
-    var b = a;
+    var b = a[3:8];
 
     i = 0;
+
     while(i < b.len) {
         printf("%d\n", b[i]);
         i = i + 1;
     }
-
-    return @sizeof(b);
 }

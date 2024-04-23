@@ -13,24 +13,24 @@
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 184
-   lea rax, [rbp-88]
+   sub rsp, 48
+   lea rax, [rbp-24]
    add rax, 0
    push rax
    mov rax, 10
    pop rdi
    mov [rdi], rax
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    push rax
    mov rax, 0
    pop rdi
    mov [rdi], eax
 .L.continue.1:
-   lea rax, [rbp-88]
+   lea rax, [rbp-24]
    add rax, 0
    mov rax, [rax]
    push rax
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    pop rdi
    cmp rax, rdi
@@ -38,27 +38,31 @@ main:
    movzb rax, al
    cmp rax, 0
    je .L.break.1
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    push rax
-   mov rax, 8
+   mov rax, 1
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-88]
+   lea rax, [rbp-24]
    add rax, 8
    pop rdi
    add rax, rdi
    push rax
-   lea rax, [rbp-92]
+   mov rax, 2
+   push rax
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-92]
+   imul rax, rdi
+   pop rdi
+   mov [rdi], al
+   lea rax, [rbp-28]
    push rax
    mov rax, 1
    push rax
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    pop rdi
    add rax, rdi
@@ -66,43 +70,34 @@ main:
    mov [rdi], eax
    jmp .L.continue.1
 .L.break.1:
-   lea rax, [rbp-184]
+   mov rax, 3
+mov rdx, rax
    push rax
-   lea rax, [rbp-88]
+   mov rax, 8
    pop rdi
-   movq rcx, [rax+0]
-   movq [rdi+0], rcx
-   movq rcx, [rax+8]
-   movq [rdi+8], rcx
-   movq rcx, [rax+16]
-   movq [rdi+16], rcx
-   movq rcx, [rax+24]
-   movq [rdi+24], rcx
-   movq rcx, [rax+32]
-   movq [rdi+32], rcx
-   movq rcx, [rax+40]
-   movq [rdi+40], rcx
-   movq rcx, [rax+48]
-   movq [rdi+48], rcx
-   movq rcx, [rax+56]
-   movq [rdi+56], rcx
-   movq rcx, [rax+64]
-   movq [rdi+64], rcx
-   movq rcx, [rax+72]
-   movq [rdi+72], rcx
-   movq rcx, [rax+80]
-   movq [rdi+80], rcx
-   lea rax, [rbp-92]
+   sub rax, rdi
+mov rcx, rax
+   lea rax, [rbp-48]
+mov [rax], rcx
+add rax, 8
+   push rax
+   lea rax, [rbp-24]
+add rax, 8
+imul rdx, 1
+add rax, rdx
+   pop rdi
+mov [rdi], rax
+   lea rax, [rbp-28]
    push rax
    mov rax, 0
    pop rdi
    mov [rdi], eax
 .L.continue.2:
-   lea rax, [rbp-184]
+   lea rax, [rbp-48]
    add rax, 0
    mov rax, [rax]
    push rax
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    pop rdi
    cmp rax, rdi
@@ -112,28 +107,29 @@ main:
    je .L.break.2
    lea rax, .L.data.0
    push rax
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    push rax
-   mov rax, 8
+   mov rax, 1
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-184]
+   lea rax, [rbp-48]
    add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
-   mov rax, [rax]
+   movsx rax, byte ptr [rax]
    push rax
    pop rsi
    pop rdi
    lea r15, printf
    call buitin_glibc_caller
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    push rax
    mov rax, 1
    push rax
-   lea rax, [rbp-92]
+   lea rax, [rbp-28]
    movsxd rax, dword ptr [rax]
    pop rdi
    add rax, rdi
@@ -141,8 +137,6 @@ main:
    mov [rdi], eax
    jmp .L.continue.2
 .L.break.2:
-   mov rax, 88
-   jmp .L.endfn.0
    xor rax, rax
 .L.endfn.0:
    mov rsp, rbp

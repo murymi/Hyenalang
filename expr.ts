@@ -1,6 +1,6 @@
 import { addGlobalString, fnType } from "./main";
 import { Token } from "./token";
-import { Type, f32, i32, i64, myType, u8 } from "./type";
+import { Type, f32, i32, i64, myType, u64, u8 } from "./type";
 
 export enum exprType {
     unary,
@@ -18,6 +18,7 @@ export enum exprType {
     //arrayget,
     //arrayset,
     address,
+    ssld
     //address_set
 }
 
@@ -69,6 +70,9 @@ export class Expression {
 
     //struct
     defaults:Expression[]
+
+    //slice
+    id:Expression
 
     newExprAddressSet(left:Expression, right:Expression) {
         this.left = left;// a deref
@@ -187,6 +191,21 @@ export class Expression {
         this.datatype.kind = myType.string;
         this.label = addGlobalString(val);
         this.labelinitialize = true;
+        return this;
+    }
+
+    newExprSlideSlice(expr:Expression, begin:Expression, end:Expression) {
+        this.type = exprType.ssld;
+        this.left = begin;
+        this.right = end;
+        this.id = expr;
+        this.datatype = new Type().newStruct([
+            { name: "len", datatype: u64, default: undefined },
+            { name: "ptr", datatype: new Type().newPointer(expr.datatype.members[1].type.base), default: undefined }
+        ])
+        //console.log(expr.datatype);
+        //this.datatype.base = new Type().newPointer(expr.datatype.members[1].type.base);
+        this.datatype.kind = myType.slice;
         return this;
     }
 

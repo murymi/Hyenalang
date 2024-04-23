@@ -173,7 +173,7 @@ export class Lexer {
         while (this.moreTokens()) {
             var pk = this.peek();
             if (!this.isNumber(pk)) {
-                if (pk !== "." && !this.isNumber(this.peekNext())) break;
+                if (pk === "." && this.isNumber(this.peekNext())) {} else break;
                 isfloat = true;
             }
             this.advance();
