@@ -165,13 +165,17 @@ export class Parser {
         return expr;
     }
 
-    parseGet(expr:Expression):Expression {
+    parseGet(expr: Expression): Expression {
         var propname = this.advance();
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             this.tokenError("expect property name after dot", this.peek());
         }
 
-        if (expr.datatype.kind === myType.struct || expr.datatype.kind === myType.slice) {
+        if (
+            expr.datatype.kind === myType.struct ||
+            expr.datatype.kind === myType.slice ||
+            expr.datatype.kind === myType.array
+        ) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
             //console.error("=================");
@@ -190,7 +194,7 @@ export class Parser {
         }
     }
 
-    parseArrayIndex(expr:Expression):Expression {
+    parseArrayIndex(expr: Expression): Expression {
         var index = this.expression();
         this.expect(tokenType.rightsquare, "Expect ]");
         return new Expression().newExprDeref(
@@ -221,7 +225,7 @@ export class Parser {
         )
     }
 
-    parseSliceSlide(expr:Expression, index:Expression):Expression {
+    parseSliceSlide(expr: Expression, index: Expression): Expression {
         //console.error("==========================");
         var end = this.expression();
         //console.log(this.peek());
@@ -229,37 +233,50 @@ export class Parser {
         return new Expression().newExprSlideSlice(expr, index, end);
     }
 
+    index(expr: Expression): Expression {
+        var index = this.expression();
+        var t = this.advance();
+        switch (expr.datatype.kind) {
+            case myType.slice:
+                switch (t.type) {
+                    case tokenType.colon:
+                        return this.parseSliceSlide(expr, index)
+                    case tokenType.rightsquare:
+                        return this.parseSliceIndex(expr, index);
+                    default:
+                        this.tokenError("Expect ]", t);
+
+                }
+                break;
+            case myType.array:
+                switch (t.type) {
+                    case tokenType.colon:
+                        return this.parseSliceSlide(expr, index)
+                    case tokenType.rightsquare:
+                        return this.parseSliceIndex(expr, index);
+                    default:
+                        this.tokenError("Expect ]", t);
+
+                }
+                break;
+            default:
+                console.error("indexing non array");
+                process.exit(1);
+
+        }
+        return new Expression();
+    }
+
     // postfix
     call(): Expression {
         var expr = this.primary();
         while (true) {
-
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
                 expr = this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
-                if (expr.datatype.kind === myType.array) {
-                    expr = this.parseArrayIndex(expr);
-                } else if (expr.datatype.kind === myType.slice) {
-                    //console.error(this.peek());
-                    var index = this.expression();
-                    var t = this.advance();
-                    switch (t.type) {
-                        case tokenType.colon:
-                            expr = this.parseSliceSlide(expr, index)
-                            break;
-                        case tokenType.rightsquare:
-                            expr = this.parseSliceIndex(expr, index);
-                            break;
-                        default:
-                            this.tokenError("Expect ]", t);
-
-                    }
-                } else {
-                    console.error("indexing non array");
-                    process.exit(1);
-                }
+                expr = this.index(expr);
             } else {
                 break;
             }
@@ -413,6 +430,7 @@ export class Parser {
             } else if (expr.type === exprType.deref) {
                 return new Expression().newExprAddressSet(expr, val);
             }
+            console.error(expr);
             this.tokenError("Unexpected assignment", equals);
         }
 
@@ -510,7 +528,7 @@ export class Parser {
                 { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) },
                 { name: "ptr", datatype: ptr, default: undefined }
             ])
-            holder.kind = myType.slice;
+            holder.kind = myType.array;
             return holder;
         }
         var tok = this.advance();

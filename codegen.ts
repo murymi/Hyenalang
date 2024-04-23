@@ -294,7 +294,7 @@ function genAddress(stmt: Statement | Expression) {
 }
 
 function generateAddress(expr: Expression | Statement) {
-    //console.error(expr);
+    //console.error(expr.type);
     switch (expr.type) {
         case exprType.identifier:
             if (expr.is_glob) {
@@ -321,7 +321,7 @@ function generateAddress(expr: Expression | Statement) {
 
 function genLvalue(expr: Expression | Statement) {
     if (expr.datatype.kind === myType.array) {
-        console.error("not an lvalue");
+        console.error("not an llvalue");
         process.exit(1);
     }
     generateAddress(expr);
@@ -354,20 +354,17 @@ function storeSliceWithIndex(
     generateCode(end);
     pop("rdi");
     genSubtract();
-
     console.log("mov rcx, rax");
-
     v ? genAddress(to) : genLvalue(to);
     console.log("mov [rax], rcx");
     console.log("add rax, 8");
     push();
-
-    genLvalue(from);
+    //console.error("==============")
+    generateAddress(from);
     console.log("add rax, 8");
     console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
     console.log("add rax, rdx");
     pop("rdi");
-
     console.log("mov [rdi], rax");
 
 }
@@ -482,12 +479,13 @@ function declareSlice(stmt: Statement) {
     if (stmt.initializer) {
         switch (stmt.initializer.type) {
             case exprType.ssld:
+                //console.error("---------------");
                 storeSliceWithIndex(stmt, stmt.initializer.id,
                     stmt.initializer.left as Expression,
                     stmt.initializer.right as Expression, true
                 )
                 break;
-            default:
+                default:
                 genAddress(stmt);
                 push();
                 generateAddress(stmt.initializer);
@@ -512,15 +510,14 @@ function genStmt(stmt: Statement, fnid: number): void {
                 // if (stmt.defaults) {
                 //     for (let item of stmt.defaults) { generateCode(item); }
                 // }
-
+                
                 declareSlice(stmt);
-
-            } else if (stmt.expr.datatype.kind == myType.array) {
-                // for(let item of stmt.datatype.members) {
-                //     if(item.default) {
-                //         
-                //     }
-                // }
+                
+            } else if (stmt.expr.datatype.kind === myType.array) {
+                //console.error("*******8888888888888");
+                if (stmt.defaults) {
+                     for (let item of stmt.defaults) { generateCode(item); }
+                 }
             } else if (stmt.expr.datatype.kind === myType.struct) {
                 if (stmt.initializer) {
                     genAddress(stmt);
@@ -628,11 +625,11 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
 
-            // if (g.value.labelinitialize) {
-            //     console.log(`   .quad ${g.value.bytes.length}`);
-            //     console.log("   .quad .L.data." + g.value.label);
-            //     return;
-            // }
+            if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
+                console.log(`   .quad ${g.datatype.members[1].type.size}`);
+                console.log(`   .zero ${g.datatype.members[1].type.size}`);
+                return;
+            }
 
             if (g.datatype.kind === myType.slice) {
                 console.log(`   .quad ${g.value.bytes.length}`);

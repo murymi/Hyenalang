@@ -139,13 +139,13 @@ export class Statement {
 
     newVarstatement(name: string, initializer: Expression | undefined, offset: number, datatype: Type, is_global: boolean): Statement {
         if (initializer === undefined) {
-            if (datatype.kind === myType.slice) {
+            if (datatype.kind === myType.slice || datatype.kind === myType.array) {
                 this.defaults = this.makeStructInitializer(offset, datatype);
                 //console.error(this.defaults);
                 this.expr = new Expression();
                 this.expr.datatype = voidtype;
                 this.expr.datatype.kind = myType.slice;
-            } else if(datatype.kind === myType.struct) {
+            } else if (datatype.kind === myType.struct) {
                 this.expr = new Expression();
                 this.expr.datatype = voidtype;
                 this.expr.datatype.kind = myType.struct;
@@ -176,7 +176,9 @@ export class Statement {
         this.type = stmtType.vardeclstmt;
         this.offset = offset;
         if (is_global) {
-            addGlobal(name, undefined, datatype);
+            addGlobal(name,
+                datatype.kind === myType.array ? new Expression() : undefined,
+                datatype);
         }
         return this;
     }

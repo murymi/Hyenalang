@@ -7,30 +7,29 @@
    .byte '
 '
    .byte 0
+.align 8
+a:
+   .quad 10
+   .zero 10
 .bss
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 48
-   lea rax, [rbp-24]
-   add rax, 0
-   push rax
-   mov rax, 10
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-28]
+   sub rsp, 24
+   lea rax, [rbp-4]
    push rax
    mov rax, 0
    pop rdi
    mov [rdi], eax
 .L.continue.1:
-   lea rax, [rbp-24]
+   push offset a
+   pop rax
    add rax, 0
    mov rax, [rax]
    push rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    pop rdi
    cmp rax, rdi
@@ -38,31 +37,28 @@ main:
    movzb rax, al
    cmp rax, 0
    je .L.break.1
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    push rax
    mov rax, 1
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-24]
+   push offset a
+   pop rax
    add rax, 8
    pop rdi
    add rax, rdi
    push rax
-   mov rax, 2
-   push rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    pop rdi
-   imul rax, rdi
-   pop rdi
    mov [rdi], al
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    push rax
    mov rax, 1
    push rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    pop rdi
    add rax, rdi
@@ -70,34 +66,35 @@ main:
    mov [rdi], eax
    jmp .L.continue.1
 .L.break.1:
-   mov rax, 3
+   mov rax, 0
 mov rdx, rax
    push rax
    mov rax, 8
    pop rdi
    sub rax, rdi
 mov rcx, rax
-   lea rax, [rbp-48]
+   lea rax, [rbp-24]
 mov [rax], rcx
 add rax, 8
    push rax
-   lea rax, [rbp-24]
+   push offset a
+   pop rax
 add rax, 8
 imul rdx, 1
 add rax, rdx
    pop rdi
 mov [rdi], rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    push rax
    mov rax, 0
    pop rdi
    mov [rdi], eax
 .L.continue.2:
-   lea rax, [rbp-48]
+   lea rax, [rbp-24]
    add rax, 0
    mov rax, [rax]
    push rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    pop rdi
    cmp rax, rdi
@@ -107,14 +104,14 @@ mov [rdi], rax
    je .L.break.2
    lea rax, .L.data.0
    push rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    push rax
    mov rax, 1
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-48]
+   lea rax, [rbp-24]
    add rax, 8
    mov rax, [rax]
    pop rdi
@@ -125,11 +122,11 @@ mov [rdi], rax
    pop rdi
    lea r15, printf
    call buitin_glibc_caller
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    push rax
    mov rax, 1
    push rax
-   lea rax, [rbp-28]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    pop rdi
    add rax, rdi
