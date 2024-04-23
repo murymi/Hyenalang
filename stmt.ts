@@ -91,7 +91,11 @@ export class Statement {
         return initExpr;
     }
 
-    newStringVarStatement(name: string, offset: number, str: Expression, datatype: Type, is_global: boolean) {
+    newStringVarStatement(name: string, offset: number, str: Expression,is_global: boolean) {
+        var datatype = new Type().newStruct([
+            { name: "len", datatype: u64, default: undefined },
+            { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
+        ]);
         this.is_global = is_global;
         this.defaults = this.makeStringInitializerFromPtr(offset, str, datatype);
         this.type = stmtType.vardeclstmt;

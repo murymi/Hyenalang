@@ -22,7 +22,7 @@ import {
     resetCurrentFunction,
     setCurrentFuction
 } from "./main";
-import { Type, bool, f32, i16, i32, i64, i8, myType, u16, u32, u64, u8, voidtype } from "./type";
+import { Type, bool, f32, i16, i32, i64, i8, myType, str, u16, u32, u64, u8, voidtype } from "./type";
 
 export class Parser {
     tokens: Token[];
@@ -213,8 +213,7 @@ export class Parser {
         var meta = getOffsetOfMember(expr.datatype, "ptr");
         var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
 
-        ///expr = new Expression().newExprGet(0, expr,)
-        //console.error(expr.datatype.members[0].type.base.size);
+
         return new Expression().newExprDeref(
             new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex,
                 new Expression().newExprBinary(
@@ -230,7 +229,9 @@ export class Parser {
         var end = this.expression();
         //console.log(this.peek());
         this.expect(tokenType.rightsquare, "Expect ] ");
-        return new Expression().newExprSlideArray(expr, index, end);
+        var s= new Expression().newExprSlideArray(expr, index, end);
+        s.type = exprType.ssld;
+        return s;
     }
 
     parseSliceSlide(expr: Expression, index: Expression): Expression {
@@ -570,6 +571,10 @@ export class Parser {
                 return bool;
             case tokenType.f32:
                 return f32;
+            case tokenType.str:
+                var t = str;
+                t.kind = myType.slice;
+                return t;
             case tokenType.identifier:
                 var struc = getStruct(tok.value as string);
                 if (struc) {
@@ -659,18 +664,21 @@ export class Parser {
 
             } else if (initializer.datatype.kind === myType.slice) {
                 type = initializer.datatype;
-                //console.error("===================================", type);
                 //initializer = new Expression().newExprDeref(initializer);
             } else {
                 type = initializer.datatype;
             }
-
+            
         } else if (this.match([tokenType.colon])) {
             type = this.parseType()
         }
-
+        
+        //console.error("===================================", type);
         if (this.match([tokenType.equal])) {
             initializer = this.expression();
+            if(initializer.datatype.kind === myType.string) {
+                is_string = true;
+            }
         }
 
         if (type === undefined) {
@@ -687,11 +695,11 @@ export class Parser {
         }
 
         if (is_string) {
+            console.error("---uuuuuuuuuuuuuuu");
             return new Statement().newStringVarStatement(
                 name.value as string,
                 offset,
                 initializer as Expression,
-                type as Type,
                 is_global
             )
         }

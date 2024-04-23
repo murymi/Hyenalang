@@ -359,7 +359,6 @@ function storeSliceFromArrayWithIndex(
     console.log("mov [rax], rcx");
     console.log("add rax, 8");
     push();
-    //console.error("==============")
     generateAddress(from);
     console.log("add rax, 8");
     console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
@@ -386,17 +385,43 @@ function storeSliceFromSliceWithIndex(
     console.log("mov [rax], rcx");
     console.log("add rax, 8");
     push();
-    //console.error("==============")
     generateAddress(from);
     console.log("add rax, 8");
 
     console.log("mov rax, [rax]");
-    
+
     console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
     console.log("add rax, rdx");
     pop("rdi");
     console.log("mov [rdi], rax");
 
+}
+
+
+function assignSlice(expr: Expression) {
+    switch (expr.right?.type) {
+        case exprType.ssld:
+            storeSliceFromArrayWithIndex(
+                expr.left as Expression,
+                (expr.right as Expression).id,
+                (expr.right as Expression).left as Expression,
+                (expr.right as Expression).right as Expression, false
+            )
+            break;
+        case exprType.asld:
+            storeSliceFromSliceWithIndex(
+                expr.left as Expression,
+                (expr.right as Expression).id,
+                (expr.right as Expression).left as Expression,
+                (expr.right as Expression).right as Expression, false
+            )
+            break;
+        default:
+            genAddress(expr.left as Expression);
+            push();
+            generateAddress(expr.right as Expression);
+            storeStruct(expr.left?.datatype as Type);
+    }
 }
 
 function generateCode(expr: Expression) {
@@ -435,8 +460,8 @@ function generateCode(expr: Expression) {
         case exprType.assign:
             switch (expr.datatype.kind) {
                 case myType.slice:
-                //for (let item of expr.defaults) { generateCode(item); }
-                //break;
+                    assignSlice(expr);
+                    break;
                 case myType.struct:
                     if (expr.datatype.size > 8) {
                         genAssignLarge(expr);
@@ -521,7 +546,7 @@ function declareSlice(stmt: Statement) {
                     stmt.initializer.right as Expression, true
                 )
                 break;
-                default:
+            default:
                 genAddress(stmt);
                 push();
                 generateAddress(stmt.initializer);
@@ -543,17 +568,11 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.vardeclstmt:
             if (stmt.expr.datatype.kind === myType.slice) {
-                // if (stmt.defaults) {
-                //     for (let item of stmt.defaults) { generateCode(item); }
-                // }
-                
                 declareSlice(stmt);
-                
             } else if (stmt.expr.datatype.kind === myType.array) {
-                //console.error("*******8888888888888");
                 if (stmt.defaults) {
-                     for (let item of stmt.defaults) { generateCode(item); }
-                 }
+                    for (let item of stmt.defaults) { generateCode(item); }
+                }
             } else if (stmt.expr.datatype.kind === myType.struct) {
                 if (stmt.initializer) {
                     genAddress(stmt);

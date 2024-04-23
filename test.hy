@@ -1,23 +1,16 @@
-extern fn printf(str:*u8, num:u64) void;
+extern fn printf(string:*u8, num:u64) void;
 
 
-struct foo {
-    x: u64,
-    y: u64
-}
-
-var a = "hello world";
+var x = "hello cow";
 
 fn main() void {
 
-    var b = a[0:5];
+    var y:[10]u8;
 
-    var c = b[1:5];
+    var a:str;
 
-    var i = 0;
+    a = y[0:7];
 
-    while(i < c.len) {
-        printf("%c\n", c[i]);
-        i = i + 1;
-    }
+    return a.len;
+
 }

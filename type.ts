@@ -172,6 +172,10 @@ export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
 export var f32 = new Type().newType(myType.f32, 4, 4);
 export var enm = new Type().newType(myType.enum, 4, 4);
+export var str = new Type().newStruct([
+    { name: "len", datatype: u64, default: undefined },
+    { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
+]);
 
 
 function typeError(message: string, tok: Token | undefined) {
