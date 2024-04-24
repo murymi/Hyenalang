@@ -1,6 +1,6 @@
 import { addGlobalString, fnType } from "./main";
 import { Token } from "./token";
-import { Type, f32, i32, i64, myType, str, u64, u8 } from "./type";
+import { Type, f32, i32, i64, myType, str, u64, u8, voidtype } from "./type";
 
 export enum exprType {
     unary,
@@ -227,6 +227,7 @@ export class Expression {
 
     newExprUndefined() {
         this.type = exprType.undefnd;
+        this.datatype = voidtype;
         return this;
     }
 

@@ -9,10 +9,6 @@ fn main() void {
 
     var y = "hello world";
 
-    var c = &y;
-
-    var d = &c;
-
-    return d.*.*.len;
+    return foo(&y);
 
 }

@@ -21,7 +21,8 @@ foo:
    push rbp
    mov rbp, rsp
    sub rsp, 8
-   lea rax, [rbp-9]
+   mov [rbp-8], rdi
+   lea rax, [rbp-8]
    mov rax, [rax]
    add rax, 0
    mov rax, [rax]
@@ -36,7 +37,7 @@ foo:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 32
+   sub rsp, 16
    lea rax, [rbp-16]
    add rax, 8
    push rax
@@ -49,21 +50,10 @@ main:
    mov rax, 11
    pop rdi
    mov [rdi], rax
-   lea rax, [rbp-24]
-   push rax
    lea rax, [rbp-16]
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-32]
    push rax
-   lea rax, [rbp-24]
    pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-32]
-   mov rax, [rax]
-   mov rax, [rax]
-   add rax, 0
-   mov rax, [rax]
+   call foo
    jmp .L.endfn.2
    xor rax, rax
 .L.endfn.2:

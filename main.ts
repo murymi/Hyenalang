@@ -170,10 +170,12 @@ export function getOffsetOfMember(struct: Type, member: string) {
 }
 
 export function getLocalOffset(name: string): { offset: number, datatype: Type, glob:boolean } {
-    for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
-        if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope <= scopeDepth) {
-            var off = functions[currentFn].locals[i].offset + functions[currentFn].arity;
-            var type = functions[currentFn].locals[i].datatype;
+    var fn = functions[currentFn];
+
+    for (let i = fn.locals.length - 1; i >= 0; i--) {
+        if (fn.locals[i].name === name && fn.locals[i].scope <= scopeDepth) {
+            var off = fn.locals[i].offset;
+            var type = fn.locals[i].datatype;
 
             return { offset: off, datatype: type, glob:false }
         }
@@ -197,7 +199,7 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
         }
     }
 
-    throw new Error("undefined variable");
+    throw new Error(`undefined variable ${name}`);
 }
 
 export function getFn(name: string): Function {

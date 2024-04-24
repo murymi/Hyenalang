@@ -610,6 +610,14 @@ function genGlobalStrings(globs: { value: string }[]): number {
     return loffset + 1;
 }
 
+
+function genArgs(params:{ name: string, scope: number, datatype: Type, offset: number }[]) {
+    let i = 0;
+    for(let p of params) {
+        console.log(`   mov [rbp-${p.offset + p.datatype.size }], ${argRegisters[i]}`);
+    }
+}
+
 function genText(fns: Function[]) {
     console.log(".text");
     fns.forEach((fn) => {
@@ -621,9 +629,9 @@ function genText(fns: Function[]) {
             console.log("   mov rbp, rsp");
             console.log("   sub rsp, " + alignTo(8, fn.localOffset));
 
-            //genArgs(fn.params);
-
+            genArgs(fn.locals.slice(0, fn.arity));
             genStmt(fn.body, i);
+
             console.log("   xor rax, rax");
             console.log(`.L.endfn.${i}:`);
             console.log("   mov rsp, rbp");
