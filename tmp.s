@@ -8,50 +8,65 @@
    .byte 'l'
    .byte 'o'
    .byte ' '
-   .byte 'c'
-   .byte 'o'
    .byte 'w'
+   .byte 'o'
+   .byte 'r'
+   .byte 'l'
+   .byte 'd'
    .byte 0
-.align 8
-x:
-   .quad 9
-   .quad .L.data.0
 .bss
 .text
+.global foo
+foo:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 8
+   lea rax, [rbp-9]
+   mov rax, [rax]
+   add rax, 0
+   mov rax, [rax]
+   jmp .L.endfn.1
+   xor rax, rax
+.L.endfn.1:
+   mov rsp, rbp
+   pop rbp
+   ret
+
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 40
-   lea rax, [rbp-24]
-   add rax, 0
+   sub rsp, 32
+   lea rax, [rbp-16]
+   add rax, 8
    push rax
-   mov rax, 10
+   lea rax, .L.data.0
    pop rdi
    mov [rdi], rax
-   mov rax, 0
-mov rdx, rax
+   lea rax, [rbp-16]
+   add rax, 0
    push rax
-   mov rax, 7
+   mov rax, 11
    pop rdi
-   sub rax, rdi
-mov rcx, rax
-   lea rax, [rbp-40]
-mov [rax], rcx
-add rax, 8
+   mov [rdi], rax
+   lea rax, [rbp-24]
+   push rax
+   lea rax, [rbp-16]
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-32]
    push rax
    lea rax, [rbp-24]
-add rax, 8
-imul rdx, 1
-add rax, rdx
    pop rdi
-mov [rdi], rax
-   lea rax, [rbp-40]
+   mov [rdi], rax
+   lea rax, [rbp-32]
+   mov rax, [rax]
+   mov rax, [rax]
    add rax, 0
    mov rax, [rax]
-   jmp .L.endfn.0
+   jmp .L.endfn.2
    xor rax, rax
-.L.endfn.0:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret

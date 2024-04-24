@@ -1,16 +1,18 @@
 extern fn printf(string:*u8, num:u64) void;
 
 
-var x = "hello cow";
+fn foo(a:*[1]u8) u64 {
+    return a.*.len;
+}
 
 fn main() void {
 
-    var y:[10]u8;
+    var y = "hello world";
 
-    var a:str;
+    var c = &y;
 
-    a = y[0:7];
+    var d = &c;
 
-    return a.len;
+    return d.*.*.len;
 
 }

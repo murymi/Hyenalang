@@ -13,24 +13,9 @@ export enum myType {
     i16,
     i32,
     i64,
-    u8_ptr,
-    u16_ptr,
-    u32_ptr,
-    u64_ptr,
-
-    i8_ptr,
-    i16_ptr,
-    i32_ptr,
-    i64_ptr,
-
     f32,
     f64,
-
-    f32_ptr,
-    f64_ptr,
-
     void,
-    void_ptr,
 
     struct,
     enum,

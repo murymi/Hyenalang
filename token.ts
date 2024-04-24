@@ -88,6 +88,7 @@ export enum tokenType {
     bitnot,
 
     str,
+    undefined,
 
     eof
 };
@@ -257,6 +258,7 @@ export class Lexer {
         if (str === "and") return new Token(tokenType.and, str, this.line, this.col);
         if (str === "or") return new Token(tokenType.or, str, this.line, this.col);
         if (str === "str") return new Token(tokenType.str, str, this.line, this.col);
+        if (str === "undefined") return new Token(tokenType.undefined, str, this.line, this.col);
 
         return new Token(tokenType.identifier, str, this.line, this.col);
     }

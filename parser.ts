@@ -139,6 +139,11 @@ export class Parser {
         }
 
 
+        if (this.match([tokenType.undefined])) {
+            return new Expression().newExprUndefined();
+        }
+
+        console.log(this.peek());
 
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
@@ -174,11 +179,11 @@ export class Parser {
         if (
             expr.datatype.kind === myType.struct ||
             expr.datatype.kind === myType.slice ||
+            expr.datatype.kind === myType.string ||
             expr.datatype.kind === myType.array
         ) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
-            //console.error("=================");
         } else if (expr.datatype.kind === myType.ptr) {
             return new Expression().newExprDeref(expr);
         } else if (expr.datatype.kind === myType.enum) {
@@ -225,19 +230,15 @@ export class Parser {
     }
 
     parseArraySlide(expr: Expression, index: Expression): Expression {
-        //console.error("==========================");
         var end = this.expression();
-        //console.log(this.peek());
         this.expect(tokenType.rightsquare, "Expect ] ");
-        var s= new Expression().newExprSlideArray(expr, index, end);
+        var s = new Expression().newExprSlideArray(expr, index, end);
         s.type = exprType.ssld;
         return s;
     }
 
     parseSliceSlide(expr: Expression, index: Expression): Expression {
-        //console.error("==========================");
         var end = this.expression();
-        //console.log(this.peek());
         this.expect(tokenType.rightsquare, "Expect ] ");
         var s = new Expression().newExprSlideArray(expr, index, end);
         s.type = exprType.asld;
@@ -309,7 +310,7 @@ export class Parser {
             return new Expression().newExprUnary(operator, right);
         }
 
-        if (this.match([tokenType.andsand])) {
+        if (this.match([tokenType.andsand, tokenType.bitand])) {
             var left = this.unary();
             if (left.type === exprType.address) {
                 console.error("wtf bro!,, thats unsupported here");
@@ -474,7 +475,6 @@ export class Parser {
     re_turn(): Statement {
         if (this.match([tokenType.semicolon])) {
             var expr = new Expression().newExprNumber(0);
-            //expr.datatype = myType.void;
             expr.datatype = i64;
             return new Statement().newReturnStatement(expr);
         }
@@ -597,114 +597,68 @@ export class Parser {
         return i64;
     }
 
-
-    makeSliceCopy(from: Expression, to: Expression): Expression[] {
-        var xpr: Expression[] = [];
-        // x.ptr = x.ptr
-        // x.len = x.len
-
-        // identifier, get = identifier, get, 
-        xpr.push(
-            new Expression().newExprSet(
-                new Expression().newExprGet(
-                    0,
-                    new Expression().newExprIdentifier(
-                        to.name, to.offset, from.datatype, identifierType.variable
-                    ),
-                    u64
-                ),
-                new Expression().newExprGet(
-                    0,
-                    new Expression().newExprIdentifier(
-                        from.name, from.offset, from.datatype, identifierType.variable
-                    ),
-                    u64
-                )
-            )
+    makeStringInitializerFromPtr(off: number, string: Expression): Expression[] {
+        var exprid = new Expression().newExprIdentifier(
+            "",
+            off,
+            string.datatype,
+            identifierType.struct
         );
 
-        xpr.push(
-            new Expression().newExprSet(
-                new Expression().newExprGet(
-                    8,
-                    new Expression().newExprIdentifier(
-                        to.name, to.offset, from.datatype, identifierType.variable
-                    ),
-                    new Type().newPointer(u8)
-                ),
-                new Expression().newExprGet(
-                    8,
-                    new Expression().newExprIdentifier(
-                        from.name, from.offset, from.datatype, identifierType.variable
-                    ),
-                    new Type().newPointer(u8)
-                )
-            )
+        var initExpr: Expression[] = [];
+        var expr = new Expression().newExprGet(
+            string.datatype.members[1].offset,
+            exprid, string.datatype.members[1].type
         );
+        var set = new Expression().newExprSet(expr, string);
+        initExpr.push(set);
 
-        return xpr;
+        var expr2 = new Expression().newExprGet(
+            string.datatype.members[0].offset,
+            exprid, string.datatype.members[0].type
+        );
+        var set2 = new Expression().newExprSet(expr2,
+            new Expression().newExprNumber(string.bytes.length, false)
+        );
+        initExpr.push(set2);
+
+        return initExpr;
+    }
+
+    rvalue(): Expression {
+        var initializer = this.expression();
+        return initializer;
     }
 
     varDeclaration(isdata: boolean): Statement {
         var name = this.expect(tokenType.identifier, "var name");
-        var initializer: Expression | undefined;
+        var initializer: Expression;
         var type: Type | undefined = undefined;
-
-        //var defaults:Expression[];
-        var is_string: boolean = false;
-
-        if (this.match([tokenType.equal])) {
-            initializer = this.expression();
-            if (initializer.datatype.kind === myType.string) {
-                is_string = true;
-                type = new Type().newStruct([
-                    { name: "len", datatype: u64, default: undefined },
-                    { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
-                ])
-
-            } else if (initializer.datatype.kind === myType.slice) {
-                type = initializer.datatype;
-                //initializer = new Expression().newExprDeref(initializer);
-            } else {
-                type = initializer.datatype;
-            }
-            
-        } else if (this.match([tokenType.colon])) {
+        if (this.match([tokenType.colon])) {
             type = this.parseType()
         }
-        
-        //console.error("===================================", type);
-        if (this.match([tokenType.equal])) {
-            initializer = this.expression();
-            if(initializer.datatype.kind === myType.string) {
-                is_string = true;
-            }
+        this.expect(tokenType.equal, "var initializer");
+        initializer = this.rvalue();
+
+        if (initializer.type === exprType.undefnd && type === undefined) {
+            this.tokenError("Type not known", this.previous());
         }
 
-        if (type === undefined) {
-            this.tokenError("Expect type--", this.peek());
+        type = type ?? initializer.datatype;
+        var offset = incLocalOffset(name.value as string, type as Type);
+
+        if (initializer.datatype.kind === myType.string) {
+            initializer = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
+            type.kind = initializer.datatype.kind;
+        } else {
+            initializer = new Expression().newExprAssign(
+                new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)
+                , initializer
+            );
         }
 
         this.expect(tokenType.semicolon, ";");
-
-        var offset = incLocalOffset(name.value as string, type as Type);
-        var is_global = false;
-
-        if (offset === -1) {
-            is_global = true;
-        }
-
-        if (is_string) {
-            console.error("---uuuuuuuuuuuuuuu");
-            return new Statement().newStringVarStatement(
-                name.value as string,
-                offset,
-                initializer as Expression,
-                is_global
-            )
-        }
-        //console.error("offset", offset);
-        return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type, is_global);
+        return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type);
     }
 
     // member

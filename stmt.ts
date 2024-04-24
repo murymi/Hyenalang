@@ -48,65 +48,27 @@ export class Statement {
     // struct
     defaults: Expression[] | undefined
 
-    makeStructInitializer(off: number, datatype: Type): Expression[] {
-        var exprid = new Expression().newExprIdentifier(
-            "",
-            off,
-            datatype,
-            identifierType.struct
-        );
-
-        var initExpr: Expression[] = [];
-        for (let mem of datatype.members) {
-            if (mem.default) {
-                var expr = new Expression().newExprGet(mem.offset, exprid, mem.type);
-                var set = new Expression().newExprSet(expr, mem.default);
-                initExpr.push(set);
-            }
-        }
-        return initExpr;
-    }
+    // makeStructInitializer(off: number, datatype: Type): Expression[] {
+    //     var exprid = new Expression().newExprIdentifier(
+    //         "",
+    //         off,
+    //         datatype,
+    //         identifierType.struct
+    //     );
+    // 
+    //     var initExpr: Expression[] = [];
+    //     for (let mem of datatype.members) {
+    //         if (mem.default) {
+    //             var expr = new Expression().newExprGet(mem.offset, exprid, mem.type);
+    //             var set = new Expression().newExprSet(expr, mem.default);
+    //             initExpr.push(set);
+    //         }
+    //     }
+    //     return initExpr;
+    // }
 
     newStructVarStatement(offset: number, defaults: Expression[]) {
 
-    }
-
-    makeStringInitializerFromPtr(off: number, string: Expression, datatype: Type) {
-        var exprid = new Expression().newExprIdentifier(
-            "",
-            off,
-            datatype,
-            identifierType.struct
-        );
-
-        var initExpr: Expression[] = [];
-        var expr = new Expression().newExprGet(datatype.members[1].offset, exprid, datatype.members[1].type);
-        var set = new Expression().newExprSet(expr, string);
-        initExpr.push(set);
-
-        var expr2 = new Expression().newExprGet(datatype.members[0].offset, exprid, datatype.members[0].type);
-        var set2 = new Expression().newExprSet(expr2, new Expression().newExprNumber(string.bytes.length, false));
-        initExpr.push(set2);
-
-        return initExpr;
-    }
-
-    newStringVarStatement(name: string, offset: number, str: Expression,is_global: boolean) {
-        var datatype = new Type().newStruct([
-            { name: "len", datatype: u64, default: undefined },
-            { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
-        ]);
-        this.is_global = is_global;
-        this.defaults = this.makeStringInitializerFromPtr(offset, str, datatype);
-        this.type = stmtType.vardeclstmt;
-        this.offset = offset;
-        this.expr = new Expression();
-        this.expr.datatype = datatype;
-        this.expr.datatype.kind = myType.slice;
-        if (is_global) {
-            addGlobal(name, str, datatype);
-        }
-        return this;
     }
 
     static makeSliceCopy(to: number, from: Expression): Expression[] {
@@ -141,45 +103,10 @@ export class Statement {
     }
 
 
-    newVarstatement(name: string, initializer: Expression | undefined, offset: number, datatype: Type, is_global: boolean): Statement {
-        if (initializer === undefined) {
-            if (datatype.kind === myType.slice || datatype.kind === myType.array) {
-                this.defaults = this.makeStructInitializer(offset, datatype);
-                //console.error(this.defaults);
-                this.expr = new Expression();
-                this.expr.datatype = voidtype;
-                this.expr.datatype.kind = myType.slice;
-            } else if (datatype.kind === myType.struct) {
-                this.expr = new Expression();
-                this.expr.datatype = voidtype;
-                this.expr.datatype.kind = myType.struct;
-            } else {
-                var zero = new Expression().newExprNumber(0);
-                this.initializer = zero;
-                this.expr = zero;
-                this.initializer.datatype = datatype;
-            }
-        } else {
-            if (datatype.kind === myType.slice) {
-                // this.defaults = Statement.makeSliceCopy(offset, initializer);
-                // this.expr = new Expression();
-                // this.expr.datatype = voidtype;
-                // this.expr.datatype.kind = myType.slice;
-                this.initializer = initializer;
-                this.expr = initializer;
-            } else {
-                this.initializer = initializer;
-                this.expr = initializer;
-                this.initializer.datatype = datatype;
-            }
-        }
-        this.is_global = is_global;
-        this.datatype = datatype;
-        //this.initializer.CustomType = custom;
-        this.name = name;
+    newVarstatement(name: string, initializer: Expression, offset: number, datatype: Type): Statement {
+        this.initializer = initializer;
         this.type = stmtType.vardeclstmt;
-        this.offset = offset;
-        if (is_global) {
+        if (offset < 0) {
             addGlobal(name,
                 datatype.kind === myType.array ? new Expression() : undefined,
                 datatype);

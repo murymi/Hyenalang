@@ -1,6 +1,6 @@
 import { addGlobalString, fnType } from "./main";
 import { Token } from "./token";
-import { Type, f32, i32, i64, myType, u64, u8 } from "./type";
+import { Type, f32, i32, i64, myType, str, u64, u8 } from "./type";
 
 export enum exprType {
     unary,
@@ -19,7 +19,9 @@ export enum exprType {
     //arrayset,
     address,
     asld,
-    ssld
+    ssld,
+    undefnd,
+    varslice
     //address_set
 }
 
@@ -138,6 +140,7 @@ export class Expression {
     newExprIdentifier(name: string,offset:number, datatype: Type, idtype:identifierType):Expression{
         this.type = exprType.identifier;
         this.datatype = datatype;
+        this.datatype.kind = datatype.kind;
         this.offset = offset;
         this.name = name;
         this.idtype = idtype;
@@ -188,10 +191,22 @@ export class Expression {
     newExprString(val:string):Expression{
         this.type = exprType.string;
         this.bytes = val;
-        this.datatype = new Type().newPointer(u8);
+        //this.datatype = new Type().newPointer(u8);
+        this.datatype = new Type().newStruct([
+             { name: "len", datatype: u64, default: undefined },
+             { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
+         ])
         this.datatype.kind = myType.string;
         this.label = addGlobalString(val);
         this.labelinitialize = true;
+        return this;
+    }
+
+    newExprSlice(defs:Expression[]) {
+        this.type = exprType.varslice;
+        this.defaults = defs;
+        this.datatype = str;
+        this.datatype.kind = myType.slice;
         return this;
     }
 
@@ -207,6 +222,11 @@ export class Expression {
         //console.log(expr.datatype);
         //this.datatype.base = new Type().newPointer(expr.datatype.members[1].type.base);
         this.datatype.kind = myType.slice;
+        return this;
+    }
+
+    newExprUndefined() {
+        this.type = exprType.undefnd;
         return this;
     }
 

@@ -314,6 +314,7 @@ function generateAddress(expr: Expression | Statement) {
             break;
 
         default:
+            console.error(expr);
             console.error("not an lvalue");
             process.exit(1);
     }
@@ -335,9 +336,10 @@ function genAssign(expr: Expression) {
 }
 
 function genAssignLarge(expr: Expression) {
-    genLvalue(expr.left as Expression);
+    generateAddress(expr.left as Expression);
     push();
-    genLvalue(expr.right as Expression);
+    //console.error(expr);
+    generateAddress(expr.right as Expression);
     storeStruct(expr.left?.datatype as Type);
 }
 
@@ -457,10 +459,15 @@ function generateCode(expr: Expression) {
         case exprType.grouping:
             generateCode(expr.left as Expression);
             break;
+        case exprType.varslice:
+            for (let item of expr.defaults) { generateCode(item); }
+            break;
         case exprType.assign:
             switch (expr.datatype.kind) {
                 case myType.slice:
                     assignSlice(expr);
+                    break;
+                case myType.string:
                     break;
                 case myType.struct:
                     if (expr.datatype.size > 8) {
@@ -479,6 +486,8 @@ function generateCode(expr: Expression) {
             if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
             }
+            break;
+        case exprType.undefnd:
             break;
         case exprType.call:
             expr.params.forEach((p) => {
@@ -504,6 +513,7 @@ function generateCode(expr: Expression) {
             console.log(`   lea rax, .L.data.${expr.label}`);
             break;
         default:
+            console.error(expr);
             throw new Error("Unexpected expression");
     }
 }
@@ -530,62 +540,13 @@ function genAlignedCall() {
     console.log("   ret")
 }
 
-function declareSlice(stmt: Statement) {
-    if (stmt.initializer) {
-        switch (stmt.initializer.type) {
-            case exprType.ssld:
-                //console.error("---------------");
-                storeSliceFromArrayWithIndex(stmt, stmt.initializer.id,
-                    stmt.initializer.left as Expression,
-                    stmt.initializer.right as Expression, true
-                )
-                break;
-            case exprType.asld:
-                storeSliceFromSliceWithIndex(stmt, stmt.initializer.id,
-                    stmt.initializer.left as Expression,
-                    stmt.initializer.right as Expression, true
-                )
-                break;
-            default:
-                genAddress(stmt);
-                push();
-                generateAddress(stmt.initializer);
-                storeStruct(stmt.expr.datatype);
-        }
-    } else {
-        if (stmt.defaults) {
-            for (let item of stmt.defaults) { generateCode(item); }
-        }
-    }
-
-}
-
-
 function genStmt(stmt: Statement, fnid: number): void {
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
             break;
         case stmtType.vardeclstmt:
-            if (stmt.expr.datatype.kind === myType.slice) {
-                declareSlice(stmt);
-            } else if (stmt.expr.datatype.kind === myType.array) {
-                if (stmt.defaults) {
-                    for (let item of stmt.defaults) { generateCode(item); }
-                }
-            } else if (stmt.expr.datatype.kind === myType.struct) {
-                if (stmt.initializer) {
-                    genAddress(stmt);
-                    push();
-                    generateAddress(stmt.initializer);
-                    storeStruct(stmt.expr.datatype);
-                }
-            } else {
-                genAddress(stmt);
-                push();
-                generateCode(stmt.expr);
-                store(stmt.expr.datatype);
-            }
+            generateCode(stmt.initializer as Expression);
             break;
         case stmtType.block:
             stmt.stmts.forEach((s, i) => { genStmt(s, fnid); })
@@ -651,8 +612,8 @@ function genGlobalStrings(globs: { value: string }[]): number {
 
 function genText(fns: Function[]) {
     console.log(".text");
-    var i = incLabel();
     fns.forEach((fn) => {
+        var i = incLabel();
         if (fn.type === fnType.native) {
             console.log(".global " + fn.name);
             console.log(fn.name + ":");
@@ -662,7 +623,7 @@ function genText(fns: Function[]) {
 
             //genArgs(fn.params);
 
-            genStmt(fn.body, 0);
+            genStmt(fn.body, i);
             console.log("   xor rax, rax");
             console.log(`.L.endfn.${i}:`);
             console.log("   mov rsp, rbp");
