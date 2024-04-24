@@ -46,6 +46,7 @@ export class Function {
         this.params = params;
 
         this.locals = locals;
+        //console.error(locals);
         var args: { name: string, scope: number, datatype: Type, offset: number }[] = [];
         if(type === fnType.native) {
             params.forEach((p)=>{

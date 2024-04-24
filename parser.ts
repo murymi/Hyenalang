@@ -289,6 +289,7 @@ export class Parser {
                 expr = this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
                 expr = this.index(expr);
+                //console.error(expr);
             } else {
                 break;
             }
@@ -611,6 +612,7 @@ export class Parser {
             exprid, string.datatype.members[1].type
         );
         var set = new Expression().newExprSet(expr, string);
+
         initExpr.push(set);
 
         var expr2 = new Expression().newExprGet(
@@ -650,6 +652,7 @@ export class Parser {
         if (initializer.datatype.kind === myType.string) {
             initializer = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
             type.kind = initializer.datatype.kind;
+            //console.error("=============uu================", initializer.datatype.kind === myType.slice);
         } else {
             initializer = new Expression().newExprAssign(
                 new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)

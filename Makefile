@@ -12,3 +12,6 @@ main:
 
 bin:
 	$(V_AT)gcc -g -static -o tmp tmp.s
+
+# $(V_AT)as -g -o tmp.o tmp.s
+# $(V_AT)ld -g -o tmp tmp.o --no-pie

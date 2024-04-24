@@ -21,7 +21,8 @@ export enum exprType {
     asld,
     ssld,
     undefnd,
-    varslice
+    varslice,
+    assignIndex
     //address_set
 }
 
@@ -80,7 +81,8 @@ export class Expression {
     newExprAddressSet(left:Expression, right:Expression) {
         this.left = left;// a deref
         this.right = right;
-        this.type = exprType.assign;
+        this.type = exprType.assignIndex;
+        //console.error("*****************************************");
         this.datatype = left.datatype;
         return this;
     }

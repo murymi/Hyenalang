@@ -3,12 +3,14 @@ import { Function } from "./main";
 import { Statement, stmtType } from "./stmt";
 import { Token } from "./token";
 
+
+
+
 export enum myType {
     u8,
     u16,
     u32,
     u64,
-
     i8,
     i16,
     i32,
@@ -16,12 +18,10 @@ export enum myType {
     f32,
     f64,
     void,
-
     struct,
     enum,
     slice,
     string,
-
     ptr,
     array,
     bool

@@ -272,7 +272,7 @@ function store(datatype: Type) {
     } else if (datatype.size === 8) {
         console.log("   mov [rdi], rax");
     } else {
-        console.error("Invalid load");
+        console.error("Invalid load", datatype.size);
         process.exit(1);
     }
 }
@@ -329,16 +329,16 @@ function genLvalue(expr: Expression | Statement) {
 }
 
 function genAssign(expr: Expression) {
-    genLvalue(expr.left as Expression);
+    generateAddress(expr.left as Expression);
     push();
     generateCode(expr.right as Expression);
+    //console.error(expr.datatype);
     store(expr.left?.datatype as Type);
 }
 
 function genAssignLarge(expr: Expression) {
     generateAddress(expr.left as Expression);
     push();
-    //console.error(expr);
     generateAddress(expr.right as Expression);
     storeStruct(expr.left?.datatype as Type);
 }
@@ -460,9 +460,23 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             break;
         case exprType.varslice:
-            for (let item of expr.defaults) { generateCode(item); }
+            for (let item of expr.defaults) {
+                generateCode(item);
+            }
+            break;
+        case exprType.assignIndex:
+            //generateAddress(expr.left as Expression);
+            //generateCode(expr.right as Expression);
+            if (expr.datatype.size > 8) {
+                genAssignLarge(expr);
+            } else {
+                genAssign(expr);
+            }
             break;
         case exprType.assign:
+            if (expr.right?.type === exprType.undefnd)
+                return;
+
             switch (expr.datatype.kind) {
                 case myType.slice:
                     assignSlice(expr);
@@ -488,6 +502,7 @@ function generateCode(expr: Expression) {
             }
             break;
         case exprType.undefnd:
+            console.log("   xor rax, rax #undefined");
             break;
         case exprType.call:
             expr.params.forEach((p) => {
@@ -611,10 +626,10 @@ function genGlobalStrings(globs: { value: string }[]): number {
 }
 
 
-function genArgs(params:{ name: string, scope: number, datatype: Type, offset: number }[]) {
+function genArgs(params: { name: string, scope: number, datatype: Type, offset: number }[]) {
     let i = 0;
-    for(let p of params) {
-        console.log(`   mov [rbp-${p.offset + p.datatype.size }], ${argRegisters[i]}`);
+    for (let p of params) {
+        console.log(`   mov [rbp-${p.offset + p.datatype.size}], ${argRegisters[i]}`);
     }
 }
 
