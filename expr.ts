@@ -18,12 +18,16 @@ export enum exprType {
     //arrayget,
     //arrayset,
     address,
-    asld,
-    ssld,
+    slice_array,
+    slice_slice,
     undefnd,
     varslice,
-    assignIndex
+    assignIndex,
     //address_set
+    assign_array_index,
+    assign_slice_index,
+    deref_array_index,
+    deref_slice_index
 }
 
 export enum identifierType {
@@ -83,6 +87,22 @@ export class Expression {
         this.right = right;
         this.type = exprType.assignIndex;
         //console.error("*****************************************");
+        this.datatype = left.datatype;
+        return this;
+    }
+
+    newExprAssignArrayIndex(left:Expression, right:Expression) {
+        this.left = left;
+        this.right = right;
+        this.type = exprType.assign_array_index;
+        this.datatype = left.datatype
+        return this;
+    }
+
+    newExprAssignSliceIndex(left:Expression, right:Expression) {
+        this.left = left;
+        this.right = right;
+        this.type = exprType.assign_slice_index;
         this.datatype = left.datatype;
         return this;
     }
@@ -213,16 +233,29 @@ export class Expression {
     }
 
     newExprSlideArray(expr:Expression, begin:Expression, end:Expression) {
-        this.type = exprType.ssld;
+        this.type = exprType.slice_array;
         this.left = begin;
         this.right = end;
         this.id = expr;
         this.datatype = new Type().newStruct([
             { name: "len", datatype: u64, default: undefined },
-            { name: "ptr", datatype: new Type().newPointer(expr.datatype.members[1].type.base), default: undefined }
+            { name: "ptr", datatype: new Type().newPointer(expr.datatype.base), default: undefined }
+        ])
+        this.datatype.kind = myType.slice;
+        return this;
+    }
+
+    newExprSlideSlice(expr:Expression, begin:Expression, end:Expression) {
+        this.type = exprType.slice_slice;
+        this.left = begin;
+        this.right = end;
+        this.id = expr;
+        this.datatype = new Type().newStruct([
+            { name: "len", datatype: u64, default: undefined },
+            { name: "ptr", datatype: new Type().newPointer(expr.datatype.base), default: undefined }
         ])
         //console.log(expr.datatype);
-        //this.datatype.base = new Type().newPointer(expr.datatype.members[1].type.base);
+        this.datatype.base = new Type().newPointer(expr.datatype.members[1].type.base);
         this.datatype.kind = myType.slice;
         return this;
     }

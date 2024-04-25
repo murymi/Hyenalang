@@ -232,6 +232,7 @@ function genNumber(expr: Expression) {
 }
 
 function load(datatype: Type) {
+    console.log("# load");
     if (datatype.size === 1) {
         console.log("   movsx rax, byte ptr [rax]");
     } else if (datatype.size === 2) {
@@ -252,10 +253,12 @@ function load(datatype: Type) {
         process.exit(1);
     }
 
+    console.log("# end load")
+
 }
 
 function store(datatype: Type) {
-
+    console.log("# store")
     console.log("   pop rdi");
     //console.log("   pop rax");
 
@@ -275,6 +278,7 @@ function store(datatype: Type) {
         console.error("Invalid load", datatype.size);
         process.exit(1);
     }
+    console.log("# end store")
 }
 
 function storeStruct(datatype: Type) {
@@ -297,22 +301,29 @@ function generateAddress(expr: Expression | Statement) {
     //console.error(expr.type);
     switch (expr.type) {
         case exprType.identifier:
+            console.log("# load address of var");
             if (expr.is_glob) {
                 console.log("   push offset " + expr.name);
                 pop("rax");
             } else {
+                
                 genAddress(expr);
             }
             break;
         case exprType.get:
+            console.log("# getting struct member")
             generateAddress(expr.left as Expression);
+            console.log("# add offset of member");
             console.log("   add rax, " + expr.offset);
+            console.log("# end add offset");
             break;
-
+        case exprType.deref_slice_index:
+        case exprType.deref_array_index:
         case exprType.deref:
+            console.log("# deref");
             generateCode(expr.left as Expression);
+            console.log("# end deref");
             break;
-
         default:
             console.error(expr);
             console.error("not an lvalue");
@@ -329,10 +340,14 @@ function genLvalue(expr: Expression | Statement) {
 }
 
 function genAssign(expr: Expression) {
+    console.log("# generate address of variable");
     generateAddress(expr.left as Expression);
+    console.log("# address of variable generated");
     push();
+    console.log("# generate value to assign");
     generateCode(expr.right as Expression);
-    //console.error(expr.datatype);
+    //console.error("======ooo======");
+    console.log("# store value to variable address");
     store(expr.left?.datatype as Type);
 }
 
@@ -392,7 +407,9 @@ function storeSliceFromSliceWithIndex(
 
     console.log("mov rax, [rax]");
 
-    console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
+    //console.error(to.datatype);
+
+    console.log(`imul rdx, ${to.datatype.base.size}`)
     console.log("add rax, rdx");
     pop("rdi");
     console.log("mov [rdi], rax");
@@ -402,7 +419,7 @@ function storeSliceFromSliceWithIndex(
 
 function assignSlice(expr: Expression) {
     switch (expr.right?.type) {
-        case exprType.ssld:
+        case exprType.slice_array:
             storeSliceFromArrayWithIndex(
                 expr.left as Expression,
                 (expr.right as Expression).id,
@@ -410,7 +427,7 @@ function assignSlice(expr: Expression) {
                 (expr.right as Expression).right as Expression, false
             )
             break;
-        case exprType.asld:
+        case exprType.slice_slice:
             storeSliceFromSliceWithIndex(
                 expr.left as Expression,
                 (expr.right as Expression).id,
@@ -433,6 +450,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.get:
             generateAddress(expr);
+            // b.c
             if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
             }
@@ -443,7 +461,11 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             genBinary(expr.operator?.type as tokenType, expr.datatype);
             break;
+        case exprType.deref_slice_index:
+        case exprType.deref_array_index:
         case exprType.deref:
+            console.log("# deref ");
+            // a.*
             generateCode(expr.left as Expression);
             if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
@@ -464,33 +486,52 @@ function generateCode(expr: Expression) {
                 generateCode(item);
             }
             break;
+        case exprType.assign_slice_index:
+        case exprType.assign_array_index:
         case exprType.assignIndex:
             //generateAddress(expr.left as Expression);
             //generateCode(expr.right as Expression);
+            console.error(expr.datatype)
             if (expr.datatype.size > 8) {
+                console.log("# assign [large]");
                 genAssignLarge(expr);
             } else {
+                console.log("# assign [small]");
                 genAssign(expr);
             }
             break;
         case exprType.assign:
-            if (expr.right?.type === exprType.undefnd)
+            if (expr.right?.type === exprType.undefnd){
+                if(expr.datatype.kind === myType.array) {
+                    generateAddress(expr.left as Expression);
+                    push();
+                    generateCode(expr.datatype.members[0].default as Expression);
+                    store(u64);
+                }
                 return;
+            }
 
             switch (expr.datatype.kind) {
                 case myType.slice:
+                    console.log("# assign slice");
                     assignSlice(expr);
                     break;
                 case myType.string:
                     break;
                 case myType.struct:
                     if (expr.datatype.size > 8) {
+                        console.log("# assign struct [large]");
                         genAssignLarge(expr);
                     } else {
+                        console.log("# assign struct [small]");
                         genAssign(expr);
                     }
                     break;
+                case myType.array:
+                    console.error("=======================", expr);
+                    break;
                 default:
+                    console.log("# assign variable");
                     genAssign(expr);
 
             }

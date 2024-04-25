@@ -1,15 +1,7 @@
-extern fn puts(string:*u8) void;
 
-
+# main function
 fn main() void {
-    # make a u8 array
-    # another comment
-    # another
-    # yeah
-    
-    var x:[5]u8 = undefined;
-    x[0] = 'y';
-
-
-    puts(x.ptr);
+    var x = "hello world";
+    x[3] = 'a';
+    return x[3];
 }

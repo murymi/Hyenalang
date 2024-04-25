@@ -241,7 +241,7 @@ export function getcurrFn(){ return currentFn; }
 
 export function resetCurrentFunction(body: Statement) {
     functions[currentFn].body = body;
-    //console.error(functions[currentFn]);
+    //console.error(functions[currentFn].locals);
     currentFn = -1;
 }
 

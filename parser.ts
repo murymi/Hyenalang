@@ -143,15 +143,20 @@ export class Parser {
             return new Expression().newExprUndefined();
         }
 
-        if(this.match([tokenType.squote])) {
-            var num = this.expect(tokenType.identifier, "expect character").value as string;
-            if(num.length !== 1) {
-                this.tokenError("expected single character", this.previous());
+        if (this.match([tokenType.squote])) {
+
+            if (this.match([tokenType.number, tokenType.identifier])) {
+                var val = this.previous().value.toString();
+                if (val.length !== 1) {
+                    this.tokenError("expected single character", this.previous());
+                }
+                this.expect(tokenType.squote, "Expect closing ' ");
+                var expr = new Expression().newExprNumber(val.charCodeAt(0));
+                expr.datatype = i8;
+                return expr;
+
             }
-            this.expect(tokenType.squote, "Expect closing ' ");
-            var expr = new Expression().newExprNumber(num.charCodeAt(0));
-            expr.datatype = i8;
-            return expr;
+            this.tokenError("expect character", this.previous());
         }
 
         console.log(this.peek());
@@ -210,49 +215,73 @@ export class Parser {
         }
     }
 
-    parseArrayIndex(expr: Expression): Expression {
-        var index = this.expression();
-        this.expect(tokenType.rightsquare, "Expect ]");
-        return new Expression().newExprDeref(
-            new Expression().newExprBinary(
-                new Token(tokenType.plus, "+", 0, 0), expr,
-                new Expression().newExprBinary(
-                    new Token(tokenType.multiply, "*", 0, 0),
-                    new Expression().newExprNumber(expr.datatype.size),
-                    index
-                )
-            )
-        )
-    }
+    // parseArrayIndex(expr: Expression): Expression {
+    //     var index = this.expression();
+    //     this.expect(tokenType.rightsquare, "Expect ]");
+    //     return new Expression().newExprDeref(
+    //         new Expression().newExprBinary(
+    //             new Token(tokenType.plus, "+", 0, 0), expr,
+    //             new Expression().newExprBinary(
+    //                 new Token(tokenType.multiply, "*", 0, 0),
+    //                 new Expression().newExprNumber(expr.datatype.size),
+    //                 index
+    //             )
+    //         )
+    //     )
+    // }
 
     parseSliceIndex(expr: Expression, index: Expression): Expression {
         var meta = getOffsetOfMember(expr.datatype, "ptr");
         var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
 
 
-        return new Expression().newExprDeref(
+        var ret = new Expression().newExprDeref(
             new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex,
                 new Expression().newExprBinary(
                     new Token(tokenType.multiply, "*", 0, 0),
-                    new Expression().newExprNumber(expr.datatype.members[1].type.base.size),
+                    new Expression().newExprNumber(expr.datatype.base.size),
                     index
                 ))
         )
+
+        ret.type = exprType.deref_slice_index;
+        ret.datatype = expr.datatype.base;
+        console.error(ret.datatype)
+        return ret;
+    }
+
+
+    parseArrayIndex(expr: Expression, index: Expression): Expression {
+        var ret = new Expression().newExprDeref(
+            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0),
+                new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), expr,
+                    new Expression().newExprBinary(
+                        new Token(tokenType.multiply, "*", 0, 0),
+                        new Expression().newExprNumber(expr.datatype.base.size),
+                        index
+                    )),
+                new Expression().newExprNumber(8)
+            )
+        )
+
+        ret.type = exprType.deref_array_index;
+        ret.datatype = expr.datatype.base
+        return ret;
     }
 
     parseArraySlide(expr: Expression, index: Expression): Expression {
         var end = this.expression();
         this.expect(tokenType.rightsquare, "Expect ] ");
         var s = new Expression().newExprSlideArray(expr, index, end);
-        s.type = exprType.ssld;
+        s.type = exprType.slice_array;
         return s;
     }
 
     parseSliceSlide(expr: Expression, index: Expression): Expression {
         var end = this.expression();
         this.expect(tokenType.rightsquare, "Expect ] ");
-        var s = new Expression().newExprSlideArray(expr, index, end);
-        s.type = exprType.asld;
+        var s = new Expression().newExprSlideSlice(expr, index, end);
+        s.type = exprType.slice_slice;
         return s;
     }
 
@@ -260,7 +289,7 @@ export class Parser {
         var index = this.expression();
         var t = this.advance();
         switch (expr.datatype.kind) {
-            case myType.slice:
+            case myType.slice:// likes char*
                 switch (t.type) {
                     case tokenType.colon:
                         return this.parseSliceSlide(expr, index)
@@ -276,7 +305,8 @@ export class Parser {
                     case tokenType.colon:
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
-                        return this.parseSliceIndex(expr, index);
+                        // done
+                        return this.parseArrayIndex(expr, index);
                     default:
                         this.tokenError("Expect ]", t);
 
@@ -292,7 +322,7 @@ export class Parser {
 
     // postfix
     call(): Expression {
-        var expr = this.primary();
+        var expr = this.primary(); // identifier
         while (true) {
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
@@ -432,30 +462,38 @@ export class Parser {
 
     assign(): Expression {
         var expr = this.logicalOr();
+        // identifier 
+        // a.c.foo -> get
+        //  a[0] -> deref
+
 
         var equals: Token;
         if (this.match([tokenType.equal])) {
             equals = this.previous();
             var val = this.assign();
-            if (expr.type === exprType.identifier) {
-                switch (expr.datatype.kind) {
-                    case myType.slice:
-                        var off = expr.offset;
-                        var expr = new Expression().newExprAssign(expr, val);
-                        expr.defaults = Statement.makeSliceCopy(off, val);
-                        return expr;
-                    default:
-                        return new Expression().newExprAssign(expr, val);
-
-                }
-            } else if (expr.type === exprType.get) {
-                var set = new Expression().newExprSet(expr, val);
-                return set;
-            } else if (expr.type === exprType.deref) {
-                return new Expression().newExprAddressSet(expr, val);
+            switch (expr.type) {
+                case exprType.identifier:
+                case exprType.deref:
+                    // switch (expr.datatype.kind) {
+                    //     case myType.slice:
+                    //         var off = expr.offset;
+                    //         var expr = new Expression().newExprAssign(expr, val);
+                    //         expr.defaults = Statement.makeSliceCopy(off, val);
+                    //         return expr;
+                    //     default:
+                    // 
+                    // }
+                    return new Expression().newExprAssign(expr, val);
+                case exprType.get:
+                    return new Expression().newExprSet(expr, val);
+                case exprType.deref_array_index:
+                    return new Expression().newExprAssignArrayIndex(expr, val);
+                case exprType.deref_slice_index:
+                    return new Expression().newExprAssignSliceIndex(expr, val);
+                default:
+                    console.error(expr);
+                    this.tokenError("Unexpected assignment", equals);
             }
-            console.error(expr);
-            this.tokenError("Unexpected assignment", equals);
         }
 
         return expr;
@@ -545,13 +583,15 @@ export class Parser {
         if (this.match([tokenType.leftsquare])) {
             var len = this.expect(tokenType.number, "Expect size of array");
             this.expect(tokenType.rightsquare, "] expected");
-            var ptr = new Type().newArray(this.parseType(), len.value as number);
+            var base = this.parseType();
             ///var def = 0
             var holder = new Type().newStruct([
                 { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) },
-                { name: "ptr", datatype: ptr, default: undefined }
             ])
+            holder.size = len.value as number + 8;
             holder.kind = myType.array;
+            holder.base = base;
+            //console.error(holder);
             return holder;
         }
         var tok = this.advance();
@@ -653,8 +693,22 @@ export class Parser {
         this.expect(tokenType.equal, "var initializer");
         initializer = this.rvalue();
 
+
         if (initializer.type === exprType.undefnd && type === undefined) {
             this.tokenError("Type not known", this.previous());
+        }
+
+        // if array make it slice
+        if (initializer.datatype.kind === myType.array) {
+            type = new Type().newStruct([
+                { name: "len", datatype: u64, default: undefined },
+                { name: "ptr", datatype: new Type().newPointer(initializer.datatype.base), default: undefined }
+            ]);
+            type.kind = myType.slice;
+            type.base = initializer.datatype.base;
+        } else if (initializer.datatype.kind === myType.string) {
+            type = str;
+            type.base = u8;
         }
 
         type = type ?? initializer.datatype;
@@ -663,7 +717,16 @@ export class Parser {
         if (initializer.datatype.kind === myType.string) {
             initializer = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
             type.kind = initializer.datatype.kind;
-            //console.error("=============uu================", initializer.datatype.kind === myType.slice);
+        } else if (initializer.datatype.kind === myType.array) {
+            initializer =
+                new Expression().newExprAssign(
+                    new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable),
+                    new Expression().newExprSlideArray(initializer,
+                        new Expression().newExprNumber(0),
+                        // len
+                        initializer.datatype.members[0].default as Expression
+                    ))
+
         } else {
             initializer = new Expression().newExprAssign(
                 new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)
