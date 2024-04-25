@@ -1,68 +1,32 @@
 .intel_syntax noprefix
 .data
-.align 1
-.L.data.0:
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
-   .byte ' '
-   .byte 'w'
-   .byte 'o'
-   .byte 'r'
-   .byte 'l'
-   .byte 'd'
-   .byte 0
 .bss
 .text
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 72
-   lea rax, [rbp-16]
-   add rax, 8
+   sub rsp, 16
+   mov rax, 0
    push rax
-   lea rax, .L.data.0
-   pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-16]
-   add rax, 0
-   push rax
-   mov rax, 11
-   pop rdi
-   mov [rdi], rax
-   mov rax, 2
-   push rax
-   mov rax, 16
+   mov rax, 1
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-72]
+   lea rax, [rbp-16]
    add rax, 8
    pop rdi
    add rax, rdi
    push rax
+   mov rax, 121
+   pop rdi
+   mov [rdi], al
    lea rax, [rbp-16]
-   pop rdi
-   movq rcx, [rax+0]
-   movq [rdi+0], rcx
-   movq rcx, [rax+8]
-   movq [rdi+8], rcx
-   mov rax, 2
-   push rax
-   mov rax, 16
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-72]
    add rax, 8
+   push rax
    pop rdi
-   add rax, rdi
-   add rax, 0
-   mov rax, [rax]
-   jmp .L.endfn.1
+   lea r15, puts
+   call buitin_glibc_caller
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp

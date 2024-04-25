@@ -143,6 +143,17 @@ export class Parser {
             return new Expression().newExprUndefined();
         }
 
+        if(this.match([tokenType.squote])) {
+            var num = this.expect(tokenType.identifier, "expect character").value as string;
+            if(num.length !== 1) {
+                this.tokenError("expected single character", this.previous());
+            }
+            this.expect(tokenType.squote, "Expect closing ' ");
+            var expr = new Expression().newExprNumber(num.charCodeAt(0));
+            expr.datatype = i8;
+            return expr;
+        }
+
         console.log(this.peek());
 
         this.tokenError("unexpected token", this.peek());

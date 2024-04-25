@@ -47,23 +47,8 @@ export enum tokenType {
     i16,
     i32,
     i64,
-
-    u8ptr,
-    u16ptr,
-    u32ptr,
-    u64ptr,
-
-    i8ptr,
-    i16ptr,
-    i32ptr,
-    i64ptr,
-
     f32,
     f64,
-
-    f32ptr,
-    f64ptr,
-
     void,
     true,
     false,
@@ -86,9 +71,11 @@ export enum tokenType {
     bitand,
     bitor,
     bitnot,
+    squote,
 
     str,
     undefined,
+    hash,
 
     eof
 };
@@ -268,7 +255,14 @@ export class Lexer {
         process.exit();
     }
 
-
+    skipComment() {
+        while(this.moreTokens() && this.peek() !== '\n') {
+            this.advance();
+        }
+        if(this.moreTokens()){
+            this.advance();
+        }
+    }
 
     lex(): Token[] {
         this.line = 1;
@@ -301,6 +295,10 @@ export class Lexer {
             } else if (char === "@") {
                 this.tokens.push(new Token(tokenType.at, "@", this.line, this.col));
                 this.advance();
+            }else if (char === "#") {
+                // this.tokens.push(new Token(tokenType.hash, "#", this.line, this.col));
+                // this.advance();
+                this.skipComment();
             } else if (char === ",") {
                 this.tokens.push(new Token(tokenType.comma, ",", this.line, this.col));
                 this.advance();
@@ -364,6 +362,10 @@ export class Lexer {
                 this.advance();
             }  else if (char === '"') {
                 this.tokens.push(this.readString());
+            } 
+            else if (char === "'") {
+                this.tokens.push(new Token(tokenType.squote, "'", this.line, this.col));
+                this.advance();
             } else if (this.isAlpha(char)) {
                 this.tokens.push(this.identifier());
             } else if (char === "eof") {

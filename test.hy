@@ -1,14 +1,15 @@
-extern fn printf(string:*u8, num:u64) void;
+extern fn puts(string:*u8) void;
 
 
 fn main() void {
+    # make a u8 array
+    # another comment
+    # another
+    # yeah
+    
+    var x:[5]u8 = undefined;
+    x[0] = 'y';
 
-    var x = "hello world";
 
-    var c:[3]str = undefined;
-
-    c[2] = x;
-
-    return c[2].len;
-
+    puts(x.ptr);
 }
