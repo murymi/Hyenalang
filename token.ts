@@ -87,6 +87,7 @@ export class Token {
     col: number;
     isfloat: boolean;
 
+
     constructor(type: tokenType, value: string | number, line: number, col: number, isfloat?: boolean) {
         this.type = type;
         this.value = value;
@@ -105,10 +106,12 @@ export class Lexer {
     line: number;
     col: number;
     tokens: Token[] = [];
+    tokenMap: any;
 
     constructor(text: string) {
         this.current = 0;
         this.text = text;
+        this.initTokenMap();
     }
 
     expect(char: string) {
@@ -163,7 +166,7 @@ export class Lexer {
         while (this.moreTokens()) {
             var pk = this.peek();
             if (!this.isNumber(pk)) {
-                if (pk === "." && this.isNumber(this.peekNext())) {} else break;
+                if (pk === "." && this.isNumber(this.peekNext())) { } else break;
                 isfloat = true;
             }
             this.advance();
@@ -202,6 +205,44 @@ export class Lexer {
         return new Token(tokenType.string, value, this.line, this.col, true);
     }
 
+    initTokenMap() {
+        this.tokenMap = {
+            var: tokenType.var,
+            if: tokenType.if,
+            else: tokenType.else,
+            while: tokenType.while,
+            break: tokenType.braek,
+            continue: tokenType.contineu,
+            extern: tokenType.extern,
+            fn: tokenType.fn,
+            return: tokenType.return,
+            struct: tokenType.struct,
+            void: tokenType.void,
+            u8: tokenType.u8,
+            u16: tokenType.u16,
+            u32: tokenType.u32,
+            u64: tokenType.u64,
+            i8: tokenType.i8,
+            i16: tokenType.i16,
+            i32: tokenType.i32,
+            i64: tokenType.i64,
+            true: tokenType.true,
+            false: tokenType.false,
+            bool: tokenType.bool,
+            eq: tokenType.eq,
+            lte: tokenType.lte,
+            gte: tokenType.gte,
+            neq: tokenType.neq,
+            f32: tokenType.f32,
+            union: tokenType.union,
+            enum: tokenType.enum,
+            and: tokenType.and,
+            or: tokenType.or,
+            str: tokenType.str,
+            undefined: tokenType.undefined
+        }
+    }
+
     identifier(): Token {
         var start = this.current;
         while (this.moreTokens()) {
@@ -209,43 +250,10 @@ export class Lexer {
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        if (str === "var") return new Token(tokenType.var, str, this.line, this.col);
-        if (str === "if") return new Token(tokenType.if, str, this.line, this.col);
-        if (str === "else") return new Token(tokenType.else, str, this.line, this.col);
-        if (str === "while") return new Token(tokenType.while, str, this.line, this.col);
-        if (str === "break") return new Token(tokenType.braek, str, this.line, this.col);
-        if (str === "continue") return new Token(tokenType.contineu, str, this.line, this.col);
-        if (str === "extern") return new Token(tokenType.extern, str, this.line, this.col);
-        if (str === "fn") return new Token(tokenType.fn, str, this.line, this.col);
-        if (str === "return") return new Token(tokenType.return, str, this.line, this.col);
-        if (str === "struct") return new Token(tokenType.struct, str, this.line, this.col);
-
-        if (str === "void") return new Token(tokenType.void, str, this.line, this.col);
-
-        if (str === "u8") return new Token(tokenType.u8, str, this.line, this.col);
-        if (str === "u16") return new Token(tokenType.u16, str, this.line, this.col);
-        if (str === "u32") return new Token(tokenType.u32, str, this.line, this.col);
-        if (str === "u64") return new Token(tokenType.u64, str, this.line, this.col);
-
-        if (str === "i8") return new Token(tokenType.i8, str, this.line, this.col);
-        if (str === "i16") return new Token(tokenType.i16, str, this.line, this.col);
-        if (str === "i32") return new Token(tokenType.i32, str, this.line, this.col);
-        if (str === "i64") return new Token(tokenType.i64, str, this.line, this.col);
-        if (str === "true") return new Token(tokenType.true, str, this.line, this.col);
-        if (str === "false") return new Token(tokenType.false, str, this.line, this.col);
-        if (str === "bool") return new Token(tokenType.bool, str, this.line, this.col);
-        if (str === "eq") return new Token(tokenType.eq, str, this.line, this.col);
-        if (str === "lte") return new Token(tokenType.lte, str, this.line, this.col);
-        if (str === "gte") return new Token(tokenType.gte, str, this.line, this.col);
-        if (str === "neq") return new Token(tokenType.neq, str, this.line, this.col);
-
-        if (str === "f32") return new Token(tokenType.f32, str, this.line, this.col);
-        if (str === "union") return new Token(tokenType.union, str, this.line, this.col);
-        if (str === "enum") return new Token(tokenType.enum, str, this.line, this.col);
-        if (str === "and") return new Token(tokenType.and, str, this.line, this.col);
-        if (str === "or") return new Token(tokenType.or, str, this.line, this.col);
-        if (str === "str") return new Token(tokenType.str, str, this.line, this.col);
-        if (str === "undefined") return new Token(tokenType.undefined, str, this.line, this.col);
+        var type = this.tokenMap[str];
+        if (type) {
+            return new Token(type, str, this.line, this.col);
+        }
 
         return new Token(tokenType.identifier, str, this.line, this.col);
     }
@@ -256,12 +264,17 @@ export class Lexer {
     }
 
     skipComment() {
-        while(this.moreTokens() && this.peek() !== '\n') {
+        while (this.moreTokens() && this.peek() !== '\n') {
             this.advance();
         }
-        if(this.moreTokens()){
+        if (this.moreTokens()) {
             this.advance();
         }
+    }
+
+    push(T: tokenType, val: string | number) {
+        this.tokens.push(new Token(T, val, this.line, this.col));
+        this.advance();
     }
 
     lex(): Token[] {
@@ -270,112 +283,116 @@ export class Lexer {
 
         while (true) {
             let char = this.peek();
-
-            //console.error("token => ", char);
             if (this.isNumber(char)) {
                 this.number();
+                continue;
             } else if (this.isSpace(char)) {
                 if (this.advance() === '\n') {
                     this.col = 1; this.line++;
                 } else this.col++;
                 continue;
-            }
-            else if (char === "+") {
-                this.tokens.push(new Token(tokenType.plus, "+", this.line, this.col));
-                this.advance();
-            } else if (char === "-") {
-                this.tokens.push(new Token(tokenType.minus, "-", this.line, this.col));
-                this.advance();
-            } else if (char === "/") {
-                this.tokens.push(new Token(tokenType.divide, "/", this.line, this.col));
-                this.advance();
-            } else if (char === "*") {
-                this.tokens.push(new Token(tokenType.multiply, "*", this.line, this.col));
-                this.advance();
-            } else if (char === "@") {
-                this.tokens.push(new Token(tokenType.at, "@", this.line, this.col));
-                this.advance();
-            }else if (char === "#") {
-                // this.tokens.push(new Token(tokenType.hash, "#", this.line, this.col));
-                // this.advance();
-                this.skipComment();
-            } else if (char === ",") {
-                this.tokens.push(new Token(tokenType.comma, ",", this.line, this.col));
-                this.advance();
-            } else if (char === '(') {
-                this.tokens.push(new Token(tokenType.leftparen, "(", this.line, this.col));
-                this.advance();
-            } else if (char === ';') {
-                this.tokens.push(new Token(tokenType.semicolon, ";", this.line, this.col));
-                this.advance();
-            } else if (char === '>') {
-                this.tokens.push(new Token(tokenType.greater, ">", this.line, this.col));
-                this.advance();
-            } else if (char === '!') {
-                this.tokens.push(new Token(tokenType.bang, "!", this.line, this.col));
-                this.advance();
-            } else if (char === '<') {
-                this.tokens.push(new Token(tokenType.less, "<", this.line, this.col));
-                this.advance();
-            }
-            else if (char === '^') {
-                this.tokens.push(new Token(tokenType.bitor, "^", this.line, this.col));
-                this.advance();
-            } else if (char === '&') {
-                this.tokens.push(new Token(tokenType.bitand, "&", this.line, this.col));
-                this.advance();
-            } else if (char === '|') {
-                this.tokens.push(new Token(tokenType.bitor, "|", this.line, this.col));
-                this.advance();
-            } else if (char === '~') {
-                this.tokens.push(new Token(tokenType.bitnot, "~", this.line, this.col));
-                this.advance();
-            } else if (char === ')') {
-                this.tokens.push(new Token(tokenType.rightparen, ")", this.line, this.col));
-                this.advance();
-            } else if (char === '&') {
-                this.tokens.push(new Token(tokenType.andsand, "&", this.line, this.col));
-                this.advance();
-            } else if (char === '}') {
-                this.tokens.push(new Token(tokenType.rightbrace, "}", this.line, this.col));
-                this.advance();
-            } else if (char === '{') {
-                this.tokens.push(new Token(tokenType.leftbrace, "{", this.line, this.col));
-                this.advance();
-            } else if (char === '=') {
-                this.tokens.push(new Token(tokenType.equal, "=", this.line, this.col));
-                this.advance();
-            } else if (char === ':') {
-                this.tokens.push(new Token(tokenType.colon, ":", this.line, this.col));
-                this.advance();
-            } else if (char === '[') {
-                this.tokens.push(new Token(tokenType.leftsquare, "[", this.line, this.col));
-                this.advance();
-            } else if (char === ']') {
-                this.tokens.push(new Token(tokenType.rightsquare, "]", this.line, this.col));
-                this.advance();
-            } else if (char === '.') {
-                this.tokens.push(new Token(tokenType.dot, ".", this.line, this.col));
-                this.advance();
-            }   else if (char === '%') {
-                this.tokens.push(new Token(tokenType.mod, "%", this.line, this.col));
-                this.advance();
-            }  else if (char === '"') {
-                this.tokens.push(this.readString());
-            } 
-            else if (char === "'") {
-                this.tokens.push(new Token(tokenType.squote, "'", this.line, this.col));
-                this.advance();
             } else if (this.isAlpha(char)) {
                 this.tokens.push(this.identifier());
-            } else if (char === "eof") {
-                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
-                break;
-            } else {
-                //console.error(char);
-                this.tokenError("unexpected token " + char);
+                continue;
+            } else if (char === "#") {
+                this.skipComment();
+                continue;
             }
 
+            if (char === "eof") {
+                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
+                break;
+            }
+
+            switch (char) {
+                case "+":
+                    this.push(tokenType.plus, char);
+                    break;
+                case "-":
+                    this.push(tokenType.minus, char);
+                    break;
+                case "/":
+                    this.push(tokenType.divide, char);
+                    break;
+                case "*":
+                    this.push(tokenType.multiply, char);
+                    break;
+                case "@":
+                    this.push(tokenType.at, char);
+                    break;
+                case ",":
+                    this.push(tokenType.comma, char);
+                    break;
+                case '(':
+                    this.push(tokenType.leftparen, char);
+                    break;
+                case ';':
+                    this.push(tokenType.semicolon, char);
+                    break;
+                case '>':
+                    this.push(tokenType.greater, char);
+                    break;
+                case '!':
+                    this.push(tokenType.bang, char);
+                    break;
+                case '<':
+                    this.push(tokenType.less, char);
+                    break;
+                case '^':
+                    this.push(tokenType.bitxor, char);
+                    break;
+                case '&':
+                    this.push(tokenType.bitand, char);
+                    break;
+                case '|':
+                    this.push(tokenType.bitor, char);
+                    break;
+                case '~':
+                    this.push(tokenType.bitnot, char);
+                    break;
+                case ')':
+                    this.push(tokenType.rightparen, char);
+                    break;
+                case '(':
+                    this.push(tokenType.leftparen, char);
+                    break;
+                case '&':
+                    this.push(tokenType.andsand, char);
+                    break;
+                case '}':
+                    this.push(tokenType.rightbrace, char);
+                    break;
+                case '{':
+                    this.push(tokenType.leftbrace, char);
+                    break;
+                case '=':
+                    this.push(tokenType.equal, char);
+                    break;
+                case ':':
+                    this.push(tokenType.colon, char);
+                    break;
+                case '[':
+                    this.push(tokenType.leftsquare, char);
+                    break;
+                case ']':
+                    this.push(tokenType.rightsquare, char);
+                    break;
+                case '.':
+                    this.push(tokenType.dot, char);
+                    break;
+                case '%':
+                    this.push(tokenType.mod, char);
+                    break;
+                case '"':
+                    this.tokens.push(this.readString());
+                    break;
+                case "'":
+                    this.push(tokenType.squote, char);
+                    break;
+                default:
+                    //console.error(char);
+                    this.tokenError("unexpected token " + char);
+            }
         }
 
         return this.tokens;

@@ -246,7 +246,6 @@ export class Parser {
 
         ret.type = exprType.deref_slice_index;
         ret.datatype = expr.datatype.base;
-        console.error(ret.datatype)
         return ret;
     }
 

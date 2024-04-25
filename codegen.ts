@@ -528,7 +528,6 @@ function generateCode(expr: Expression) {
                     }
                     break;
                 case myType.array:
-                    console.error("=======================", expr);
                     break;
                 default:
                     console.log("# assign variable");
