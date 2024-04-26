@@ -1,52 +1,79 @@
 .intel_syntax noprefix
 .data
-.align 8
-.L.data.strings.0:
-   .quad 12
-   .byte 0x68 
-   .byte 0x65 
-   .byte 0x6c 
-   .byte 0x6c 
-   .byte 0x6f 
-   .byte 0x20 
-   .byte 0x77 
-   .byte 0x6f 
-   .byte 0x72 
-   .byte 0x6c 
-   .byte 0x64 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.1:
-   .quad 5
-   .byte 0x68 
-   .byte 0x65 
-   .byte 0x6c 
-   .byte 0x6c 
-   .byte 0x6f 
-   .byte 0
-.align 8
-.L.data.anon.0:
-   .quad 5
-   .quad offset .L.data.strings.1 + 8
-.align 8
-a:
-   .quad 12
-   .quad offset .L.data.strings.0 + 8
 .bss
 .text
+.global makenum
+makenum:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 0
+   mov rax, 10
+   jmp .L.endfn.0
+   xor rax, rax
+.L.endfn.0:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global add
+add:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 8
+   mov [rbp-4], edi
+   mov [rbp-8], esi
+# load address of var
+   lea rax, [rbp-8]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   push rax
+# load address of var
+   lea rax, [rbp-4]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   pop rdi
+   add rax, rdi
+   jmp .L.endfn.1
+   xor rax, rax
+.L.endfn.1:
+   mov rsp, rbp
+   pop rbp
+   ret
+
 .global main
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
-   lea rax, .L.data.anon.0
+   sub rsp, 8
+# assign variable
+# generate address of variable
+# load address of var
+   lea rax, [rbp-4]
+# address of variable generated
    push rax
+# generate value to assign
+   call makenum
+   push rax
+   call makenum
+   push rax
+   pop rsi
    pop rdi
-   lea r15, puts
-   call buitin_glibc_caller
+   call add
+# store value to variable address
+# store
+   pop rdi
+   mov [rdi], eax
+# end store
+# load address of var
+   lea rax, [rbp-4]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   jmp .L.endfn.2
    xor rax, rax
-.L.endfn.1:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret

@@ -6,6 +6,7 @@ import { fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
 import { Type, alignTo, f32, myType, u64 } from "./type";
+import { createDiffieHellmanGroup } from "crypto";
 
 
 var latestContinueLabel = "";
@@ -15,6 +16,17 @@ var argRegisters = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
 var byteArgRegisters = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
+
+function getArgRegister(index:number, size:number):string {
+    switch(size){
+        case 1: return byteArgRegisters[index];
+        case 2: return wordArgRegisters[index];
+        case 4: return dwordArgRegisters[index];
+        case 8: return argRegisters[index];
+        default:
+            throw new Error("inavlid size");
+    }
+}
 
 var l = 0;
 function incLabel() {
@@ -686,7 +698,8 @@ function genGlobalStrings(globs: { value: string }[]): number {
 function genArgs(params: { name: string, scope: number, datatype: Type, offset: number }[]) {
     let i = 0;
     for (let p of params) {
-        console.log(`   mov [rbp-${p.offset + p.datatype.size}], ${argRegisters[i]}`);
+        console.log(`   mov [rbp-${p.offset + p.datatype.size}], ${getArgRegister(i, p.datatype.size)}`);
+        i++;
     }
 }
 

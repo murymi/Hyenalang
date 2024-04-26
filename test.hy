@@ -1,9 +1,17 @@
+struct point {
+    x:u8,
+    y:u8
+}
 
-var a = "hello world\n";
+fn makenum() u32 {
+    return 10;
+}
 
-extern fn puts(char:*u8) void;
+fn add(a:u32, b:u32) u32 {
+    return a + b;
+}
 
 fn main() void {
-
-    puts("hello");
+    var a = add(makenum(), makenum());
+    return a;
 }
