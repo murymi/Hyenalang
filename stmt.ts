@@ -111,7 +111,7 @@ export class Statement {
         this.type = stmtType.vardeclstmt;
         if (offset < 0) {
             addGlobal(name,
-                datatype.kind === myType.array ? new Expression() : undefined,
+                initializer,
                 datatype);
         }
         return this;

@@ -567,6 +567,9 @@ function generateCode(expr: Expression) {
             //genString(expr.name);
             console.log(`   lea rax, .L.data.${expr.label}`);
             break;
+        case exprType.anon_string:
+            console.log(`   lea rax, .L.data.anon.${expr.offset}`);
+            break;
         default:
             console.error(expr);
             throw new Error("Unexpected expression");
@@ -661,13 +664,19 @@ function genGlobalStrings(globs: { value: string }[]): number {
     console.log(".data");
     var loffset = 0;
     globs.forEach((glob, i) => {
-        console.log(".align 1");
-        console.log(".L.data." + i + ":");
+        //console.log(".align 1");
+        console.log(`.align 8`);
+        console.log(".L.data.strings." + i + ":");
+        console.log(`   .quad ${glob.value.length}`);
         for (let i = 0; i < glob.value.length; i++) {
             console.log("   .byte '" + glob.value[i] + "'");
         }
         console.log("   .byte " + 0);
         loffset = i;
+        // console.log(`.align 8`);
+        // console.log(`.L.data.strings.${i}:`);
+        // console.log(`   .quad ${glob.value.length}`);
+        // console.log(`   .quad .L.data.${i}`);
     })
 
     return loffset + 1;
@@ -709,18 +718,26 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
     globals.forEach((g) => {
         if (g.value) {
 
+            if(g.value.type === exprType.undefnd) return;
+
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
 
-            if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
-                console.log(`   .quad ${g.datatype.members[1].type.size}`);
-                console.log(`   .zero ${g.datatype.members[1].type.size}`);
-                return;
-            }
+            // if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
+            //     console.log(`   .quad ${g.datatype.members[1].type.size}`);
+            //     console.log(`   .zero ${g.datatype.members[1].type.size}`);
+            //     return;
+            // }
 
-            if (g.datatype.kind === myType.slice) {
-                console.log(`   .quad ${g.value.bytes.length}`);
-                console.log("   .quad .L.data." + g.value.label);
+            // if (g.datatype.kind === myType.slice) {
+            //     console.log(`   .quad ${g.value.bytes.length}`);
+            //     console.log("   .quad .L.data." + g.value.label);
+            //     return;
+            // }
+
+            if(g.datatype.kind === myType.slice) {
+                console.log(`   .quad ${g.value.bytes.length}`)
+                console.log(`   .quad offset .L.data.strings.${g.value.label} + 8`)
                 return;
             }
 
@@ -735,6 +752,8 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
     console.log(".bss");
 
     globals.forEach((g) => {
+
+        //console.error(g);
         if (g.value === undefined) {
 
             console.log(".align " + g.datatype.align);
@@ -744,12 +763,23 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
     });
 }
 
+function genAnonStrings(anons:{value:Expression}[]) {
+    anons.forEach((item, i)=>{
+        console.log(".align 8");
+        console.log(`.L.data.anon.${i}:`);
+        console.log(`   .quad ${item.value.bytes.length}`);
+        console.log(`   .quad offset .L.data.strings.${item.value.label} + 8`)
+    })
+}
+
 export function genStart(
     globstrings: { value: string }[],
     globals: { name: string, value: Expression | undefined, datatype: Type }[],
+    anons: {value:Expression}[],
     fns: Function[]
 ) {
     var offset = genGlobalStrings(globstrings);
+    genAnonStrings(anons);
     genGlobals(globals);
     genText(fns);
     genAlignedCall();

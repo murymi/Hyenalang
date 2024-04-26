@@ -1,5 +1,39 @@
 .intel_syntax noprefix
 .data
+.align 8
+.L.data.strings.0:
+   .quad 12
+   .byte 'h'
+   .byte 'e'
+   .byte 'l'
+   .byte 'l'
+   .byte 'o'
+   .byte ' '
+   .byte 'w'
+   .byte 'o'
+   .byte 'r'
+   .byte 'l'
+   .byte 'd'
+   .byte '
+'
+   .byte 0
+.align 8
+.L.data.strings.1:
+   .quad 5
+   .byte 'h'
+   .byte 'e'
+   .byte 'l'
+   .byte 'l'
+   .byte 'o'
+   .byte 0
+.align 8
+.L.data.anon.0:
+   .quad 5
+   .quad offset .L.data.strings.1 + 8
+.align 8
+a:
+   .quad 12
+   .quad offset .L.data.strings.0 + 8
 .bss
 .text
 .global main
@@ -7,12 +41,13 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 0
-# [inline asm]
-   mov rax, rdi
-   mov rsi, rax
-# [end]
+   lea rax, .L.data.anon.0
+   push rax
+   pop rdi
+   lea r15, puts
+   call buitin_glibc_caller
    xor rax, rax
-.L.endfn.0:
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret

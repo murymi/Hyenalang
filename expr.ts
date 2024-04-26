@@ -27,7 +27,8 @@ export enum exprType {
     assign_array_index,
     assign_slice_index,
     deref_array_index,
-    deref_slice_index
+    deref_slice_index,
+    anon_string
 }
 
 export enum identifierType {
@@ -263,6 +264,12 @@ export class Expression {
     newExprUndefined() {
         this.type = exprType.undefnd;
         this.datatype = voidtype;
+        return this;
+    }
+
+    newExprAnonString(offset:number) {
+        this.type = exprType.anon_string;
+        this.offset = offset;
         return this;
     }
 

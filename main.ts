@@ -12,13 +12,17 @@ export enum fnType {
     native,
 }
 
-
-
 //var localSize = 0;
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: { value: string }[] = [];
 var globals: { name: string, value: Expression|undefined, datatype:Type }[] = [];
+var anon_strings :{ value:Expression }[] = [];
+
+export function addAnonString(val:Expression) {
+    anon_strings.push({value:val});
+    return anon_strings.length - 1;
+}
 
 
 //class Variable
@@ -268,7 +272,7 @@ function compile(path: string) {
         var bitstream = createWriteStream("./tmp.s");
         var orig = console.log;        
         console.log = (data)=> {bitstream.write(`${data}\n`);}
-        genStart(globalstrings,globals, functions);
+        genStart(globalstrings,globals,anon_strings, functions);
         bitstream.end();
         console.log = orig;
         spawn("make", ["bin"]);

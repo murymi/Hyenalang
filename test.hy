@@ -1,8 +1,9 @@
 
-# main function
+var a = "hello world\n";
+
+extern fn puts(char:*u8) void;
+
 fn main() void {
-    asm {
-        "mov rax, rdi"
-        "mov rsi, rax"
-    }
+
+    puts("hello");
 }

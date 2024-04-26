@@ -5,6 +5,7 @@ import { exprType } from "./expr";
 import { Statement } from "./stmt";
 import {
     Struct,
+    addAnonString,
     addGlobal,
     beginScope,
     endScope,
@@ -166,11 +167,20 @@ export class Parser {
 
     }
 
+    declareAnnonymousString(val:Expression) {
+        addAnonString(val)
+    }
+
     finishCall(callee: Expression): Expression {
         var args: Expression[] = [];
         if (!this.check(tokenType.rightparen)) {
             do {
-                args.push(this.expression());
+                var arg = this.expression();
+                if(arg.type === exprType.string) {
+                    args.push(new Expression().newExprAnonString(addAnonString(arg)))
+                } else {
+                    args.push(arg);
+                }
             } while (this.match([tokenType.comma]));
         }
         var fntok = this.expect(tokenType.rightparen, ") after params");
@@ -721,11 +731,15 @@ export class Parser {
         }
 
         type = type ?? initializer.datatype;
+        //console.error(initializer);
         var offset = incLocalOffset(name.value as string, type as Type);
 
         if (initializer.datatype.kind === myType.string) {
-            initializer = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
-            type.kind = initializer.datatype.kind;
+            var init = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
+            type.kind = init.datatype.kind;
+            if(offset >= 0) {
+                initializer = init;
+            }
         } else if (initializer.datatype.kind === myType.array) {
             initializer =
                 new Expression().newExprAssign(
