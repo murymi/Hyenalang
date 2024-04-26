@@ -3,28 +3,27 @@
 .align 8
 .L.data.strings.0:
    .quad 12
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
-   .byte ' '
-   .byte 'w'
-   .byte 'o'
-   .byte 'r'
-   .byte 'l'
-   .byte 'd'
-   .byte '
-'
+   .byte 104 
+   .byte 101 
+   .byte 108 
+   .byte 108 
+   .byte 111 
+   .byte 32 
+   .byte 119 
+   .byte 111 
+   .byte 114 
+   .byte 108 
+   .byte 100 
+   .byte 10 
    .byte 0
 .align 8
 .L.data.strings.1:
    .quad 5
-   .byte 'h'
-   .byte 'e'
-   .byte 'l'
-   .byte 'l'
-   .byte 'o'
+   .byte 104 
+   .byte 101 
+   .byte 108 
+   .byte 108 
+   .byte 111 
    .byte 0
 .align 8
 .L.data.anon.0:
