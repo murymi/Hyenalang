@@ -30,6 +30,7 @@ export function addAnonString(val:Expression) {
 export class Function {
     name: string;
     arity: number;
+    impilicit_arity:number;
     type: fnType;
     locals: { name: string, scope: number, datatype: Type, offset: number }[];
     localOffset: number;
@@ -42,7 +43,7 @@ export class Function {
         type: fnType,
         params: { name: string, datatype: Type }[],
         locals: { name: string, scope: number, datatype: Type, offset: number }[],
-        retType: any
+        retType: Type
     ) {
         this.localOffset = 0;
         this.name = name;
@@ -53,11 +54,23 @@ export class Function {
         //console.error(locals);
         var args: { name: string, scope: number, datatype: Type, offset: number }[] = [];
         if(type === fnType.native) {
+            // implicit ret ptr 
+            if(retType.size > 8) {
+                this.localOffset = alignTo(8, this.localOffset);
+                args.push({
+                    name: "",
+                    scope: 0,
+                    offset: this.localOffset,
+                    datatype: new Type().newPointer(retType)
+                });
+                this.localOffset += 8;
+            }
+
             params.forEach((p)=>{
                 this.localOffset = alignTo(p.datatype.align, this.localOffset);
                 args.push({
                     name: p.name,
-                    scope: scopeDepth,
+                    scope: 0,
                     offset: this.localOffset,
                     datatype: p.datatype
                 });
@@ -68,7 +81,8 @@ export class Function {
         }
 
 
-        this.arity = params.length;
+        this.arity =params.length;
+        this.impilicit_arity = retType.size > 8 ? params.length+1 : params.length;
         this.returnType = retType;
     }
 }

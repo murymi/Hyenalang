@@ -6,7 +6,6 @@ import { fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
 import { Type, alignTo, f32, myType, u64 } from "./type";
-import { createDiffieHellmanGroup } from "crypto";
 
 
 var latestContinueLabel = "";
@@ -261,7 +260,7 @@ function load(datatype: Type) {
         console.error("Invalid load");
         process.exit(1);
     } else {
-        console.error("Invalid load");
+        console.error("Invalidx load");
         process.exit(1);
     }
 
@@ -287,7 +286,8 @@ function store(datatype: Type) {
     } else if (datatype.size === 8) {
         console.log("   mov [rdi], rax");
     } else {
-        console.error("Invalid load", datatype.size);
+        console.error(datatype);
+        console.error("Invalid store", datatype.size);
         process.exit(1);
     }
     console.log("# end store")
@@ -337,7 +337,7 @@ function generateAddress(expr: Expression | Statement) {
             console.log("# end deref");
             break;
         default:
-            console.error(expr);
+            //console.error(expr);
             console.error("not an lvalue");
             process.exit(1);
     }
@@ -523,6 +523,13 @@ function generateCode(expr: Expression) {
                 return;
             }
 
+            
+            if(expr.right?.type === exprType.call && expr.right.datatype.size > 8) {
+                //console.error(expr.right);
+                generateCode(expr.right as Expression);
+                return;
+            }
+
             switch (expr.datatype.kind) {
                 case myType.slice:
                     console.log("# assign slice");
@@ -558,6 +565,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.call:
             expr.params.forEach((p) => {
+                //console.error(p);
                 generateCode(p);
                 push();
             });
@@ -655,7 +663,14 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log("   jmp " + latestContinueLabel);
             break;
         case stmtType.ret:
-            generateCode(stmt.expr);
+            if(stmt.expr.datatype.size > 8) {
+                console.log("   mov rax, [rbp-8]");
+                push();
+                generateAddress(stmt.expr);
+                storeStruct(stmt.expr.datatype);
+            } else {
+                generateCode(stmt.expr);
+            }
             console.log(`   jmp .L.endfn.${fnid}`);
             break;
         case stmtType.inline_asm:
@@ -714,7 +729,7 @@ function genText(fns: Function[]) {
             console.log("   mov rbp, rsp");
             console.log("   sub rsp, " + alignTo(8, fn.localOffset));
 
-            genArgs(fn.locals.slice(0, fn.arity));
+            genArgs(fn.locals.slice(0, fn.impilicit_arity));
             genStmt(fn.body, i);
 
             console.log("   xor rax, rax");

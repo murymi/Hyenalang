@@ -2,42 +2,58 @@
 .data
 .bss
 .text
-.global makenum
-makenum:
+.global makepoint
+makepoint:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
+   sub rsp, 24
+   mov [rbp-8], rdi
+# assign variable
+# generate address of variable
+# getting struct member
+# load address of var
+   lea rax, [rbp-24]
+# add offset of member
+   add rax, 0
+# end add offset
+# address of variable generated
+   push rax
+# generate value to assign
+   mov rax, 9
+# store value to variable address
+# store
+   pop rdi
+   mov [rdi], rax
+# end store
+# assign variable
+# generate address of variable
+# getting struct member
+# load address of var
+   lea rax, [rbp-24]
+# add offset of member
+   add rax, 8
+# end add offset
+# address of variable generated
+   push rax
+# generate value to assign
    mov rax, 10
+# store value to variable address
+# store
+   pop rdi
+   mov [rdi], rax
+# end store
+   mov rax, [rbp-8]
+   push rax
+# load address of var
+   lea rax, [rbp-24]
+   pop rdi
+   movq rcx, [rax+0]
+   movq [rdi+0], rcx
+   movq rcx, [rax+8]
+   movq [rdi+8], rcx
    jmp .L.endfn.0
    xor rax, rax
 .L.endfn.0:
-   mov rsp, rbp
-   pop rbp
-   ret
-
-.global add
-add:
-   push rbp
-   mov rbp, rsp
-   sub rsp, 8
-   mov [rbp-4], edi
-   mov [rbp-8], esi
-# load address of var
-   lea rax, [rbp-8]
-# load
-   movsxd rax, dword ptr [rax]
-# end load
-   push rax
-# load address of var
-   lea rax, [rbp-4]
-# load
-   movsxd rax, dword ptr [rax]
-# end load
-   pop rdi
-   add rax, rdi
-   jmp .L.endfn.1
-   xor rax, rax
-.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret
@@ -46,34 +62,36 @@ add:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
-# assign variable
-# generate address of variable
+   sub rsp, 16
 # load address of var
-   lea rax, [rbp-4]
-# address of variable generated
+   lea rax, [rbp-16]
    push rax
-# generate value to assign
-   call makenum
-   push rax
-   call makenum
-   push rax
-   pop rsi
    pop rdi
-   call add
-# store value to variable address
-# store
-   pop rdi
-   mov [rdi], eax
-# end store
+   call makepoint
+# getting struct member
 # load address of var
-   lea rax, [rbp-4]
+   lea rax, [rbp-16]
+# add offset of member
+   add rax, 8
+# end add offset
 # load
-   movsxd rax, dword ptr [rax]
+   mov rax, [rax]
 # end load
-   jmp .L.endfn.2
+   push rax
+# getting struct member
+# load address of var
+   lea rax, [rbp-16]
+# add offset of member
+   add rax, 0
+# end add offset
+# load
+   mov rax, [rax]
+# end load
+   pop rdi
+   add rax, rdi
+   jmp .L.endfn.1
    xor rax, rax
-.L.endfn.2:
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret

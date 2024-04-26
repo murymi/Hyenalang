@@ -167,7 +167,7 @@ export class Parser {
 
     }
 
-    declareAnnonymousString(val:Expression) {
+    declareAnnonymousString(val: Expression) {
         addAnonString(val)
     }
 
@@ -176,7 +176,7 @@ export class Parser {
         if (!this.check(tokenType.rightparen)) {
             do {
                 var arg = this.expression();
-                if(arg.type === exprType.string) {
+                if (arg.type === exprType.string) {
                     args.push(new Expression().newExprAnonString(addAnonString(arg)))
                 } else {
                     args.push(arg);
@@ -186,13 +186,13 @@ export class Parser {
         var fntok = this.expect(tokenType.rightparen, ") after params");
         var fn = getFn(callee.name as string);
 
-        var expr = new Expression().newExprCall(callee, fn.returnType);;
-        expr.callee = callee;
+
+
+        var expr = new Expression().newExprCall(callee, fn.returnType, args, fn.type);
         if (fn.arity !== args.length) {
             this.tokenError(fn.name + " expects " + fn.arity + " args but " + args.length + " provided.", fntok);
         }
-        expr.params = args;
-        expr.fntype = fn.type;
+
         return expr;
     }
 
@@ -335,6 +335,8 @@ export class Parser {
         while (true) {
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
+                //console.error(expr.datatype);
+                //expr.type = exprType.call;
             } else if (this.match([tokenType.dot])) {
                 expr = this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
@@ -480,7 +482,12 @@ export class Parser {
         if (this.match([tokenType.equal])) {
             equals = this.previous();
             var val = this.assign();
+
+
+
             switch (expr.type) {
+                case exprType.call:
+                    break;
                 case exprType.identifier:
                 case exprType.deref:
                     // switch (expr.datatype.kind) {
@@ -585,10 +592,10 @@ export class Parser {
             return new Statement().newWhileStatement(cond, then);
         }
 
-        if(this.match([tokenType.asm])) {
-            var lines:string[] = []
+        if (this.match([tokenType.asm])) {
+            var lines: string[] = []
             this.expect(tokenType.leftbrace, "expect { after asm");
-            while(!this.check(tokenType.rightbrace)) {
+            while (!this.check(tokenType.rightbrace)) {
                 lines.push(this.expect(tokenType.string, "expect asm statements").value as string);
             }
             this.expect(tokenType.rightbrace, "Expect } after asm body");
@@ -730,14 +737,22 @@ export class Parser {
             type.base = u8;
         }
 
+
         type = type ?? initializer.datatype;
         //console.error(initializer);
         var offset = incLocalOffset(name.value as string, type as Type);
 
+        if (initializer.type === exprType.call && type.size > 8) {
+            var p = new Array(new Expression().newExprAddress(
+                new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)));
+            p.concat(initializer.params);
+            initializer.params = p;
+        }
+
         if (initializer.datatype.kind === myType.string) {
             var init = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
             type.kind = init.datatype.kind;
-            if(offset >= 0) {
+            if (offset >= 0) {
                 initializer = init;
             }
         } else if (initializer.datatype.kind === myType.array) {
@@ -749,7 +764,6 @@ export class Parser {
                         // len
                         initializer.datatype.members[0].default as Expression
                     ))
-
         } else {
             initializer = new Expression().newExprAssign(
                 new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)

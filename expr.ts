@@ -181,14 +181,16 @@ export class Expression {
         this.type = exprType.assign;
         this.right = val;
         this.left = left;
-        this.datatype = left.datatype
+        this.datatype = left.datatype;
         return this;
     }
 
-    newExprCall(callee:Expression, datatype:Type):Expression{
+    newExprCall(callee:Expression, datatype:Type, args:Expression[], fnT:fnType):Expression{
         this.type = exprType.call;
         this.callee = callee;
         this.datatype = datatype;
+        this.params = args;
+        this.fntype = fnT;
         return this;
     }
 

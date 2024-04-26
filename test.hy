@@ -1,17 +1,17 @@
 struct point {
-    x:u8,
-    y:u8
+    x:u64,
+    y:u64
 }
 
-fn makenum() u32 {
-    return 10;
-}
-
-fn add(a:u32, b:u32) u32 {
-    return a + b;
+fn makepoint() point {
+    var a:point = undefined;
+    a.x = 9;
+    a.y = 10;
+    return a;
 }
 
 fn main() void {
-    var a = add(makenum(), makenum());
-    return a;
+    var a = makepoint();
+
+    return a.x + a.y;
 }
