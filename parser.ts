@@ -478,12 +478,18 @@ export class Parser {
         //  a[0] -> deref
 
 
+
+
         var equals: Token;
         if (this.match([tokenType.equal])) {
             equals = this.previous();
             var val = this.assign();
 
-
+            if (val.type === exprType.call && expr.datatype.size > 8) {
+                var p = new Array(new Expression().newExprAddress(expr))
+                p.concat(val.params);
+                val.params = p;
+            }
 
             switch (expr.type) {
                 case exprType.call:

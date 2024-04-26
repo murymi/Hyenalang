@@ -11,7 +11,6 @@ fn makepoint() point {
 }
 
 fn main() void {
-    var a = makepoint();
-
-    return a.x + a.y;
+    var a:point = undefined;
+    a = makepoint();
 }
