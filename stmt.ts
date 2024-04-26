@@ -16,7 +16,8 @@ export enum stmtType {
     externfn,
     nativefn,
     structdecl,
-    ret
+    ret,
+    inline_asm
 }
 
 export class Statement {
@@ -46,7 +47,9 @@ export class Statement {
     is_global: boolean;
 
     // struct
-    defaults: Expression[] | undefined
+    defaults: Expression[] | undefined;
+
+    asm_lines :string[]
 
     // makeStructInitializer(off: number, datatype: Type): Expression[] {
     //     var exprid = new Expression().newExprIdentifier(
@@ -67,9 +70,9 @@ export class Statement {
     //     return initExpr;
     // }
 
-    newStructVarStatement(offset: number, defaults: Expression[]) {
-
-    }
+    // newStructVarStatement(offset: number, defaults: Expression[]) {
+// 
+    // }
 
     static makeSliceCopy(to: number, from: Expression): Expression[] {
         var xpr: Expression[] = [];
@@ -183,6 +186,12 @@ export class Statement {
     newVarAccessStatement(offset: number): Statement {
         this.offset = offset;
         this.type = stmtType.varAccess;
+        return this;
+    }
+
+    newAsmStatement(lines: string[]){
+        this.type = stmtType.inline_asm;
+        this.asm_lines = lines;
         return this;
     }
 

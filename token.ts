@@ -72,6 +72,7 @@ export enum tokenType {
     bitor,
     bitnot,
     squote,
+    asm,
 
     str,
     undefined,
@@ -239,7 +240,8 @@ export class Lexer {
             and: tokenType.and,
             or: tokenType.or,
             str: tokenType.str,
-            undefined: tokenType.undefined
+            undefined: tokenType.undefined,
+            asm: tokenType.asm
         }
     }
 

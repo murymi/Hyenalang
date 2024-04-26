@@ -643,7 +643,15 @@ function genStmt(stmt: Statement, fnid: number): void {
             generateCode(stmt.expr);
             console.log(`   jmp .L.endfn.${fnid}`);
             break;
-        default: break;
+        case stmtType.inline_asm:
+            console.log("# [inline asm]");
+            stmt.asm_lines.forEach((l)=>{
+                console.log(`   ${l}`);
+            })
+            console.log("# [end]");
+            break;
+        default: 
+            throw new Error("unhandled statement");
     }
 
 }

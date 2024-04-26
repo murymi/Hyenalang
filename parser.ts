@@ -575,6 +575,16 @@ export class Parser {
             return new Statement().newWhileStatement(cond, then);
         }
 
+        if(this.match([tokenType.asm])) {
+            var lines:string[] = []
+            this.expect(tokenType.leftbrace, "expect { after asm");
+            while(!this.check(tokenType.rightbrace)) {
+                lines.push(this.expect(tokenType.string, "expect asm statements").value as string);
+            }
+            this.expect(tokenType.rightbrace, "Expect } after asm body");
+            return new Statement().newAsmStatement(lines);
+        }
+
         return this.ExprStatement();
     }
 

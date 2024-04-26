@@ -1,7 +1,8 @@
 
 # main function
 fn main() void {
-    var x = "hello world";
-    x[3] = 'a';
-    return x[3];
+    asm {
+        "mov rax, rdi"
+        "mov rsi, rax"
+    }
 }
