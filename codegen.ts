@@ -669,7 +669,7 @@ function genGlobalStrings(globs: { value: string }[]): number {
         console.log(".L.data.strings." + i + ":");
         console.log(`   .quad ${glob.value.length}`);
         for (let i = 0; i < glob.value.length; i++) {
-            console.log(`   .byte ${glob.value.charCodeAt(i)} `);
+            console.log(`   .byte 0x${glob.value.charCodeAt(i).toString(16)} `);
         }
         console.log("   .byte " + 0);
         loffset = i;
