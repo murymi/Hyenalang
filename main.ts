@@ -16,11 +16,11 @@ export enum fnType {
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: { value: string }[] = [];
-var globals: { name: string, value: Expression|undefined, datatype:Type }[] = [];
-var anon_strings :{ value:Expression }[] = [];
+var globals: { name: string, value: Expression | undefined, datatype: Type }[] = [];
+var anon_strings: { value: Expression }[] = [];
 
-export function addAnonString(val:Expression) {
-    anon_strings.push({value:val});
+export function addAnonString(val: Expression) {
+    anon_strings.push({ value: val });
     return anon_strings.length - 1;
 }
 
@@ -30,7 +30,7 @@ export function addAnonString(val:Expression) {
 export class Function {
     name: string;
     arity: number;
-    impilicit_arity:number;
+    impilicit_arity: number;
     type: fnType;
     locals: { name: string, scope: number, datatype: Type, offset: number }[];
     localOffset: number;
@@ -53,9 +53,9 @@ export class Function {
         this.locals = locals;
         //console.error(locals);
         var args: { name: string, scope: number, datatype: Type, offset: number }[] = [];
-        if(type === fnType.native) {
+        if (type === fnType.native) {
             // implicit ret ptr 
-            if(retType.size > 8) {
+            if (retType.size > 8) {
                 this.localOffset = alignTo(8, this.localOffset);
                 args.push({
                     name: "",
@@ -66,13 +66,13 @@ export class Function {
                 this.localOffset += 8;
             }
 
-            params.forEach((p)=>{
+            params.forEach((p) => {
                 this.localOffset = alignTo(p.datatype.align, this.localOffset);
                 args.push({
                     name: p.name,
                     scope: 0,
                     offset: this.localOffset,
-                    datatype: p.datatype
+                    datatype: p.datatype.size < 8 ? p.datatype : new Type().newPointer(p.datatype)
                 });
                 this.localOffset += p.datatype.size;
             })
@@ -81,8 +81,8 @@ export class Function {
         }
 
 
-        this.arity =params.length;
-        this.impilicit_arity = retType.size > 8 ? params.length+1 : params.length;
+        this.arity = params.length;
+        this.impilicit_arity = retType.size > 8 ? params.length + 1 : params.length;
         this.returnType = retType;
     }
 }
@@ -91,22 +91,22 @@ export class Function {
 export class Struct {
     name: string;
     size: number;
-    members: { name: string, datatype: Type, default:Expression|undefined }[];
-    is_union:boolean;
+    members: { name: string, datatype: Type, default: Expression | undefined }[];
+    is_union: boolean;
 
-    constructor(name: string, isunion:boolean, members: { name: string, datatype: Type, default:Expression|undefined }[]) {
+    constructor(name: string, isunion: boolean, members: { name: string, datatype: Type, default: Expression | undefined }[]) {
         this.name = name;
         this.size = 0;
         this.members = members;
-        this.is_union= isunion;
+        this.is_union = isunion;
     }
 }
 
 export class Enum {
     name: string;
-    values:{name:string, value:number}[];
+    values: { name: string, value: number }[];
 
-    constructor(name:string, values:{name:string, value:number}[]) {
+    constructor(name: string, values: { name: string, value: number }[]) {
         this.name = name;
         this.values = values;
     }
@@ -119,18 +119,18 @@ var functions: Function[] = [];
 
 var enums: Type[] = [];
 
-export function pushEnum(en:Type) {
+export function pushEnum(en: Type) {
     enums.push(en);
 }
 
-export function getEnum(name:string) {
-    for(let e of enums){
-        if(e.name === name) {
+export function getEnum(name: string) {
+    for (let e of enums) {
+        if (e.name === name) {
             return e;
         }
     }
     return null;
-} 
+}
 
 export function checkStruct(name: string) {
     for (let s of structs) {
@@ -167,20 +167,20 @@ export function incLocalOffset(name: string, type: Type): number {
     return old;
 }
 
-export function addGlobalString( value: string): number {
+export function addGlobalString(value: string): number {
     globalstrings.push({ value: value });
     return globalstrings.length - 1;
 }
 
-export function addGlobal(name: string, value:Expression|undefined, datatype:Type): void {
-    globals.push({name:name, value:value, datatype:datatype});
+export function addGlobal(name: string, value: Expression | undefined, datatype: Type): void {
+    globals.push({ name: name, value: value, datatype: datatype });
 }
 
 
 export function getOffsetOfMember(struct: Type, member: string) {
     for (let m of struct.members) {
         if (m.name === member) {
-            return { offset:m.offset, datatype:m.type };
+            return { offset: m.offset, datatype: m.type };
         }
     }
 
@@ -188,7 +188,7 @@ export function getOffsetOfMember(struct: Type, member: string) {
     process.exit(1);
 }
 
-export function getLocalOffset(name: string): { offset: number, datatype: Type, glob:boolean } {
+export function getLocalOffset(name: string): { offset: number, datatype: Type, glob: boolean } {
     var fn = functions[currentFn];
 
     for (let i = fn.locals.length - 1; i >= 0; i--) {
@@ -196,25 +196,25 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
             var off = fn.locals[i].offset;
             var type = fn.locals[i].datatype;
 
-            return { offset: off, datatype: type, glob:false }
+            return { offset: off, datatype: type, glob: false }
         }
     }
 
-    for(let i = 0; i < globals.length; i++) {
-        if(globals[i].name === name) {
-            return { offset: -2, datatype: globals[i].datatype, glob:true }
+    for (let i = 0; i < globals.length; i++) {
+        if (globals[i].name === name) {
+            return { offset: -2, datatype: globals[i].datatype, glob: true }
         }
     }
 
-    for(let e of enums) {
-        if(e.name === name) {
-            return { offset: -3, datatype: e, glob:false }
+    for (let e of enums) {
+        if (e.name === name) {
+            return { offset: -3, datatype: e, glob: false }
         }
     }
 
     for (let i = functions.length - 1; i >= 0; i--) {
         if (functions[i].name === name) {
-            return { offset: -1, datatype:i64, glob:true}
+            return { offset: -1, datatype: i64, glob: true }
         }
     }
 
@@ -236,15 +236,15 @@ export function pushFunction(name: string, params: { name: string, datatype: Typ
     return functions.length - 1;
 }
 
-export function pushStruct(struc:Struct) {
+export function pushStruct(struc: Struct) {
     structs.push(struc);
 }
 
 var currentFn: number = -1;
 
 export function getStruct(name: string) {
-    for (let s of structs){
-        if(s.name === name) {
+    for (let s of structs) {
+        if (s.name === name) {
             return s;
         }
     }
@@ -255,7 +255,7 @@ export function setCurrentFuction(n: number) {
     currentFn = n;
 }
 
-export function getcurrFn(){ return currentFn; }
+export function getcurrFn() { return currentFn; }
 
 export function resetCurrentFunction(body: Statement) {
     functions[currentFn].body = body;
@@ -272,21 +272,21 @@ export function endScope() {
 }
 
 function compile(path: string) {
-    readFile(path,{ encoding: "utf-8" }, (err, data)=> {
-        if(err) {
+    readFile(path, { encoding: "utf-8" }, (err, data) => {
+        if (err) {
             console.error("failed to open file");
             process.exit(1);
         }
-        
+
         var lexer = new Lexer(data);
 
         var tokens = lexer.lex();
         var parser = new Parser(tokens);
         var stmts = parser.parse();
         var bitstream = createWriteStream("./tmp.s");
-        var orig = console.log;        
-        console.log = (data)=> {bitstream.write(`${data}\n`);}
-        genStart(globalstrings,globals,anon_strings, functions);
+        var orig = console.log;
+        console.log = (data) => { bitstream.write(`${data}\n`); }
+        genStart(globalstrings, globals, anon_strings, functions);
         bitstream.end();
         console.log = orig;
         spawn("make", ["bin"]);
@@ -294,10 +294,10 @@ function compile(path: string) {
 
 }
 
-if(process.argv.length < 3) {
+if (process.argv.length < 3) {
     console.error("Usage: make FILE=<file name>");
 } else {
-    if(process.argv[2] === "") {
+    if (process.argv[2] === "") {
         console.error("Usage: make FILE=<file name>");
         process.exit();
     }

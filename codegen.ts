@@ -566,7 +566,11 @@ function generateCode(expr: Expression) {
         case exprType.call:
             expr.params.forEach((p) => {
                 //console.error(p);
-                generateCode(p);
+                if(p.datatype.size > 8) {
+                    generateAddress(p);
+                } else {
+                    generateCode(p);
+                }
                 push();
             });
 
@@ -710,9 +714,14 @@ function genGlobalStrings(globs: { value: string }[]): number {
 }
 
 
-function genArgs(params: { name: string, scope: number, datatype: Type, offset: number }[]) {
+function genArgs(
+    params: { name: string, scope: number, datatype: Type, offset: number }[]
+    ) {
     let i = 0;
     for (let p of params) {
+        // if(i < params.length - arity) {
+        //     console.log(`   mov ${getArgRegister(i, p.datatype.size)}, [${getArgRegister(i, p.datatype.size)}]`)
+        // }
         console.log(`   mov [rbp-${p.offset + p.datatype.size}], ${getArgRegister(i, p.datatype.size)}`);
         i++;
     }

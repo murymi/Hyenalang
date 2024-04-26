@@ -58,6 +58,33 @@ makepoint:
    pop rbp
    ret
 
+.global usepoint
+usepoint:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 16
+   mov [rbp-8], rdi
+# getting struct member
+# deref
+# load address of var
+   lea rax, [rbp-8]
+# load
+   mov rax, [rax]
+# end load
+# end deref
+# add offset of member
+   add rax, 0
+# end add offset
+# load
+   mov rax, [rax]
+# end load
+   jmp .L.endfn.1
+   xor rax, rax
+.L.endfn.1:
+   mov rsp, rbp
+   pop rbp
+   ret
+
 .global main
 main:
    push rbp
@@ -68,30 +95,14 @@ main:
    push rax
    pop rdi
    call makepoint
-# getting struct member
 # load address of var
    lea rax, [rbp-16]
-# add offset of member
-   add rax, 8
-# end add offset
-# load
-   mov rax, [rax]
-# end load
    push rax
-# getting struct member
-# load address of var
-   lea rax, [rbp-16]
-# add offset of member
-   add rax, 0
-# end add offset
-# load
-   mov rax, [rax]
-# end load
    pop rdi
-   add rax, rdi
-   jmp .L.endfn.1
+   call usepoint
+   jmp .L.endfn.2
    xor rax, rax
-.L.endfn.1:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret

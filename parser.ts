@@ -210,8 +210,13 @@ export class Parser {
         ) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
-        } else if (expr.datatype.kind === myType.ptr) {
+        } else if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
             return new Expression().newExprDeref(expr);
+        } else if (expr.datatype.kind === myType.ptr && expr.datatype.base.kind === myType.struct) {
+            var meta = getOffsetOfMember(expr.datatype.base, propname.value as string);
+            return new Expression().newExprGet(meta.offset,
+                new Expression().newExprDeref(expr)
+                , meta.datatype);
         } else if (expr.datatype.kind === myType.enum) {
             var val = expr.datatype.enumvalues.find((e) => e.name === propname.value);
             if (val) {
@@ -220,7 +225,7 @@ export class Parser {
             console.error(`enum ${expr.name} has no field named ${propname.value}`);
             process.exit(1);
         } else {
-            console.error("member access to non struct");
+            console.error(`${expr.name} has no member ${propname.value}`);
             process.exit(1);
         }
     }

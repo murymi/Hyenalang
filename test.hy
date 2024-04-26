@@ -10,7 +10,13 @@ fn makepoint() point {
     return a;
 }
 
+fn usepoint(p:point) void {
+    return p.x;
+}
+
 fn main() void {
     var a:point = undefined;
     a = makepoint();
+
+    return usepoint(a);
 }
