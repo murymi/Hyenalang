@@ -1,22 +1,27 @@
+struct foa { a:i8 }
+struct fob { a:foa }
+struct foc { a:fob }
+struct fod { a:foc }
+struct foe { a:fod }
+
+
+
 struct point {
     x:u64,
     y:u64
 }
 
+
 fn makepoint() point {
     var a:point = undefined;
-    a.x = 9;
-    a.y = 10;
+
     return a;
 }
 
 fn usepoint(p:point) void {
-    return p.x;
+    return p.y;
 }
 
 fn main() void {
-    var a:point = undefined;
-    a = makepoint();
-
-    return usepoint(a);
+   usepoint(makepoint());
 }

@@ -336,8 +336,16 @@ function generateAddress(expr: Expression | Statement) {
             generateCode(expr.left as Expression);
             console.log("# end deref");
             break;
+        case exprType.decl_anon_for_get:
+            generateCode(expr.left as Expression);
+            generateAddress(expr.right as Expression);
+            break;
+        case exprType.call:
+            // for struct only
+            generateCode(expr);
+            break
         default:
-            //console.error(expr);
+            console.error(expr);
             console.error("not an lvalue");
             process.exit(1);
     }
@@ -593,6 +601,10 @@ function generateCode(expr: Expression) {
             break;
         case exprType.anon_string:
             console.log(`   lea rax, .L.data.anon.${expr.offset}`);
+            break;
+        case exprType.decl_anon_for_get:
+            generateCode(expr.left as Expression);
+            generateCode(expr.right as Expression);
             break;
         default:
             console.error(expr);

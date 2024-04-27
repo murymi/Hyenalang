@@ -8,40 +8,6 @@ makepoint:
    mov rbp, rsp
    sub rsp, 24
    mov [rbp-8], rdi
-# assign variable
-# generate address of variable
-# getting struct member
-# load address of var
-   lea rax, [rbp-24]
-# add offset of member
-   add rax, 0
-# end add offset
-# address of variable generated
-   push rax
-# generate value to assign
-   mov rax, 9
-# store value to variable address
-# store
-   pop rdi
-   mov [rdi], rax
-# end store
-# assign variable
-# generate address of variable
-# getting struct member
-# load address of var
-   lea rax, [rbp-24]
-# add offset of member
-   add rax, 8
-# end add offset
-# address of variable generated
-   push rax
-# generate value to assign
-   mov rax, 10
-# store value to variable address
-# store
-   pop rdi
-   mov [rdi], rax
-# end store
    mov rax, [rbp-8]
    push rax
 # load address of var
@@ -73,7 +39,7 @@ usepoint:
 # end load
 # end deref
 # add offset of member
-   add rax, 0
+   add rax, 8
 # end add offset
 # load
    mov rax, [rax]
@@ -100,7 +66,6 @@ main:
    push rax
    pop rdi
    call usepoint
-   jmp .L.endfn.2
    xor rax, rax
 .L.endfn.2:
    mov rsp, rbp

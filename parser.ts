@@ -171,6 +171,13 @@ export class Parser {
         addAnonString(val)
     }
 
+    makeAnonArg(arg:Expression) {
+        var offset = incLocalOffset("", arg.datatype);
+        var vardecl = Statement.anonLargeReturnVar(arg, offset);
+        var get = new Expression().newExprIdentifier("", offset, arg.datatype, identifierType.variable);
+        return new Expression().newExprDeclAnonForGet(vardecl, get)
+    }
+
     finishCall(callee: Expression): Expression {
         var args: Expression[] = [];
         if (!this.check(tokenType.rightparen)) {
@@ -178,6 +185,9 @@ export class Parser {
                 var arg = this.expression();
                 if (arg.type === exprType.string) {
                     args.push(new Expression().newExprAnonString(addAnonString(arg)))
+                } if(arg.type === exprType.call && arg.datatype.size > 8) {
+                    //console.error("==============");
+                    args.push(this.makeAnonArg(arg));
                 } else {
                     args.push(arg);
                 }
@@ -203,10 +213,10 @@ export class Parser {
         }
 
         if (
-            expr.datatype.kind === myType.struct ||
-            expr.datatype.kind === myType.slice ||
-            expr.datatype.kind === myType.string ||
-            expr.datatype.kind === myType.array
+            (expr.datatype.kind === myType.struct ||
+                expr.datatype.kind === myType.slice ||
+                expr.datatype.kind === myType.string ||
+                expr.datatype.kind === myType.array) && expr.type !== exprType.call
         ) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
@@ -224,8 +234,23 @@ export class Parser {
             }
             console.error(`enum ${expr.name} has no field named ${propname.value}`);
             process.exit(1);
+        } else if (expr.type === exprType.call && expr.datatype.kind === myType.struct) {
+            var meta = getOffsetOfMember(expr.datatype, propname.value as string);
+            var offset = incLocalOffset("", expr.datatype);
+            var get = new Expression().newExprGet(meta.offset,
+                new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable),
+                 meta.datatype);
+            if (expr.datatype.size > 8) {
+                var vardecl = Statement.anonLargeReturnVar(expr, offset);
+                return new Expression().newExprDeclAnonForGet(vardecl, get);
+            }
+            var vardecl = Statement.anonSmallReturnVar(expr, offset);
+            //console.error("-------shold return-------");
+            return new Expression().newExprDeclAnonForGet(vardecl, get);
+
         } else {
             console.error(`${expr.name} has no member ${propname.value}`);
+            console.error(expr.datatype);
             process.exit(1);
         }
     }

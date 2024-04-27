@@ -1,5 +1,5 @@
-import { Expression, identifierType } from "./expr";
-import { addGlobal } from "./main";
+import { Expression, exprType, identifierType } from "./expr";
+import { addGlobal, incLocalOffset } from "./main";
 import { Token } from "./token";
 import { Type, myType, u64, u8, voidtype } from "./type";
 
@@ -177,8 +177,35 @@ export class Statement {
         return this;
     }
 
+    static anonLargeReturnVar(expr:Expression, offset:number) {
+        expr.params.splice(0, 0, new Expression().newExprAddress(
+            new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
+        return new Expression().newExprAssign(
+            new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)
+            , expr
+        );
+    }
+
+    static anonSmallReturnVar(expr:Expression, offset:number) {
+        return new Expression().newExprAssign(
+            new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)
+            , expr
+        );
+    }
+
     newExprStatement(expr: Expression): Statement {
         this.type = stmtType.exprstmt;
+
+        if(expr.type === exprType.decl_anon_for_get) {
+            this.expr = expr;
+            return this;
+        }
+
+        if(expr.datatype.size > 8 && expr.type === exprType.call) {
+            var offset = incLocalOffset("", expr.datatype);
+            return new Statement().newVarstatement("", Statement.anonLargeReturnVar(expr, offset), offset, expr.datatype);
+        }
+
         this.expr = expr;
         return this;
     }

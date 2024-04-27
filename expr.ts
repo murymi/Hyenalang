@@ -1,4 +1,5 @@
 import { addGlobalString, fnType } from "./main";
+import { Statement } from "./stmt";
 import { Token } from "./token";
 import { Type, f32, i32, i64, myType, str, u64, u8, voidtype } from "./type";
 
@@ -28,7 +29,8 @@ export enum exprType {
     assign_slice_index,
     deref_array_index,
     deref_slice_index,
-    anon_string
+    anon_string,
+    decl_anon_for_get
 }
 
 export enum identifierType {
@@ -274,6 +276,16 @@ export class Expression {
         this.offset = offset;
         return this;
     }
+
+    newExprDeclAnonForGet(left:Expression, right:Expression):Expression {
+        this.left = left;
+        this.right = right;
+        this.datatype = right.datatype;
+        this.type = exprType.decl_anon_for_get;
+        return this;
+    }
+
+    
 
     constructor(){
     }
