@@ -12,6 +12,7 @@ export enum fnType {
     native,
 }
 
+var anon_count = 0;
 //var localSize = 0;
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
@@ -143,6 +144,12 @@ export function checkStruct(name: string) {
 
 // size in 8 bytes (for now)
 export function incLocalOffset(name: string, type: Type): number {
+
+    if(name === "") {
+        name = "anon"+anon_count.toString(2);
+        anon_count++;
+    }
+
     if (currentFn === -1) {
         return -1;
     }

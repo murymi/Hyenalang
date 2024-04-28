@@ -344,6 +344,9 @@ function generateAddress(expr: Expression | Statement) {
             // for struct only
             generateCode(expr);
             break
+        case exprType.anon_string:
+            generateCode(expr);
+            break;
         default:
             console.error(expr);
             console.error("not an lvalue");
@@ -791,9 +794,9 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
             }
 
             if (g.value.datatype.size === 1) {
-                console.log("   .byte " + g.value.val);
+                console.log("   .byte " + g.value.right?.val);
             } else {
-                console.log("   ." + g.value.datatype.size + "byte " + g.value.val);
+                console.log("   ." + g.value.datatype.size + "byte " + g.value.right?.val);
             }
         }
     });

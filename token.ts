@@ -150,7 +150,7 @@ export class Lexer {
     }
 
     isAlpha(text: string): boolean {
-        return /^[a-z]$/.test(text);
+        return /^[a-zA-Z_]$/.test(text);
     }
 
     isNumber(text: string): boolean {

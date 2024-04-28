@@ -24,6 +24,7 @@ import {
     setCurrentFuction
 } from "./main";
 import { Type, bool, f32, i16, i32, i64, i8, myType, str, u16, u32, u64, u8, voidtype } from "./type";
+import { error } from "console";
 
 export class Parser {
     tokens: Token[];
@@ -171,7 +172,7 @@ export class Parser {
         addAnonString(val)
     }
 
-    makeAnonArg(arg:Expression) {
+    makeAnonArg(arg: Expression) {
         var offset = incLocalOffset("", arg.datatype);
         var vardecl = Statement.anonLargeReturnVar(arg, offset);
         var get = new Expression().newExprIdentifier("", offset, arg.datatype, identifierType.variable);
@@ -185,9 +186,13 @@ export class Parser {
                 var arg = this.expression();
                 if (arg.type === exprType.string) {
                     args.push(new Expression().newExprAnonString(addAnonString(arg)))
-                } if(arg.type === exprType.call && arg.datatype.size > 8) {
-                    //console.error("==============");
-                    args.push(this.makeAnonArg(arg));
+                } else if (arg.datatype.size > 8) {
+                    if (arg.type === exprType.call && arg.datatype.kind === myType.struct) {
+                        //console.error("==============");
+                        args.push(this.makeAnonArg(arg));
+                    } else {
+                        throw new error("Large arg detected");
+                    }
                 } else {
                     args.push(arg);
                 }
@@ -196,7 +201,7 @@ export class Parser {
         var fntok = this.expect(tokenType.rightparen, ") after params");
         var fn = getFn(callee.name as string);
 
-
+        //console.error(args);
 
         var expr = new Expression().newExprCall(callee, fn.returnType, args, fn.type);
         if (fn.arity !== args.length) {
@@ -239,7 +244,7 @@ export class Parser {
             var offset = incLocalOffset("", expr.datatype);
             var get = new Expression().newExprGet(meta.offset,
                 new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable),
-                 meta.datatype);
+                meta.datatype);
             if (expr.datatype.size > 8) {
                 var vardecl = Statement.anonLargeReturnVar(expr, offset);
                 return new Expression().newExprDeclAnonForGet(vardecl, get);
@@ -582,6 +587,13 @@ export class Parser {
         }
 
         var expr = this.expression();
+
+        if (expr.type === exprType.call && expr.datatype.size > 8) {
+            var offset = incLocalOffset("", expr.datatype)
+            expr.params.splice(0, 0, new Expression().newExprAddress(
+                new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
+        }
+
         this.expect(tokenType.semicolon, ";");
         return new Statement().newReturnStatement(expr);
     }

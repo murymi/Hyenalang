@@ -274,6 +274,7 @@ export class Expression {
     newExprAnonString(offset:number) {
         this.type = exprType.anon_string;
         this.offset = offset;
+        this.datatype = str;
         return this;
     }
 
