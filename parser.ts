@@ -191,6 +191,7 @@ export class Parser {
                         //console.error("==============");
                         args.push(this.makeAnonArg(arg));
                     } else {
+                        console.error(arg);
                         throw new error("Large arg detected");
                     }
                 } else {
@@ -783,6 +784,7 @@ export class Parser {
         } else if (initializer.datatype.kind === myType.string) {
             type = str;
             type.base = u8;
+            type.kind = myType.slice
         }
 
 
@@ -798,11 +800,10 @@ export class Parser {
         }
 
         if (initializer.datatype.kind === myType.string) {
-            var init = new Expression().newExprSlice(this.makeStringInitializerFromPtr(offset, initializer));
-            type.kind = init.datatype.kind;
-            if (offset >= 0) {
-                initializer = init;
-            }
+            initializer =
+            new Expression().newExprAssign(
+                new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable),
+                new Expression().newExprSlideString(initializer))
         } else if (initializer.datatype.kind === myType.array) {
             initializer =
                 new Expression().newExprAssign(

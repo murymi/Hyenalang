@@ -215,17 +215,27 @@ export class Expression {
         return this;
     }
 
-    newExprString(val:string):Expression{
+    newExprString(strng:string):Expression {
+        var label = addGlobalString(strng);
+        this.label = label;
+        this.bytes = strng;
         this.type = exprType.string;
-        this.bytes = val;
+        this.datatype = new Type();
+        this.datatype.kind = myType.string;
+        return this;
+    }
+
+    newExprSlideString(id:Expression):Expression{
+        this.type = exprType.slice_array;
+        this.left = new Expression().newExprNumber(0);
+        this.right = new Expression().newExprNumber(id.bytes.length);
+        this.id = id;
         //this.datatype = new Type().newPointer(u8);
         this.datatype = new Type().newStruct([
              { name: "len", datatype: u64, default: undefined },
              { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
          ])
-        this.datatype.kind = myType.string;
-        this.label = addGlobalString(val);
-        this.labelinitialize = true;
+        this.datatype.kind = myType.slice;
         return this;
     }
 

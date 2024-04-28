@@ -118,6 +118,8 @@ fn sub_i64(a:i64, b:i64) i64 {
     return a - b;
 }
 
+extern fn printf(fmt:*u8, a:i64, b:i64, c: i64) void;
+
 fn main() void {
     var i = 0;
     write("testing loop\n");
@@ -177,5 +179,8 @@ fn main() void {
         test_eql(sub_i64(i, 20), i - 20);
         i = i + 1;
     }
+
+    var fmt = "Total tests: %d\npassed: %d\nfailed: %d\n";
+    printf(fmt.ptr, total, passed, failed);
 }
 

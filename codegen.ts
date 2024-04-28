@@ -16,8 +16,8 @@ var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
 var byteArgRegisters = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
 
-function getArgRegister(index:number, size:number):string {
-    switch(size){
+function getArgRegister(index: number, size: number): string {
+    switch (size) {
         case 1: return byteArgRegisters[index];
         case 2: return wordArgRegisters[index];
         case 4: return dwordArgRegisters[index];
@@ -311,14 +311,14 @@ function genAddress(stmt: Statement | Expression) {
 
 function generateAddress(expr: Expression | Statement) {
     //console.error(expr.type);
-    switch (expr.type) {
+    switch (expr.type /** */) {
         case exprType.identifier:
             console.log("# load address of var");
             if (expr.is_glob) {
                 console.log("   push offset " + expr.name);
                 pop("rax");
             } else {
-                
+
                 genAddress(expr);
             }
             break;
@@ -345,6 +345,9 @@ function generateAddress(expr: Expression | Statement) {
             generateCode(expr);
             break
         case exprType.anon_string:
+            generateCode(expr);
+            break;
+        case exprType.string:
             generateCode(expr);
             break;
         default:
@@ -467,7 +470,7 @@ function assignSlice(expr: Expression) {
 }
 
 function generateCode(expr: Expression) {
-    switch (expr.type) {
+    switch (expr.type/**comment */) {
         case exprType.address:
             generateAddress(expr.left as Expression);
             break;
@@ -524,8 +527,8 @@ function generateCode(expr: Expression) {
             }
             break;
         case exprType.assign:
-            if (expr.right?.type === exprType.undefnd){
-                if(expr.datatype.kind === myType.array) {
+            if (expr.right?.type === exprType.undefnd) {
+                if (expr.datatype.kind === myType.array) {
                     generateAddress(expr.left as Expression);
                     push();
                     generateCode(expr.datatype.members[0].default as Expression);
@@ -534,12 +537,14 @@ function generateCode(expr: Expression) {
                 return;
             }
 
-            
-            if(expr.right?.type === exprType.call && expr.right.datatype.size > 8) {
+
+            if (expr.right?.type === exprType.call && expr.right.datatype.size > 8) {
                 //console.error(expr.right);
                 generateCode(expr.right as Expression);
                 return;
             }
+
+            //console.error(expr.datatype.kind);
 
             switch (expr.datatype.kind) {
                 case myType.slice:
@@ -547,6 +552,8 @@ function generateCode(expr: Expression) {
                     assignSlice(expr);
                     break;
                 case myType.string:
+                    console.error("===============================");
+                    assignSlice(expr);
                     break;
                 case myType.struct:
                     if (expr.datatype.size > 8) {
@@ -577,7 +584,7 @@ function generateCode(expr: Expression) {
         case exprType.call:
             expr.params.forEach((p) => {
                 //console.error(p);
-                if(p.datatype.size > 8) {
+                if (p.datatype.size > 8) {
                     generateAddress(p);
                 } else {
                     generateCode(p);
@@ -600,7 +607,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.string:
             //genString(expr.name);
-            console.log(`   lea rax, .L.data.${expr.label}`);
+            console.log(`   lea rax, .L.data.strings.${expr.label}`);
             break;
         case exprType.anon_string:
             console.log(`   lea rax, .L.data.anon.${expr.offset}`);
@@ -682,7 +689,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log("   jmp " + latestContinueLabel);
             break;
         case stmtType.ret:
-            if(stmt.expr.datatype.size > 8) {
+            if (stmt.expr.datatype.size > 8) {
                 console.log("   mov rax, [rbp-8]");
                 push();
                 generateAddress(stmt.expr);
@@ -694,12 +701,12 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.inline_asm:
             console.log("# [inline asm]");
-            stmt.asm_lines.forEach((l)=>{
+            stmt.asm_lines.forEach((l) => {
                 console.log(`   ${l}`);
             })
             console.log("# [end]");
             break;
-        default: 
+        default:
             throw new Error("unhandled statement");
     }
 
@@ -731,7 +738,7 @@ function genGlobalStrings(globs: { value: string }[]): number {
 
 function genArgs(
     params: { name: string, scope: number, datatype: Type, offset: number }[]
-    ) {
+) {
     let i = 0;
     for (let p of params) {
         // if(i < params.length - arity) {
@@ -770,7 +777,7 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
     globals.forEach((g) => {
         if (g.value) {
 
-            if(g.value.type === exprType.undefnd) return;
+            if (g.value.type === exprType.undefnd) return;
 
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
@@ -787,7 +794,7 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
             //     return;
             // }
 
-            if(g.datatype.kind === myType.slice) {
+            if (g.datatype.kind === myType.slice) {
                 console.log(`   .quad ${g.value.bytes.length}`)
                 console.log(`   .quad offset .L.data.strings.${g.value.label} + 8`)
                 return;
@@ -815,8 +822,8 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
     });
 }
 
-function genAnonStrings(anons:{value:Expression}[]) {
-    anons.forEach((item, i)=>{
+function genAnonStrings(anons: { value: Expression }[]) {
+    anons.forEach((item, i) => {
         console.log(".align 8");
         console.log(`.L.data.anon.${i}:`);
         console.log(`   .quad ${item.value.bytes.length}`);
@@ -827,7 +834,7 @@ function genAnonStrings(anons:{value:Expression}[]) {
 export function genStart(
     globstrings: { value: string }[],
     globals: { name: string, value: Expression | undefined, datatype: Type }[],
-    anons: {value:Expression}[],
+    anons: { value: Expression }[],
     fns: Function[]
 ) {
     var offset = genGlobalStrings(globstrings);

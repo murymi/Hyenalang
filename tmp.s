@@ -164,6 +164,48 @@
    .byte 0xa 
    .byte 0
 .align 8
+.L.data.strings.10:
+   .quad 38
+   .byte 0x54 
+   .byte 0x6f 
+   .byte 0x74 
+   .byte 0x61 
+   .byte 0x6c 
+   .byte 0x20 
+   .byte 0x74 
+   .byte 0x65 
+   .byte 0x73 
+   .byte 0x74 
+   .byte 0x73 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x25 
+   .byte 0x64 
+   .byte 0xa 
+   .byte 0x70 
+   .byte 0x61 
+   .byte 0x73 
+   .byte 0x73 
+   .byte 0x65 
+   .byte 0x64 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x25 
+   .byte 0x64 
+   .byte 0xa 
+   .byte 0x66 
+   .byte 0x61 
+   .byte 0x69 
+   .byte 0x6c 
+   .byte 0x65 
+   .byte 0x64 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x25 
+   .byte 0x64 
+   .byte 0xa 
+   .byte 0
+.align 8
 .L.data.anon.0:
    .quad 9
    .quad offset .L.data.strings.0 + 8
@@ -990,7 +1032,7 @@ sub_i64:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
+   sub rsp, 24
 # assign variable
 # generate address of variable
 # load address of var
@@ -1008,75 +1050,6 @@ main:
    push rax
    pop rdi
    call write
-.L.continue.26:
-   mov rax, 50
-   push rax
-# load address of var
-   lea rax, [rbp-4]
-# load
-   movsxd rax, dword ptr [rax]
-# end load
-   pop rdi
-   cmp rax, rdi
-   setl al
-   movzb rax, al
-   cmp rax, 0
-   je .L.break.26
-# load address of var
-   lea rax, [rbp-4]
-# load
-   movsxd rax, dword ptr [rax]
-# end load
-   push rax
-# load address of var
-   lea rax, [rbp-4]
-# load
-   movsxd rax, dword ptr [rax]
-# end load
-   push rax
-   pop rsi
-   pop rdi
-   call test_eql
-# assign variable
-# generate address of variable
-# load address of var
-   lea rax, [rbp-4]
-# address of variable generated
-   push rax
-# generate value to assign
-   mov rax, 1
-   push rax
-# load address of var
-   lea rax, [rbp-4]
-# load
-   movsxd rax, dword ptr [rax]
-# end load
-   pop rdi
-   add rax, rdi
-# store value to variable address
-# store
-   pop rdi
-   mov [rdi], eax
-# end store
-   jmp .L.continue.26
-.L.break.26:
-# assign variable
-# generate address of variable
-# load address of var
-   lea rax, [rbp-4]
-# address of variable generated
-   push rax
-# generate value to assign
-   mov rax, 0
-# store value to variable address
-# store
-   pop rdi
-   mov [rdi], eax
-# end store
-   lea rax, .L.data.anon.5
-   push rax
-   pop rdi
-   call write
 .L.continue.27:
    mov rax, 50
    push rax
@@ -1091,19 +1064,17 @@ main:
    movzb rax, al
    cmp rax, 0
    je .L.break.27
-   mov rax, 50
+# load address of var
+   lea rax, [rbp-4]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
    push rax
 # load address of var
    lea rax, [rbp-4]
 # load
    movsxd rax, dword ptr [rax]
 # end load
-   pop rdi
-   cmp rax, rdi
-   setl al
-   movzb rax, al
-   push rax
-   mov rax, 1
    push rax
    pop rsi
    pop rdi
@@ -1144,7 +1115,7 @@ main:
    pop rdi
    mov [rdi], eax
 # end store
-   lea rax, .L.data.anon.6
+   lea rax, .L.data.anon.5
    push rax
    pop rdi
    call write
@@ -1162,6 +1133,77 @@ main:
    movzb rax, al
    cmp rax, 0
    je .L.break.28
+   mov rax, 50
+   push rax
+# load address of var
+   lea rax, [rbp-4]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   pop rdi
+   cmp rax, rdi
+   setl al
+   movzb rax, al
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   call test_eql
+# assign variable
+# generate address of variable
+# load address of var
+   lea rax, [rbp-4]
+# address of variable generated
+   push rax
+# generate value to assign
+   mov rax, 1
+   push rax
+# load address of var
+   lea rax, [rbp-4]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   pop rdi
+   add rax, rdi
+# store value to variable address
+# store
+   pop rdi
+   mov [rdi], eax
+# end store
+   jmp .L.continue.28
+.L.break.28:
+# assign variable
+# generate address of variable
+# load address of var
+   lea rax, [rbp-4]
+# address of variable generated
+   push rax
+# generate value to assign
+   mov rax, 0
+# store value to variable address
+# store
+   pop rdi
+   mov [rdi], eax
+# end store
+   lea rax, .L.data.anon.6
+   push rax
+   pop rdi
+   call write
+.L.continue.29:
+   mov rax, 50
+   push rax
+# load address of var
+   lea rax, [rbp-4]
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   pop rdi
+   cmp rax, rdi
+   setl al
+   movzb rax, al
+   cmp rax, 0
+   je .L.break.29
 # load address of var
    lea rax, [rbp-4]
 # load
@@ -1284,8 +1326,8 @@ main:
    pop rdi
    mov [rdi], eax
 # end store
-   jmp .L.continue.28
-.L.break.28:
+   jmp .L.continue.29
+.L.break.29:
 # assign variable
 # generate address of variable
 # load address of var
@@ -1303,7 +1345,7 @@ main:
    push rax
    pop rdi
    call write
-.L.continue.29:
+.L.continue.30:
    mov rax, 50
    push rax
 # load address of var
@@ -1316,7 +1358,7 @@ main:
    setl al
    movzb rax, al
    cmp rax, 0
-   je .L.break.29
+   je .L.break.30
 # load address of var
    lea rax, [rbp-4]
 # load
@@ -1439,8 +1481,8 @@ main:
    pop rdi
    mov [rdi], eax
 # end store
-   jmp .L.continue.29
-.L.break.29:
+   jmp .L.continue.30
+.L.break.30:
 # assign variable
 # generate address of variable
 # load address of var
@@ -1458,7 +1500,7 @@ main:
    push rax
    pop rdi
    call write
-.L.continue.30:
+.L.continue.31:
    mov rax, 50
    push rax
 # load address of var
@@ -1471,7 +1513,7 @@ main:
    setl al
    movzb rax, al
    cmp rax, 0
-   je .L.break.30
+   je .L.break.31
 # load address of var
    lea rax, [rbp-4]
 # load
@@ -1594,8 +1636,8 @@ main:
    pop rdi
    mov [rdi], eax
 # end store
-   jmp .L.continue.30
-.L.break.30:
+   jmp .L.continue.31
+.L.break.31:
 # assign variable
 # generate address of variable
 # load address of var
@@ -1613,7 +1655,7 @@ main:
    push rax
    pop rdi
    call write
-.L.continue.31:
+.L.continue.32:
    mov rax, 50
    push rax
 # load address of var
@@ -1626,7 +1668,7 @@ main:
    setl al
    movzb rax, al
    cmp rax, 0
-   je .L.break.31
+   je .L.break.32
 # load address of var
    lea rax, [rbp-4]
 # load
@@ -1749,10 +1791,66 @@ main:
    pop rdi
    mov [rdi], eax
 # end store
-   jmp .L.continue.31
-.L.break.31:
+   jmp .L.continue.32
+.L.break.32:
+# assign slice
+   mov rax, 0
+mov rdx, rax
+   push rax
+   mov rax, 38
+   pop rdi
+   sub rax, rdi
+mov rcx, rax
+# load address of var
+   lea rax, [rbp-24]
+mov [rax], rcx
+add rax, 8
+   push rax
+   lea rax, .L.data.strings.10
+add rax, 8
+imul rdx, 1
+add rax, rdx
+   pop rdi
+mov [rdi], rax
+# getting struct member
+# load address of var
+   lea rax, [rbp-24]
+# add offset of member
+   add rax, 8
+# end add offset
+# load
+   mov rax, [rax]
+# end load
+   push rax
+# load address of var
+   push offset total
+   pop rax
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   push rax
+# load address of var
+   push offset passed
+   pop rax
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   push rax
+# load address of var
+   push offset failed
+   pop rax
+# load
+   movsxd rax, dword ptr [rax]
+# end load
+   push rax
+   pop rcx
+   pop rdx
+   pop rsi
+   pop rdi
+   lea r15, printf
+   call buitin_glibc_caller
    xor rax, rax
-.L.endfn.25:
+.L.endfn.26:
    mov rsp, rbp
    pop rbp
    ret
