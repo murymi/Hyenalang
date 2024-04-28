@@ -163,6 +163,7 @@ export var str = new Type().newStruct([
 ]);
 
 
+
 function typeError(message: string, tok: Token | undefined) {
     if (tok) {
         console.error(message + ": [ line:" + tok.line + " col:" + tok.col + " ]");

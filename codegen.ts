@@ -689,6 +689,20 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log("   jmp " + latestContinueLabel);
             break;
         case stmtType.ret:
+            if(stmt.expr.datatype.kind === myType.string) {
+                //console.error(stmt.expr.datatype);
+                console.log("mov rax, [rbp-8]");
+                push();
+                generateCode(stmt.expr);
+                pop("rdi");
+                console.log("mov rcx, [rax]");
+                console.log("mov [rdi], rcx");
+                console.log("lea rcx, [rax + 8]");
+                console.log("mov [rdi+8], rcx");
+                console.log("mov rax, [rbp-8]");
+                return;
+            }
+
             if (stmt.expr.datatype.size > 8) {
                 console.log("   mov rax, [rbp-8]");
                 push();

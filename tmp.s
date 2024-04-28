@@ -2,7 +2,7 @@
 .data
 .align 8
 .L.data.strings.0:
-   .quad 12
+   .quad 11
    .byte 0x68 
    .byte 0x65 
    .byte 0x6c 
@@ -14,27 +14,24 @@
    .byte 0x72 
    .byte 0x6c 
    .byte 0x64 
-   .byte 0xa 
    .byte 0
-.align 8
-.L.data.anon.0:
-   .quad 12
-   .quad offset .L.data.strings.0 + 8
 .bss
 .text
-.global write
-write:
+.global foo
+foo:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
+   sub rsp, 8
    mov [rbp-8], rdi
-# [inline asm]
-   mov rsi, [rdi+8]
-   mov rdx, [rdi +0]
-   mov rdi, 1
-   mov rax, 1
-   syscall
-# [end]
+mov rax, [rbp-8]
+   push rax
+   lea rax, .L.data.strings.0
+   pop rdi
+mov rcx, [rax]
+mov [rdi], rcx
+lea rcx, [rax + 8]
+mov [rdi+8], rcx
+mov rax, [rbp-8]
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp
@@ -45,11 +42,42 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
-   lea rax, .L.data.anon.0
+   sub rsp, 24
+# assign variable
+# generate address of variable
+# load address of var
+   lea rax, [rbp-24]
+# address of variable generated
+   push rax
+# generate value to assign
+# load address of var
+   lea rax, [rbp-16]
    push rax
    pop rdi
-   call write
+   call foo
+# getting struct member
+# load address of var
+   lea rax, [rbp-16]
+# add offset of member
+   add rax, 8
+# end add offset
+# load
+   mov rax, [rax]
+# end load
+# store value to variable address
+# store
+   pop rdi
+   mov [rdi], rax
+# end store
+# load address of var
+   lea rax, [rbp-24]
+# load
+   mov rax, [rax]
+# end load
+   push rax
+   pop rdi
+   lea r15, puts
+   call buitin_glibc_caller
    xor rax, rax
 .L.endfn.2:
    mov rsp, rbp

@@ -212,18 +212,20 @@ export class Parser {
         return expr;
     }
 
+    isStructure(T: Type): boolean {
+        if (T.members) {
+            return true;
+        }
+        return false;
+    }
+
     parseGet(expr: Expression): Expression {
         var propname = this.advance();
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             this.tokenError("expect property name after dot", this.peek());
         }
 
-        if (
-            (expr.datatype.kind === myType.struct ||
-                expr.datatype.kind === myType.slice ||
-                expr.datatype.kind === myType.string ||
-                expr.datatype.kind === myType.array) && expr.type !== exprType.call
-        ) {
+        if (this.isStructure(expr.datatype) && expr.type !== exprType.call) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
         } else if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
@@ -240,7 +242,7 @@ export class Parser {
             }
             console.error(`enum ${expr.name} has no field named ${propname.value}`);
             process.exit(1);
-        } else if (expr.type === exprType.call && expr.datatype.kind === myType.struct) {
+        } else if (expr.type === exprType.call && this.isStructure(expr.datatype)) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             var offset = incLocalOffset("", expr.datatype);
             var get = new Expression().newExprGet(meta.offset,
@@ -593,6 +595,8 @@ export class Parser {
             var offset = incLocalOffset("", expr.datatype)
             expr.params.splice(0, 0, new Expression().newExprAddress(
                 new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
+        } else if (expr.type === exprType.string) {
+
         }
 
         this.expect(tokenType.semicolon, ";");
@@ -699,7 +703,10 @@ export class Parser {
             case tokenType.f32:
                 return f32;
             case tokenType.str:
-                var t = str;
+                var t = new Type().newStruct([
+                    { name: "len", datatype: u64, default: undefined },
+                    { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
+                ]);
                 t.kind = myType.slice;
                 return t;
             case tokenType.identifier:
@@ -801,9 +808,9 @@ export class Parser {
 
         if (initializer.datatype.kind === myType.string) {
             initializer =
-            new Expression().newExprAssign(
-                new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable),
-                new Expression().newExprSlideString(initializer))
+                new Expression().newExprAssign(
+                    new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable),
+                    new Expression().newExprSlideString(initializer))
         } else if (initializer.datatype.kind === myType.array) {
             initializer =
                 new Expression().newExprAssign(

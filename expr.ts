@@ -222,6 +222,7 @@ export class Expression {
         this.type = exprType.string;
         this.datatype = new Type();
         this.datatype.kind = myType.string;
+        this.datatype.size = strng.length+8;
         return this;
     }
 
