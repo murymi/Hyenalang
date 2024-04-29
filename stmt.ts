@@ -204,7 +204,7 @@ export class Statement {
         }
 
         if(expr.datatype.size > 8 && expr.type === exprType.call) {
-            var offset = incLocalOffset("", expr.datatype,"");
+            var offset = incLocalOffset("", expr.datatype,-1);
             return new Statement().newVarstatement("", Statement.anonLargeReturnVar(expr, offset), offset, expr.datatype);
         }
 

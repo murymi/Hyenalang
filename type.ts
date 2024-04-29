@@ -1,28 +1,97 @@
 import { Expression, exprType } from "./expr";
-import { Function } from "./main";
+import { Function, getCurrentFile, setCurrentFile, setPreviousFile } from "./main";
 import { Statement, stmtType } from "./stmt";
 import { Token } from "./token";
 
-
-var modules:string[] = ["mod_main"];
-var module_stack = ["mod_main"];
-
-export function pushModule(name:string) {
-    modules.push(name);
-    module_stack.push(name);
+export class Module {
+    name: string;
+    children: Module[];
+    file: string;
+    id: number;
+    constructor(name: string) {
+        this.name = name;
+        this.children = [];
+        this.file = getCurrentFile();
+        this.id = modules.length;
+    }
 }
 
-export function popModule() { 
+var modules: Module[] = [];
+var module_stack: Module[] = [];
+
+export function pushModule(mod: Module) {
+    //setCurrentFile(mod.file);
+    modules.push(mod);
+    module_stack.push(modules[modules.length - 1]);
+}
+
+export function popModule() {
     //console.error(modules);
-    module_stack.pop(); 
+    //setPreviousFile();
+    module_stack.pop();
 }
 
-export function getPresentModule():string { return module_stack.at(-1) as string; }
+export function appendModule(mod: Module) {
+    (module_stack.at(-1) as Module).children.push(mod);
+    module_stack.push(mod)
+}
 
-export function searchModule(name:string) {
+export function getPresentModule(): number {
+    //console.log(module_stack, modules)
+    return (module_stack.at(-1) as Module).id
+}
+
+function moduleNotFoundError(name: string) {
+    throw new Error(`module ${name} not found`);
+}
+
+function recursiveSearch(name: string, mods: Module[]):Module|null {
+    for (let m of mods) {
+        if (m.name === name) return m;
+        if(m.children.length > 0) {
+            var mod = recursiveSearch(name, m.children);
+            if (mod) return mod;
+        }
+    }
+
+    return null;
+
+}
+
+// function recursive(name:string, mod:Module) {
+//     if(mod.name === name) return mod.id;
+//     return recursiveSearch(name, mod.children);
+// }
+
+export function searchModule(name: string): number {
     //console.error(modules, modules.find((m)=> m===name), name);
-    return modules.find((m)=> m===name)
-};
+    //var n = modules.find((m) => m.name === name)
+    //if (n) return n.id;
+    var num = recursiveSearch(name, modules);
+    if(num) return num.id;
+
+    //if (n >= 0) return n;
+    console.log(modules[1]);
+    moduleNotFoundError(name);
+    return -1;
+}
+
+export function searchModuleById(id: number) {
+    return modules.find((m) => m.id === id)
+}
+
+export function searchModuleChildren(id: number, child: string): number {
+    var mod = searchModuleById(id);
+    var modchld = searchModule(child);
+    if (mod === undefined) {
+        moduleNotFoundError("++" + child);
+    }
+    var num = mod?.children.find((c) => c.id === modchld);
+    if (num) return num.id;
+    console.error(mod?.children)
+    moduleNotFoundError("--" + child)
+    return -1;
+}
 
 export enum myType {
     u8,
@@ -72,12 +141,12 @@ export class Type {
 
     base: Type;
     arrayLen: number;
-    members: { name: string, offset: number, type: Type, default:Expression|undefined }[];
+    members: { name: string, offset: number, type: Type, default: Expression | undefined }[];
     returnType: myType;
 
-    enumvalues:{name:string, value:number}[];
-    name:string;
-    module_name:string;
+    enumvalues: { name: string, value: number }[];
+    name: string;
+    mod_id: number;
 
     newPointer(base: Type) {
         this.base = base;
@@ -96,17 +165,16 @@ export class Type {
         return this;
     }
 
-    newStruct(name:string, mems: { name: string, datatype: Type, default:Expression|undefined }[]) {
+    newStruct(name: string, mems: { name: string, datatype: Type, default: Expression | undefined }[]) {
         this.name = name;
-        //this.module_name = getPresentModule() as string;
+        //this.mod_id = getPresentModule() as string;
         this.members = [];
         this.kind = myType.struct;
         var offt = 0;
         this.align = 0;
         mems.forEach((m) => {
-            getPresentModule();
             offt = alignTo(m.datatype.align, offt);
-            this.members.push({ name: m.name, offset: offt, type: m.datatype , default:m.default});
+            this.members.push({ name: m.name, offset: offt, type: m.datatype, default: m.default });
             offt += m.datatype.size;
 
             if (this.align < m.datatype.align) {
@@ -117,7 +185,7 @@ export class Type {
         return this;
     }
 
-    newUnion(name: string,mems: {name: string, datatype:Type, default:Expression|undefined}[]) {
+    newUnion(name: string, mems: { name: string, datatype: Type, default: Expression | undefined }[]) {
         this.name = name;
         this.members = [];
         this.kind = myType.struct;
@@ -127,7 +195,7 @@ export class Type {
         mems.forEach((m) => {
             offt = alignTo(m.datatype.align, offt);
             //offt += m.datatype.size;
-            
+
             if (this.align < m.datatype.align) {
                 this.align = m.datatype.align;
             }
@@ -136,9 +204,9 @@ export class Type {
                 lagest = m.datatype.align;
             }
         });
-        
-        mems.forEach((m)=>{
-            this.members.push({ name: m.name, offset: offt, type: m.datatype, default:m.default });
+
+        mems.forEach((m) => {
+            this.members.push({ name: m.name, offset: offt, type: m.datatype, default: m.default });
         })
 
         this.size = alignTo(this.align, lagest);
@@ -146,8 +214,8 @@ export class Type {
         return this;
     }
 
-    newEnum(name:string, mems:{name:string, value:number}[]) {
-        this.module_name = getPresentModule() as string;
+    newEnum(name: string, mems: { name: string, value: number }[]) {
+        this.mod_id = getPresentModule();
         this.kind = myType.enum;
         this.size = 4;
         this.align = 4;
@@ -164,7 +232,7 @@ export class Type {
     }
 
     constructor() {
-        this.module_name = getPresentModule() as string;
+        this.mod_id = 0;
     }
 }
 
@@ -181,7 +249,7 @@ export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
 export var f32 = new Type().newType(myType.f32, 4, 4);
 export var enm = new Type().newType(myType.enum, 4, 4);
-export var str = new Type().newStruct("str",[
+export var str = new Type().newStruct("str", [
     { name: "len", datatype: u64, default: undefined },
     { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
 ]);
