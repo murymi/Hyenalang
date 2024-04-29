@@ -68,8 +68,8 @@ foonew:
    pop rbp
    ret
 
-.global fooadd
-fooadd:
+.global foozero
+foozero:
    push rbp
    mov rbp, rsp
    sub rsp, 8
@@ -90,24 +90,7 @@ fooadd:
                                                        # address of variable generated
    push rax
                                                        # generate value to assign
-   mov rax, 1
-   push rax
-                                               # getting struct member
-                                               # deref
-                                               # load address of var
-   lea rax, [rbp-8]
-                                                       # load
-   mov rax, [rax]
-                                                       # end load
-                                               # end deref
-                                               # add offset of member
-   add rax, 0
-                                               # end add offset
-                                                       # load
-   mov rax, [rax]
-                                                       # end load
-   pop rdi
-   add rax, rdi
+   mov rax, 5
                                                        # store value to variable address
                                                        # store
    pop rdi
@@ -129,24 +112,7 @@ fooadd:
                                                        # address of variable generated
    push rax
                                                        # generate value to assign
-   mov rax, 1
-   push rax
-                                               # getting struct member
-                                               # deref
-                                               # load address of var
-   lea rax, [rbp-8]
-                                                       # load
-   mov rax, [rax]
-                                                       # end load
-                                               # end deref
-                                               # add offset of member
-   add rax, 8
-                                               # end add offset
-                                                       # load
-   mov rax, [rax]
-                                                       # end load
-   pop rdi
-   add rax, rdi
+   mov rax, 5
                                                        # store value to variable address
                                                        # store
    pop rdi
@@ -162,7 +128,7 @@ fooadd:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
+   sub rsp, 24
                                                # load address of var
    lea rax, [rbp-16]
    push rax
@@ -174,11 +140,45 @@ main:
    pop rsi
    pop rdi
    call foonew
+                                        # assign variable
+                                                       # generate address of variable
+                                               # load address of var
+   lea rax, [rbp-24]
+                                                       # address of variable generated
+   push rax
+                                                       # generate value to assign
                                                # load address of var
    lea rax, [rbp-16]
    push rax
    pop rdi
-   call fooadd
+   call foozero
+                                                       # store value to variable address
+                                                       # store
+   pop rdi
+   mov [rdi], rax
+                                                       # end store
+                                               # getting struct member
+                                               # load address of var
+   lea rax, [rbp-16]
+                                               # add offset of member
+   add rax, 8
+                                               # end add offset
+                                                       # load
+   mov rax, [rax]
+                                                       # end load
+   push rax
+                                               # getting struct member
+                                               # load address of var
+   lea rax, [rbp-16]
+                                               # add offset of member
+   add rax, 0
+                                               # end add offset
+                                                       # load
+   mov rax, [rax]
+                                                       # end load
+   pop rdi
+   add rax, rdi
+   jmp .L.endfn.2
    xor rax, rax
 .L.endfn.2:
    mov rsp, rbp

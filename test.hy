@@ -12,8 +12,8 @@ impl foo {
     }
 
     fn zero(self:*foo) void {
-        self.y = 0;
-        self.x = 0;
+        self.y = 5;
+        self.x = 5;
     }
 
 }
@@ -21,5 +21,7 @@ impl foo {
 
 fn main() void {
     var a = foo::new(2,3);
-    a.zero();
+    var b = &a.zero();
+
+    return a.y + a.x;
 }

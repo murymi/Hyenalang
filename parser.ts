@@ -71,10 +71,10 @@ export class Parser {
     primary(): Expression {
         if (this.match([tokenType.identifier])) {
 
-            
+
             var mod_name = getPresentModule();
             var id = this.previous().value as string;
-            while(this.check(tokenType.doublecolon)) {
+            while (this.check(tokenType.doublecolon)) {
                 mod_name = id;
                 this.advance();
                 id = this.expect(tokenType.identifier, "Expect member name").value as string
@@ -186,13 +186,13 @@ export class Parser {
     }
 
     makeAnonArg(arg: Expression) {
-        var offset = incLocalOffset("", arg.datatype,"");
+        var offset = incLocalOffset("", arg.datatype, "");
         var vardecl = Statement.anonLargeReturnVar(arg, offset);
         var get = new Expression().newExprIdentifier("", offset, arg.datatype, identifierType.variable);
         return new Expression().newExprDeclAnonForGet(vardecl, get)
     }
 
-    finishCall(callee: Expression, optional?:Expression): Expression {
+    finishCall(callee: Expression, optional?: Expression): Expression {
         var args: Expression[] = [];
         if (!this.check(tokenType.rightparen)) {
             do {
@@ -214,18 +214,18 @@ export class Parser {
         }
         var fntok = this.expect(tokenType.rightparen, ") after params");
         var fn = getFn(callee.name as string);
-        
+
         //console.error(args);
 
-        if(optional) {
-            args.splice(0,0,optional);
+        if (optional) {
+            args.splice(0, 0, optional);
         }
-        
+
         var expr = new Expression().newExprCall(callee, fn.returnType, args, fn.type);
         if (fn.arity !== args.length) {
             this.tokenError(fn.name + " expects " + fn.arity + " args but " + args.length + " provided.", fntok);
         }
-        
+
         //console.error("88888888", this.peek());
         return expr;
     }
@@ -237,14 +237,14 @@ export class Parser {
         return false;
     }
 
-    typeEql(a:Type,b:Type):boolean {
+    typeEql(a: Type, b: Type): boolean {
         return a.module_name === b.module_name && a.name === b.name;
     }
 
-    getFunctionFromStruct(expr:Expression, meta:{offset:number, datatype:Type, name:string}):Expression {
+    getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
         var fn = getFn(meta.name as string);
 
-        if(fn.params.length === 0 || !this.typeEql(fn.params[0].datatype.base,expr.datatype)) {
+        if (fn.params.length === 0 || !this.typeEql(fn.params[0].datatype.base, expr.datatype)) {
             this.tokenError(`${expr.datatype.name} has no such member function`, this.previous());
         }
         var fakeid = new Expression();
@@ -252,7 +252,24 @@ export class Parser {
         this.expect(tokenType.leftparen, "Expect ( ");
         //console.error("=====================", this.peek());
         return this.finishCall(fakeid, new Expression().newExprAddress(expr));
-        
+
+    }
+
+
+    getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
+        var fn = getFn(meta.name as string);
+
+        //console.error(expr.datatype);
+
+        if (fn.params.length === 0 || !this.typeEql(fn.params[0].datatype.base, expr.datatype.base)) {
+            this.tokenError(`${expr.datatype.base.name} has no such member function`, this.previous());
+        }
+        var fakeid = new Expression();
+        fakeid.name = meta.name;
+        this.expect(tokenType.leftparen, "Expect ( ");
+        //console.error("=====================", this.peek());
+        return this.finishCall(fakeid, expr);
+
     }
 
     parseGet(expr: Expression): Expression {
@@ -262,7 +279,7 @@ export class Parser {
         }
         if (this.isStructure(expr.datatype) && expr.type !== exprType.call) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
-            if(meta.offset === -1) {
+            if (meta.offset === -1) {
                 //console.error("==========oo===========", this.peek());
                 return this.getFunctionFromStruct(expr, meta);
             }
@@ -271,6 +288,9 @@ export class Parser {
             return new Expression().newExprDeref(expr);
         } else if (expr.datatype.kind === myType.ptr && expr.datatype.base.kind === myType.struct) {
             var meta = getOffsetOfMember(expr.datatype.base, propname.value as string);
+            if (meta.offset === -1) {
+                return this.getFunctionFromStructPtr(expr, meta);
+            }
             return new Expression().newExprGet(meta.offset,
                 new Expression().newExprDeref(expr)
                 , meta.datatype);
@@ -703,7 +723,7 @@ export class Parser {
             this.expect(tokenType.rightsquare, "] expected");
             var base = this.parseType();
             ///var def = 0
-            var holder = new Type().newStruct("array",[
+            var holder = new Type().newStruct("array", [
                 { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) },
             ])
             holder.size = len.value as number + 8;
@@ -714,7 +734,7 @@ export class Parser {
         }
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
-            var t =  new Type().newPointer(this.parseType());
+            var t = new Type().newPointer(this.parseType());
             //console.error("=================", t);
             return t;
         }
@@ -744,7 +764,7 @@ export class Parser {
             case tokenType.f32:
                 return f32;
             case tokenType.str:
-                var t = new Type().newStruct("str",[
+                var t = new Type().newStruct("str", [
                     { name: "len", datatype: u64, default: undefined },
                     { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
                 ]);
@@ -841,7 +861,7 @@ export class Parser {
         var offset = incLocalOffset(name.value as string, type as Type, getPresentModule() as string);
 
         if (initializer.type === exprType.call && type.size > 8) {
-            initializer.params.splice(0,0,new Expression().newExprAddress(
+            initializer.params.splice(0, 0, new Expression().newExprAddress(
                 new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)));
             //p.concat(initializer.params);
             //initializer.params = p;
@@ -888,7 +908,7 @@ export class Parser {
                 this.expect(tokenType.colon, "Expect : after name");
                 var type = this.parseType();
 
-                params.push({ name: paramname.value as string, datatype: type, module_name:"" });
+                params.push({ name: paramname.value as string, datatype: type, module_name: "" });
                 if (!this.check(tokenType.comma)) break;
                 this.advance();
             }
@@ -914,7 +934,7 @@ export class Parser {
 
                 //console.error("**", type);
 
-                params.push({ name: paramname.value as string, datatype: type, module_name:"" });
+                params.push({ name: paramname.value as string, datatype: type, module_name: "" });
                 if (!this.check(tokenType.comma)) break;
                 this.advance();
             }
@@ -990,41 +1010,41 @@ export class Parser {
         return new Statement();
     }
 
-    moduleDeclaration():Statement {
-        
-        var statements:Statement[] = [];
+    moduleDeclaration(): Statement {
+
+        var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
         pushModule(name as string);
         this.expect(tokenType.leftbrace, "Expect module body");
-        while(!this.check(tokenType.rightbrace)) {
+        while (!this.check(tokenType.rightbrace)) {
             statements.push(this.declaration());
-        } 
+        }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
-        return new Statement().newModule(name as string,statements);
+        return new Statement().newModule(name as string, statements);
     }
 
 
-    implModuleDeclaration():Statement {
-        var statements:Statement[] = [];
+    implModuleDeclaration(): Statement {
+        var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
         pushModule(name as string);
 
         this.expect(tokenType.leftbrace, "Expect module body");
-        while(!this.check(tokenType.rightbrace)) {
+        while (!this.check(tokenType.rightbrace)) {
             statements.push(this.nativeFuncDeclaration());
-        } 
+        }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
-        return new Statement().newModule(name as string,statements);
+        return new Statement().newModule(name as string, statements);
     }
 
     declaration(): Statement {
-        if(this.match([tokenType.impl])) {
+        if (this.match([tokenType.impl])) {
             return this.moduleDeclaration();
         }
 
-        if(this.match([tokenType.module])) {
+        if (this.match([tokenType.module])) {
             return this.implModuleDeclaration();
         }
 
