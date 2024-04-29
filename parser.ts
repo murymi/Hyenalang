@@ -8,6 +8,7 @@ import {
     addAnonString,
     addGlobal,
     beginScope,
+    compile,
     endScope,
     fnType,
     getEnum,
@@ -23,7 +24,29 @@ import {
     resetCurrentFunction,
     setCurrentFuction
 } from "./main";
-import { Type, bool, f32, getPresentModule, i16, i32, i64, i8, myType, popModule, pushModule, str, u16, u32, u64, u8, voidtype } from "./type";
+import {
+    Module,
+    Type,
+    bool,
+    f32,
+    i16,
+    i32,
+    i64,
+    i8,
+    myType,
+    popModule,
+    pushModule,
+    searchModule,
+    getPresentModule,
+    str,
+    u16,
+    u32,
+    u64,
+    u8,
+    voidtype,
+    searchModuleChildren,
+    appendModule
+} from "./type";
 import { error } from "console";
 
 export class Parser {
@@ -68,19 +91,27 @@ export class Parser {
         process.exit();
     }
 
+    // moduleError() {
+    //     this.tokenError(`${id} has no `)
+    // }
+
     primary(): Expression {
         if (this.match([tokenType.identifier])) {
-
-
-            var mod_name = getPresentModule();
+            var mod_id = getPresentModule();
             var id = this.previous().value as string;
-            while (this.check(tokenType.doublecolon)) {
-                mod_name = id;
-                this.advance();
-                id = this.expect(tokenType.identifier, "Expect member name").value as string
+
+            if(this.check(tokenType.doublecolon)) {
+                mod_id = searchModule(id);
             }
 
-            var obj = getLocalOffset(id, mod_name as string);
+            while (this.check(tokenType.doublecolon)) {
+                this.advance();
+                id = this.expect(tokenType.identifier, "Expect member name").value as string
+                if(!this.check(tokenType.doublecolon)) break
+                mod_id = searchModuleChildren(mod_id, id);
+            }
+
+            var obj = getLocalOffset(id, mod_id);
             if (obj.offset === -1) {
                 return new Expression().newExprIdentifier(
                     obj.name, obj.offset,
@@ -186,7 +217,7 @@ export class Parser {
     }
 
     makeAnonArg(arg: Expression) {
-        var offset = incLocalOffset("", arg.datatype, "");
+        var offset = incLocalOffset("", arg.datatype, -1);
         var vardecl = Statement.anonLargeReturnVar(arg, offset);
         var get = new Expression().newExprIdentifier("", offset, arg.datatype, identifierType.variable);
         return new Expression().newExprDeclAnonForGet(vardecl, get)
@@ -238,7 +269,7 @@ export class Parser {
     }
 
     typeEql(a: Type, b: Type): boolean {
-        return a.module_name === b.module_name && a.name === b.name;
+        return a.mod_id === b.mod_id && a.name === b.name;
     }
 
     getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
@@ -303,7 +334,7 @@ export class Parser {
             process.exit(1);
         } else if (expr.type === exprType.call && this.isStructure(expr.datatype)) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
-            var offset = incLocalOffset("", expr.datatype, "");
+            var offset = incLocalOffset("", expr.datatype, -1);
             var get = new Expression().newExprGet(meta.offset,
                 new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable),
                 meta.datatype);
@@ -630,11 +661,11 @@ export class Parser {
         return stmt;
     }
 
-    block(): Statement {
+    async block(): Promise<Statement> {
         beginScope();
         var stmts: Statement[] = [];
         while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
-            stmts.push(this.declaration());
+            stmts.push(await this.declaration());
         }
         this.expect(tokenType.rightbrace, "}");
         endScope();
@@ -651,7 +682,7 @@ export class Parser {
         var expr = this.expression();
 
         if (expr.type === exprType.call && expr.datatype.size > 8) {
-            var offset = incLocalOffset("", expr.datatype, "")
+            var offset = incLocalOffset("", expr.datatype, -1)
             expr.params.splice(0, 0, new Expression().newExprAddress(
                 new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
         } else if (expr.type === exprType.string) {
@@ -662,7 +693,7 @@ export class Parser {
         return new Statement().newReturnStatement(expr);
     }
 
-    statement(): Statement {
+    async statement(): Promise<Statement> {
 
         if (this.match([tokenType.contineu])) {
             this.expect(tokenType.semicolon, ";");
@@ -675,7 +706,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.leftbrace])) {
-            return this.block();
+            return await this.block();
         }
 
         if (this.match([tokenType.return])) {
@@ -686,10 +717,10 @@ export class Parser {
             this.expect(tokenType.leftparen, "( after if");
             var cond = this.expression();
             this.expect(tokenType.rightparen, ") after condition");
-            var then = this.statement();
+            var then = await this.statement();
             var else_: Statement | undefined = undefined;
             if (this.match([tokenType.else])) {
-                else_ = this.statement();
+                else_ = await this.statement();
             }
 
             return new Statement().newIfStatement(cond, then, else_);
@@ -699,7 +730,7 @@ export class Parser {
             this.expect(tokenType.leftparen, "( after while");
             var cond = this.expression();
             this.expect(tokenType.rightparen, ") after condition");
-            var then = this.statement();
+            var then = await this.statement();
 
             return new Statement().newWhileStatement(cond, then);
         }
@@ -858,7 +889,7 @@ export class Parser {
 
         type = type ?? initializer.datatype;
         //console.error(initializer);
-        var offset = incLocalOffset(name.value as string, type as Type, getPresentModule() as string);
+        var offset = incLocalOffset(name.value as string, type as Type, getPresentModule());
 
         if (initializer.type === exprType.call && type.size > 8) {
             initializer.params.splice(0, 0, new Expression().newExprAddress(
@@ -900,7 +931,7 @@ export class Parser {
         this.expect(tokenType.fn, "expected fn");
         var name = this.expect(tokenType.identifier, "fn name");
         this.expect(tokenType.leftparen, "( after fn name");
-        var params: { name: string, datatype: Type, module_name: string }[] = [];
+        var params: { name: string, datatype: Type, mod_id: number }[] = [];
         if (!this.check(tokenType.rightparen)) {
             while (true) {
                 var paramname = this.expect(tokenType.identifier, "param name");
@@ -908,7 +939,7 @@ export class Parser {
                 this.expect(tokenType.colon, "Expect : after name");
                 var type = this.parseType();
 
-                params.push({ name: paramname.value as string, datatype: type, module_name: "" });
+                params.push({ name: paramname.value as string, datatype: type, mod_id: -1 });
                 if (!this.check(tokenType.comma)) break;
                 this.advance();
             }
@@ -920,11 +951,11 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    nativeFuncDeclaration(): Statement {
+    async nativeFuncDeclaration(): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "fn name");
         this.expect(tokenType.leftparen, "( after fn name");
 
-        var params: { name: string, datatype: Type, module_name: string }[] = [];
+        var params: { name: string, datatype: Type, mod_id: number }[] = [];
 
         if (!this.check(tokenType.rightparen)) {
             while (true) {
@@ -934,7 +965,7 @@ export class Parser {
 
                 //console.error("**", type);
 
-                params.push({ name: paramname.value as string, datatype: type, module_name: "" });
+                params.push({ name: paramname.value as string, datatype: type, mod_id: -1 });
                 if (!this.check(tokenType.comma)) break;
                 this.advance();
             }
@@ -944,7 +975,7 @@ export class Parser {
         this.expect(tokenType.leftbrace, "function body");
         var currFn = pushFunction(name.value as string, params, fnType.native, [], type);
         setCurrentFuction(currFn);
-        var body = this.block();
+        var body = await this.block();
         resetCurrentFunction(body);
         return new Statement().newNativeFnStatement(name.value as string);
     }
@@ -1010,14 +1041,14 @@ export class Parser {
         return new Statement();
     }
 
-    moduleDeclaration(): Statement {
+    async moduleDeclaration(): Promise<Statement> {
 
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
-        pushModule(name as string);
+        appendModule(new Module(name as string));
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
-            statements.push(this.declaration());
+            statements.push(await this.declaration());
         }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
@@ -1025,27 +1056,45 @@ export class Parser {
     }
 
 
-    implModuleDeclaration(): Statement {
+    async implModuleDeclaration(): Promise<Statement> {
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
-        pushModule(name as string);
-
+        appendModule(new Module(name as string));
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
-            statements.push(this.nativeFuncDeclaration());
+            statements.push(await this.nativeFuncDeclaration());
         }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
         return new Statement().newModule(name as string, statements);
     }
 
-    declaration(): Statement {
+    moduleImport() {
+        var path = this.expect(tokenType.string, "Expect path").value as string;
+        this.expect(tokenType.as, "Expect as keyword");
+        var name = this.expect(tokenType.identifier, "Expect module name").value as string;
+        this.expect(tokenType.semicolon, "Expect ; ");
+        return new Promise((resolve, reject) => {
+            compile(path, name).then(() => {
+                resolve(new Statement())
+
+            })
+                .catch((e) => { reject(e); })
+        })
+    }
+
+    async declaration(): Promise<Statement> {
+        if (this.match([tokenType.import])) {
+            await this.moduleImport();
+            return new Statement();
+        }
+
         if (this.match([tokenType.impl])) {
-            return this.moduleDeclaration();
+            return this.implModuleDeclaration();
         }
 
         if (this.match([tokenType.module])) {
-            return this.implModuleDeclaration();
+            return this.moduleDeclaration();
         }
 
         if (this.match([tokenType.var])) {
@@ -1079,10 +1128,10 @@ export class Parser {
 
 
 
-    parse(): Statement[] {
+    async parse(): Promise<Statement[]> {
         var stmts: Statement[] = [];
         while (this.moreTokens()) {
-            stmts.push(this.declaration());
+            stmts.push(await this.declaration());
         }
 
         return stmts;
@@ -1093,3 +1142,5 @@ export class Parser {
         this.current = 0;
     }
 }
+
+

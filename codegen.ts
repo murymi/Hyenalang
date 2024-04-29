@@ -622,27 +622,27 @@ function generateCode(expr: Expression) {
     }
 }
 
-function genAlignedCall() {
-    console.log(".global buitin_glibc_caller")
-    console.log("buitin_glibc_caller:")
-    console.log("   push rbp");
-    console.log("   mov rbp, rsp");
-    console.log("   mov rax, rsp");
-    console.log("   and rax, 15");
-    console.log("   jnz .L.call");
-    console.log("   mov rax, 0");
-    console.log("   call r15");
-    console.log("   jmp .L.end");
-    console.log(".L.call:");
-    console.log("   sub rsp, 8");
-    console.log("   mov rax, 0");
-    console.log("   call r15");
-    console.log("   add rsp, 8");
-    console.log(".L.end:");
-    console.log("   mov rsp, rbp");
-    console.log("   pop rbp");
-    console.log("   ret")
-}
+// function genAlignedCall() {
+//     console.log(".global buitin_glibc_caller")
+//     console.log("buitin_glibc_caller:")
+//     console.log("   push rbp");
+//     console.log("   mov rbp, rsp");
+//     console.log("   mov rax, rsp");
+//     console.log("   and rax, 15");
+//     console.log("   jnz .L.call");
+//     console.log("   mov rax, 0");
+//     console.log("   call r15");
+//     console.log("   jmp .L.end");
+//     console.log(".L.call:");
+//     console.log("   sub rsp, 8");
+//     console.log("   mov rax, 0");
+//     console.log("   call r15");
+//     console.log("   add rsp, 8");
+//     console.log(".L.end:");
+//     console.log("   mov rsp, rbp");
+//     console.log("   pop rbp");
+//     console.log("   ret")
+// }
 
 function genStmt(stmt: Statement, fnid: number): void {
     switch (stmt.type) {
@@ -771,12 +771,12 @@ function genText(fns: Function[]) {
     fns.forEach((fn) => {
         var i = incLabel();
         if (fn.type === fnType.native) {
-            if(fn.name === "main" && fn.module_name === "mod_main") {
+            if(fn.name === "main" && fn.mod_id === 0) {
                 console.log(".global " + fn.name);
                 console.log(fn.name + ":");
             } else {
-                console.log(".global " + fn.module_name+fn.name);
-                console.log(fn.module_name+fn.name + ":");
+                console.log(".global " + fn.name+fn.mod_id);
+                console.log(fn.name+fn.mod_id + ":");
             }
             console.log("   push rbp");
             console.log("   mov rbp, rsp");
@@ -795,14 +795,14 @@ function genText(fns: Function[]) {
     })
 }
 
-function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type, module_name:string }[]) {
+function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type, mod_id:number }[]) {
     globals.forEach((g) => {
         if (g.value) {
 
             if (g.value.type === exprType.undefnd) return;
 
             console.log(".align " + g.datatype.align);
-            console.log(g.module_name+g.name + ":");
+            console.log(g.name+g.mod_id+ ":");
 
             // if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
             //     console.log(`   .quad ${g.datatype.members[1].type.size}`);
@@ -836,9 +836,8 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
 
         //console.error(g);
         if (g.value === undefined) {
-
             console.log(".align " + g.datatype.align);
-            console.log(g.module_name+g.name + ":");
+            console.log(g.name+g.mod_id + ":");
             console.log("   .zero " + g.datatype.size);
         }
     });
@@ -855,7 +854,7 @@ function genAnonStrings(anons: { value: Expression }[]) {
 
 export function genStart(
     globstrings: { value: string }[],
-    globals: { name: string, value: Expression | undefined, datatype: Type, module_name:string }[],
+    globals: { name: string, value: Expression | undefined, datatype: Type, mod_id:number }[],
     anons: { value: Expression }[],
     fns: Function[]
 ) {
@@ -863,6 +862,6 @@ export function genStart(
     genAnonStrings(anons);
     genGlobals(globals);
     genText(fns);
-    genAlignedCall();
+    //genAlignedCall();
 }
 

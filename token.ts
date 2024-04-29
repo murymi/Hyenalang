@@ -80,6 +80,8 @@ export enum tokenType {
     module,
     impl,
     doublecolon,
+    import,
+    as,
 
     eof
 };
@@ -246,7 +248,9 @@ export class Lexer {
             undefined: tokenType.undefined,
             asm: tokenType.asm,
             module: tokenType.module,
-            impl: tokenType.impl
+            impl: tokenType.impl,
+            import: tokenType.import,
+            as: tokenType.as
         }
     }
 
