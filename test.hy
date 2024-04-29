@@ -11,17 +11,15 @@ impl foo {
         return struc;
     }
 
-    fn add(self:*foo) void {
-        self.y = self.y + 1;
-        self.x = self.x + 1;
+    fn zero(self:*foo) void {
+        self.y = 0;
+        self.x = 0;
     }
 
-    fn see() void {}
 }
 
 
 fn main() void {
     var a = foo::new(2,3);
-    a.add();
-    a.see();
+    a.zero();
 }
