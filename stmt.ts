@@ -17,7 +17,8 @@ export enum stmtType {
     nativefn,
     structdecl,
     ret,
-    inline_asm
+    inline_asm,
+    module
 }
 
 export class Statement {
@@ -178,6 +179,7 @@ export class Statement {
     }
 
     static anonLargeReturnVar(expr:Expression, offset:number) {
+        
         expr.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
         return new Expression().newExprAssign(
@@ -202,7 +204,7 @@ export class Statement {
         }
 
         if(expr.datatype.size > 8 && expr.type === exprType.call) {
-            var offset = incLocalOffset("", expr.datatype);
+            var offset = incLocalOffset("", expr.datatype,"");
             return new Statement().newVarstatement("", Statement.anonLargeReturnVar(expr, offset), offset, expr.datatype);
         }
 
@@ -219,6 +221,12 @@ export class Statement {
     newAsmStatement(lines: string[]){
         this.type = stmtType.inline_asm;
         this.asm_lines = lines;
+        return this;
+    }
+
+    newModule(name:string,statements:Statement[]):Statement {
+        this.type = stmtType.module;
+        this.stmts = statements;
         return this;
     }
 

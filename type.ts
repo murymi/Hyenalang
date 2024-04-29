@@ -4,7 +4,25 @@ import { Statement, stmtType } from "./stmt";
 import { Token } from "./token";
 
 
+var modules:string[] = ["mod_main"];
+var module_stack = ["mod_main"];
 
+export function pushModule(name:string) {
+    modules.push(name);
+    module_stack.push(name);
+}
+
+export function popModule() { 
+    //console.error(modules);
+    module_stack.pop(); 
+}
+
+export function getPresentModule():string { return module_stack.at(-1) as string; }
+
+export function searchModule(name:string) {
+    //console.error(modules, modules.find((m)=> m===name), name);
+    return modules.find((m)=> m===name)
+};
 
 export enum myType {
     u8,
@@ -59,6 +77,7 @@ export class Type {
 
     enumvalues:{name:string, value:number}[];
     name:string;
+    module_name:string;
 
     newPointer(base: Type) {
         this.base = base;
@@ -77,12 +96,15 @@ export class Type {
         return this;
     }
 
-    newStruct(mems: { name: string, datatype: Type, default:Expression|undefined }[]) {
+    newStruct(name:string, mems: { name: string, datatype: Type, default:Expression|undefined }[]) {
+        this.name = name;
+        //this.module_name = getPresentModule() as string;
         this.members = [];
         this.kind = myType.struct;
         var offt = 0;
         this.align = 0;
         mems.forEach((m) => {
+            getPresentModule();
             offt = alignTo(m.datatype.align, offt);
             this.members.push({ name: m.name, offset: offt, type: m.datatype , default:m.default});
             offt += m.datatype.size;
@@ -91,12 +113,12 @@ export class Type {
                 this.align = m.datatype.align;
             }
         });
-
         this.size = alignTo(this.align, offt);
         return this;
     }
 
-    newUnion(mems: {name: string, datatype:Type, default:Expression|undefined}[]) {
+    newUnion(name: string,mems: {name: string, datatype:Type, default:Expression|undefined}[]) {
+        this.name = name;
         this.members = [];
         this.kind = myType.struct;
         var offt = 0;
@@ -125,6 +147,7 @@ export class Type {
     }
 
     newEnum(name:string, mems:{name:string, value:number}[]) {
+        this.module_name = getPresentModule() as string;
         this.kind = myType.enum;
         this.size = 4;
         this.align = 4;
@@ -141,6 +164,7 @@ export class Type {
     }
 
     constructor() {
+        this.module_name = getPresentModule() as string;
     }
 }
 
@@ -157,7 +181,7 @@ export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
 export var f32 = new Type().newType(myType.f32, 4, 4);
 export var enm = new Type().newType(myType.enum, 4, 4);
-export var str = new Type().newStruct([
+export var str = new Type().newStruct("str",[
     { name: "len", datatype: u64, default: undefined },
     { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
 ]);

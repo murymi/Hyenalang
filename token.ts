@@ -77,6 +77,9 @@ export enum tokenType {
     str,
     undefined,
     hash,
+    module,
+    impl,
+    doublecolon,
 
     eof
 };
@@ -241,7 +244,9 @@ export class Lexer {
             or: tokenType.or,
             str: tokenType.str,
             undefined: tokenType.undefined,
-            asm: tokenType.asm
+            asm: tokenType.asm,
+            module: tokenType.module,
+            impl: tokenType.impl
         }
     }
 
@@ -371,6 +376,11 @@ export class Lexer {
                     this.push(tokenType.equal, char);
                     break;
                 case ':':
+                    if(this.peekNext() === ":") {
+                        this.push(tokenType.doublecolon, "::");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.colon, char);
                     break;
                 case '[':

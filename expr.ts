@@ -232,7 +232,7 @@ export class Expression {
         this.right = new Expression().newExprNumber(id.bytes.length);
         this.id = id;
         //this.datatype = new Type().newPointer(u8);
-        this.datatype = new Type().newStruct([
+        this.datatype = new Type().newStruct("slice",[
              { name: "len", datatype: u64, default: undefined },
              { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
          ])
@@ -253,7 +253,7 @@ export class Expression {
         this.left = begin;
         this.right = end;
         this.id = expr;
-        this.datatype = new Type().newStruct([
+        this.datatype = new Type().newStruct("slice", [
             { name: "len", datatype: u64, default: undefined },
             { name: "ptr", datatype: new Type().newPointer(expr.datatype.base), default: undefined }
         ])
@@ -266,7 +266,7 @@ export class Expression {
         this.left = begin;
         this.right = end;
         this.id = expr;
-        this.datatype = new Type().newStruct([
+        this.datatype = new Type().newStruct("slice",[
             { name: "len", datatype: u64, default: undefined },
             { name: "ptr", datatype: new Type().newPointer(expr.datatype.base), default: undefined }
         ])

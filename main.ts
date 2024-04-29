@@ -1,11 +1,11 @@
-import { Lexer, Token } from "./token";
+import { Lexer } from "./token";
 import { Parser } from "./parser";
 import { genStart } from "./codegen";
 import { Statement } from "./stmt";
 import { Expression } from "./expr";
-import { Type, alignTo, enm, i32, i64 } from "./type";
-import { WriteStream, createWriteStream, openSync, readFile, unlink } from "fs";
-import { ChildProcess, spawn } from "child_process";
+import { createWriteStream, readFile } from "fs";
+import { spawn } from "child_process";
+import { Type, alignTo, getPresentModule, i64, searchModule } from "./type";
 
 export enum fnType {
     extern,
@@ -17,7 +17,7 @@ var anon_count = 0;
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: { value: string }[] = [];
-var globals: { name: string, value: Expression | undefined, datatype: Type }[] = [];
+var globals: { name: string, value: Expression | undefined, datatype: Type, module_name:string }[] = [];
 var anon_strings: { value: Expression }[] = [];
 
 export function addAnonString(val: Expression) {
@@ -33,19 +33,21 @@ export class Function {
     arity: number;
     impilicit_arity: number;
     type: fnType;
-    locals: { name: string, scope: number, datatype: Type, offset: number }[];
+    locals: { name: string, scope: number, datatype: Type, offset: number, module_name: string}[];
     localOffset: number;
     params: { name: string, datatype: Type }[];
     body: Statement;
     returnType: any;
+    module_name: string;
 
     constructor(
         name: string,
         type: fnType,
-        params: { name: string, datatype: Type }[],
-        locals: { name: string, scope: number, datatype: Type, offset: number }[],
+        params: { name: string, datatype: Type, module_name: string }[],
+        locals: { name: string, scope: number, datatype: Type, offset: number, module_name: string }[],
         retType: Type
     ) {
+        this.module_name = getPresentModule() as string;
         this.localOffset = 0;
         this.name = name;
         this.type = type;
@@ -53,7 +55,7 @@ export class Function {
 
         this.locals = locals;
         //console.error(locals);
-        var args: { name: string, scope: number, datatype: Type, offset: number }[] = [];
+        var args: { name: string, scope: number, datatype: Type, offset: number, module_name: string }[] = [];
         if (type === fnType.native) {
             // implicit ret ptr 
             if (retType.size > 8) {
@@ -62,7 +64,8 @@ export class Function {
                     name: "",
                     scope: 0,
                     offset: this.localOffset,
-                    datatype: new Type().newPointer(retType)
+                    datatype: new Type().newPointer(retType),
+                    module_name:""
                 });
                 this.localOffset += 8;
             }
@@ -73,7 +76,8 @@ export class Function {
                     name: p.name,
                     scope: 0,
                     offset: this.localOffset,
-                    datatype: p.datatype.size < 8 ? p.datatype : new Type().newPointer(p.datatype)
+                    datatype: p.datatype.size > 8 ? new Type().newPointer(p.datatype):p.datatype,
+                    module_name:getPresentModule()
                 });
                 this.localOffset += p.datatype.size;
             })
@@ -94,24 +98,28 @@ export class Struct {
     size: number;
     members: { name: string, datatype: Type, default: Expression | undefined }[];
     is_union: boolean;
+    module_name: string;
 
     constructor(name: string, isunion: boolean, members: { name: string, datatype: Type, default: Expression | undefined }[]) {
         this.name = name;
         this.size = 0;
         this.members = members;
         this.is_union = isunion;
+        this.module_name = getPresentModule() as string;
     }
 }
 
-export class Enum {
-    name: string;
-    values: { name: string, value: number }[];
-
-    constructor(name: string, values: { name: string, value: number }[]) {
-        this.name = name;
-        this.values = values;
-    }
-}
+// export class Enum {
+//     name: string;
+//     values: { name: string, value: number }[];
+//     module_name:string;
+// 
+//     constructor(name: string, values: { name: string, value: number }[]) {
+//         this.name = name;
+//         this.values = values;
+//         this.module_name = getPresentModule() as string
+//     }
+// }
 
 
 var structs: Struct[] = [];
@@ -140,10 +148,8 @@ export function checkStruct(name: string) {
     return null;
 }
 
-
-
 // size in 8 bytes (for now)
-export function incLocalOffset(name: string, type: Type): number {
+export function incLocalOffset(name: string, type: Type, module_name:string): number {
 
     if(name === "") {
         name = "anon"+anon_count.toString(2);
@@ -167,7 +173,8 @@ export function incLocalOffset(name: string, type: Type): number {
         name: name,
         scope: scopeDepth,
         offset: functions[currentFn].localOffset,
-        datatype: type
+        datatype: type,
+        module_name: module_name
     });
     functions[currentFn].localOffset += type.size;// ++;
     // return start point for var
@@ -180,14 +187,24 @@ export function addGlobalString(value: string): number {
 }
 
 export function addGlobal(name: string, value: Expression | undefined, datatype: Type): void {
-    globals.push({ name: name, value: value, datatype: datatype });
+    globals.push({ name: name, value: value, datatype: datatype, module_name: getPresentModule() as string });
 }
 
 
 export function getOffsetOfMember(struct: Type, member: string) {
     for (let m of struct.members) {
         if (m.name === member) {
-            return { offset: m.offset, datatype: m.type };
+            return { offset: m.offset, datatype: m.type, name:"" };
+        }
+    }
+
+    //console.error(struct);
+
+    if(searchModule(struct.name)) {
+        for (let i = functions.length - 1; i >= 0; i--) {
+            if (functions[i].name === member && functions[i].module_name === struct.name) {
+                return { offset: -1, datatype: i64 , name: struct.name+functions[i].name }
+            }
         }
     }
 
@@ -195,50 +212,53 @@ export function getOffsetOfMember(struct: Type, member: string) {
     process.exit(1);
 }
 
-export function getLocalOffset(name: string): { offset: number, datatype: Type, glob: boolean } {
+
+
+export function getLocalOffset(name: string, module_name:string): { offset: number, datatype: Type, glob: boolean, name:string } {
     var fn = functions[currentFn];
 
     for (let i = fn.locals.length - 1; i >= 0; i--) {
-        if (fn.locals[i].name === name && fn.locals[i].scope <= scopeDepth) {
+        if (fn.locals[i].name === name && fn.locals[i].module_name === module_name && fn.locals[i].scope <= scopeDepth) {
             var off = fn.locals[i].offset;
             var type = fn.locals[i].datatype;
 
-            return { offset: off, datatype: type, glob: false }
+            return { offset: off, datatype: type, glob: false, name:name }
         }
     }
 
     for (let i = 0; i < globals.length; i++) {
-        if (globals[i].name === name) {
-            return { offset: -2, datatype: globals[i].datatype, glob: true }
+        if (globals[i].name === name && globals[i].module_name === module_name) {
+            return { offset: -2, datatype: globals[i].datatype, glob: true, name:module_name+globals[i].name }
         }
     }
 
     for (let e of enums) {
-        if (e.name === name) {
-            return { offset: -3, datatype: e, glob: false }
+        if (e.name === name && e.module_name === module_name) {
+            return { offset: -3, datatype: e, glob: false, name:name }
         }
     }
 
     for (let i = functions.length - 1; i >= 0; i--) {
-        if (functions[i].name === name) {
-            return { offset: -1, datatype: i64, glob: true }
+        if (functions[i].name === name && functions[i].module_name === module_name) {
+            return { offset: -1, datatype: i64, glob: true, name: module_name+functions[i].name }
         }
     }
 
-    throw new Error(`undefined variable ${name}`);
+    throw new Error(`undefined variable ${name} in ${module_name}`);
 }
 
 export function getFn(name: string): Function {
     for (let i = functions.length - 1; i >= 0; i--) {
-        if (functions[i].name === name) {
+        if (functions[i].module_name+functions[i].name === name) {
             return functions[i];
         }
     }
 
-    throw new Error("undefined function");
+    console.error(`undefined function ${name}`);
+    process.exit(1);
 }
 
-export function pushFunction(name: string, params: { name: string, datatype: Type }[], type: fnType, locals: [], retType: any): number {
+export function pushFunction(name: string, params: { name: string, datatype: Type, module_name: string }[], type: fnType, locals: [], retType: any): number {
     functions.push(new Function(name, type, params, locals, retType));
     return functions.length - 1;
 }
@@ -277,6 +297,10 @@ export function beginScope() {
 export function endScope() {
     scopeDepth--;
 }
+
+
+
+
 
 function compile(path: string) {
     readFile(path, { encoding: "utf-8" }, (err, data) => {
