@@ -298,10 +298,6 @@ export function endScope() {
     scopeDepth--;
 }
 
-
-
-
-
 function compile(path: string) {
     readFile(path, { encoding: "utf-8" }, (err, data) => {
         if (err) {
