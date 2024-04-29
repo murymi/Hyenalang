@@ -310,27 +310,6 @@ export function endScope() {
     scopeDepth--;
 }
 
-<<<<<<< HEAD
-function compile(path: string) {
-    readFile(path, { encoding: "utf-8" }, (err, data) => {
-        if (err) {
-            console.error("failed to open file");
-            process.exit(1);
-        }
-
-        var lexer = new Lexer(data);
-
-        var tokens = lexer.lex();
-        var parser = new Parser(tokens);
-        var stmts = parser.parse();
-        var bitstream = createWriteStream("./tmp.s");
-        var orig = console.log;
-        console.log = (data) => { bitstream.write(`${data}\n`); }
-        genStart(globalstrings, globals, anon_strings, functions);
-        bitstream.end();
-        console.log = orig;
-        spawn("make", ["bin"]);
-=======
 
 
 export function compile(path: string, mod_name: string) {
@@ -354,7 +333,6 @@ export function compile(path: string, mod_name: string) {
                 resolve(true);
             }
         })
->>>>>>> e952860c0ab910fc3616ee26af5e165b286fb5e3
     })
 }
 
