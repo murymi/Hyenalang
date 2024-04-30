@@ -317,6 +317,9 @@ function generateAddress(expr: Expression | Statement) {
                 genAddress(expr);
             }
             break;
+        case exprType.fn_identifier:
+            generateCode(expr);
+            break;
         case exprType.get:
             generateAddress(expr.left as Expression);
             console.log("   add rax, " + expr.offset);
@@ -561,6 +564,9 @@ function generateCode(expr: Expression) {
             console.log("   xor rax, rax #undefined");
             break;
         case exprType.call:
+            generateCode(expr.callee);
+            push();
+
             expr.params.forEach((p) => {
                 //console.error(p);
                 if (p.datatype.size > 8) {
@@ -581,7 +587,8 @@ function generateCode(expr: Expression) {
                 console.log("   lea r15, " + expr.callee.name);
                 console.log("   call buitin_glibc_caller");
             } else {
-                console.log("   call " + expr.callee.name);
+                pop("rax");
+                console.log("   call rax");
             }
             break;
         case exprType.string:
@@ -594,6 +601,9 @@ function generateCode(expr: Expression) {
         case exprType.decl_anon_for_get:
             generateCode(expr.left as Expression);
             generateCode(expr.right as Expression);
+            break;
+        case exprType.fn_identifier:
+            console.log(`   lea rax, [${expr.name}]`);
             break;
         default:
             console.error(expr);

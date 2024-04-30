@@ -30,7 +30,8 @@ export enum exprType {
     deref_array_index,
     deref_slice_index,
     anon_string,
-    decl_anon_for_get
+    decl_anon_for_get,
+    fn_identifier
 }
 
 export enum identifierType {
@@ -162,13 +163,21 @@ export class Expression {
         return this;
     }
 
-    newExprIdentifier(name: string,offset:number, datatype: Type, idtype:identifierType):Expression{
+    newExprIdentifier(name: string,offset:number, datatype: Type):Expression{
         this.type = exprType.identifier;
         this.datatype = datatype;
         this.datatype.kind = datatype.kind;
         this.offset = offset;
         this.name = name;
-        this.idtype = idtype;
+        return this;
+    }
+
+
+    newExprFnIdentifier(name: string,datatype: Type):Expression{
+        this.type = exprType.fn_identifier;
+        this.datatype = datatype;
+        this.datatype.kind = datatype.kind;
+        this.name = name;
         return this;
     }
 

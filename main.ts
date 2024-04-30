@@ -40,6 +40,7 @@ export class Function {
     body: Statement;
     returnType: any;
     module_name: string;
+    data_type:Type;
 
     constructor(
         name: string,
@@ -55,6 +56,7 @@ export class Function {
         this.params = params;
 
         this.locals = locals;
+        var arg_types:{name:string, type:Type}[] = [];
         //console.error(locals);
         var args: { name: string, scope: number, datatype: Type, offset: number, module_name: string }[] = [];
         if (type === fnType.native) {
@@ -69,18 +71,21 @@ export class Function {
                     module_name:""
                 });
                 this.localOffset += 8;
+                //arg_types.push({name:"", type:new Type().newPointer(retType)});
             }
 
             params.forEach((p) => {
                 this.localOffset = alignTo(p.datatype.align, this.localOffset);
+                var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype):p.datatype
                 args.push({
                     name: p.name,
                     scope: 0,
                     offset: this.localOffset,
-                    datatype: p.datatype.size > 8 ? new Type().newPointer(p.datatype):p.datatype,
+                    datatype: arg_data_type,
                     module_name:getPresentModule()
                 });
                 this.localOffset += p.datatype.size;
+                arg_types.push({name:p.name, type:arg_data_type});
             })
             args.concat(locals);
             this.locals = args;
@@ -89,6 +94,9 @@ export class Function {
 
         this.arity = params.length;
         this.impilicit_arity = retType.size > 8 ? params.length + 1 : params.length;
+
+        this.data_type = new Type().newFunction(retType, arg_types);
+
         this.returnType = retType;
     }
 }
@@ -199,16 +207,6 @@ export function getOffsetOfMember(struct: Type, member: string) {
         }
     }
 
-    console.error(struct);
-
-    // if(searchModule(struct.name)) {
-    //     for (let i = functions.length - 1; i >= 0; i--) {
-    //         if (functions[i].name === member && functions[i].module_name === struct.name) {
-    //             return { offset: -1, datatype: i64 , name: struct.name+functions[i].name }
-    //         }
-    //     }
-    // }
-
     if(struct.member_fn_names.find((n)=> n === member)) {
             return { offset: -1, datatype: i64 , name: struct.name+member }
     }
@@ -245,7 +243,7 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
 
     for (let i = functions.length - 1; i >= 0; i--) {
         if (functions[i].name === name) {
-            return { offset: -1, datatype: i64, glob: true}
+            return { offset: -1, datatype: functions[i].data_type, glob: true}
         }
     }
 
@@ -307,45 +305,6 @@ export function beginScope() {
 export function endScope() {
     scopeDepth--;
 }
-
-
-
-
-
-// function compile(path: string) {
-//     readFile(path, { encoding: "utf-8" }, (err, data) => {
-//         if (err) {
-//             console.error("failed to open file");
-//             process.exit(1);
-//         }
-// 
-//         var lexer = new Lexer(data);
-// 
-//         var tokens = lexer.lex();
-//         var parser = new Parser(tokens);
-//         var stmts = parser.parse();
-//         var bitstream = createWriteStream("./tmp.s");
-//         var orig = console.log;
-//         console.log = (data) => { bitstream.write(`${data}\n`); }
-//         genStart(globalstrings, globals, anon_strings, functions);
-//         bitstream.end();
-//         console.log = orig;
-//         spawn("make", ["bin"]);
-//     })
-// 
-// }
-// 
-// if (process.argv.length < 3) {
-//     console.error("Usage: make FILE=<file name>");
-// } else {
-//     if (process.argv[2] === "") {
-//         console.error("Usage: make FILE=<file name>");
-//         process.exit();
-//     }
-//     compile(process.argv[2]);
-// }
-// 
-// 
 
 var compiled_files: string[] = [];
 

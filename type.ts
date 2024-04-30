@@ -42,7 +42,8 @@ export enum myType {
     string,
     ptr,
     array,
-    bool
+    bool,
+    function
 }
 
 export function alignTo(align: number, n: number): number {
@@ -93,6 +94,8 @@ export class Type {
     name:string;
     module_name:string;
     member_fn_names:string[];
+    arguments: {name:string, type:Type}[];
+    return_type:Type
 
     newPointer(base: Type) {
         this.base = base;
@@ -175,6 +178,15 @@ export class Type {
         this.kind = t;
         this.size = size;
         this.align = align;
+        return this;
+    }
+
+    newFunction(return_type:Type, args_types:{name:string, type:Type}[]) {
+        this.size = 8;
+        this.align = 8;
+        this.return_type = return_type;
+        this.arguments = args_types;
+        this.kind = myType.function;
         return this;
     }
 

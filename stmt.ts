@@ -82,8 +82,7 @@ export class Statement {
                 new Expression().newExprGet(
                     0,
                     new Expression().newExprIdentifier(
-                        "", to, from.datatype, identifierType.variable
-                    ),
+                        "", to, from.datatype),
                     u64
                 ),
                 new Expression().newExprGet(0, from, u64)
@@ -95,8 +94,7 @@ export class Statement {
                 new Expression().newExprGet(
                     8,
                     new Expression().newExprIdentifier(
-                        "", to, from.datatype, identifierType.variable
-                    ),
+                        "", to, from.datatype),
                     new Type().newPointer(u8)
                 ),
                 new Expression().newExprGet(8, from, new Type().newPointer(u8))
@@ -181,16 +179,16 @@ export class Statement {
     static anonLargeReturnVar(expr:Expression, offset:number) {
         
         expr.params.splice(0, 0, new Expression().newExprAddress(
-            new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
+            new Expression().newExprIdentifier("", offset, expr.datatype)))
         return new Expression().newExprAssign(
-            new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)
+            new Expression().newExprIdentifier("", offset, expr.datatype)
             , expr
         );
     }
 
     static anonSmallReturnVar(expr:Expression, offset:number) {
         return new Expression().newExprAssign(
-            new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)
+            new Expression().newExprIdentifier("", offset, expr.datatype)
             , expr
         );
     }

@@ -1,21 +1,18 @@
 import { Token } from "./token";
 import { tokenType } from "./token";
-import { Expression, identifierType } from "./expr";
+import { Expression } from "./expr";
 import { exprType } from "./expr";
 import { Statement } from "./stmt";
 import {
     Struct,
     addAnonString,
-    addGlobal,
     beginScope,
     compile,
     endScope,
     fnType,
     getEnum,
-    getFn,
     getLocalOffset,
     getOffsetOfMember,
-    getStruct,
     getcurrFn,
     incLocalOffset,
     pushEnum,
@@ -24,7 +21,7 @@ import {
     resetCurrentFunction,
     setCurrentFuction
 } from "./main";
-import { Type, bool, f32, getPresentModule, i16, i32, i64, i8, logStructs, myType, popModule, pushModule, pushStructType, searchStruct, str, u16, u32, u64, u8, voidtype } from "./type";
+import { Type, bool, f32, getPresentModule, i16, i32, i64, i8, myType, popModule, pushModule, pushStructType, searchStruct, str, u16, u32, u64, u8, voidtype } from "./type";
 import { error } from "console";
 
 export class Parser {
@@ -71,41 +68,19 @@ export class Parser {
 
     primary(): Expression {
         if (this.match([tokenType.identifier])) {
-
-
-            // var mod_name = getPresentModule();
             var id = this.previous().value as string;
-            // while (this.check(tokenType.doublecolon)) {
-            //     mod_name = id;
-            //     this.advance();
-            //     id = this.expect(tokenType.identifier, "Expect member name").value as string
-            // }
-
             var obj = getLocalOffset(id);
             if (obj.offset === -1) {
-                return new Expression().newExprIdentifier(
-                    id, obj.offset,
-                    obj.datatype, identifierType.func
+                return new Expression().newExprFnIdentifier(
+                    id,
+                    obj.datatype
                 );
             }
-
-            var idtype = identifierType.variable;
             var offset = obj.offset;
-
-            if (obj.datatype.kind === myType.struct) {
-                idtype = identifierType.struct;
-            } else if (obj.datatype.kind === myType.array) {
-                idtype = identifierType.array;
-            }
-
-            //console.error(obj.name);
-
             var expr = new Expression().newExprIdentifier(
-                //this.previous().value as string,
                 id,
                 offset,
-                obj.datatype,
-                idtype,
+                obj.datatype
             );
 
             expr.is_glob = obj.glob;
@@ -133,7 +108,6 @@ export class Parser {
             var expr = this.expression();
             this.expect(tokenType.rightparen, ")");
             return new Expression().newExprGrouping(expr);
-
         }
 
         if (this.match([tokenType.at])) {
@@ -154,7 +128,6 @@ export class Parser {
             }
         }
 
-
         if (this.match([tokenType.undefined])) {
             return new Expression().newExprUndefined();
         }
@@ -174,9 +147,7 @@ export class Parser {
             }
             this.tokenError("expect character", this.previous());
         }
-
         console.log(this.peek());
-
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
 
@@ -189,11 +160,14 @@ export class Parser {
     makeAnonArg(arg: Expression) {
         var offset = incLocalOffset("", arg.datatype, "");
         var vardecl = Statement.anonLargeReturnVar(arg, offset);
-        var get = new Expression().newExprIdentifier("", offset, arg.datatype, identifierType.variable);
+        var get = new Expression().newExprIdentifier("", offset, arg.datatype);
         return new Expression().newExprDeclAnonForGet(vardecl, get)
     }
 
     finishCall(callee: Expression, optional?: Expression): Expression {
+        if(callee.datatype.kind !== myType.function) {
+            this.tokenError("Not a fuction", this.previous());
+        }
         var args: Expression[] = [];
         if (!this.check(tokenType.rightparen)) {
             do {
@@ -202,7 +176,6 @@ export class Parser {
                     args.push(new Expression().newExprAnonString(addAnonString(arg)))
                 } else if (arg.datatype.size > 8) {
                     if (arg.type === exprType.call && arg.datatype.kind === myType.struct) {
-                        //console.error("==============");
                         args.push(this.makeAnonArg(arg));
                     } else {
                         console.error(arg);
@@ -214,20 +187,11 @@ export class Parser {
             } while (this.match([tokenType.comma]));
         }
         var fntok = this.expect(tokenType.rightparen, ") after params");
-        var fn = getFn(callee.name as string);
-
-        //console.error(args);
-
-        if (optional) {
-            args.splice(0, 0, optional);
+        if (optional) { args.splice(0, 0, optional); }
+        var expr = new Expression().newExprCall(callee, callee.datatype.return_type, args, fnType.native);
+        if (callee.datatype.arguments.length !== args.length) {
+            this.tokenError(callee.name + " expects " + callee.datatype.arguments.length + " args but " + args.length + " provided.", fntok);
         }
-
-        var expr = new Expression().newExprCall(callee, fn.returnType, args, fn.type);
-        if (fn.arity !== args.length) {
-            this.tokenError(fn.name + " expects " + fn.arity + " args but " + args.length + " provided.", fntok);
-        }
-
-        //console.error("88888888", this.peek());
         return expr;
     }
 
@@ -243,34 +207,25 @@ export class Parser {
     }
 
     getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
-        var fn = getFn(meta.name as string);
-
-        if (fn.params.length === 0 || !this.typeEql(fn.params[0].datatype.base, expr.datatype)) {
+        var obj = getLocalOffset(meta.name);
+        var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
+        if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].type.base, expr.datatype)) {
             this.tokenError(`${expr.datatype.name} has no such member function`, this.previous());
         }
-        var fakeid = new Expression();
-        fakeid.name = meta.name;
-        this.expect(tokenType.leftparen, "Expect ( ");
-        //console.error("=====================", this.peek());
-        return this.finishCall(fakeid, new Expression().newExprAddress(expr));
 
+        this.expect(tokenType.leftparen, "Expect ( ");
+        return this.finishCall(fakeid, expr);
     }
 
 
     getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
-        var fn = getFn(meta.name as string);
-
-        //console.error(expr.datatype);
-
-        if (fn.params.length === 0 || !this.typeEql(fn.params[0].datatype.base, expr.datatype.base)) {
+        var obj = getLocalOffset(meta.name);
+        var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
+        this.expect(tokenType.leftparen, "Expect ( ");
+        if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].type.base, expr.datatype.base)) {
             this.tokenError(`${expr.datatype.base.name} has no such member function`, this.previous());
         }
-        var fakeid = new Expression();
-        fakeid.name = meta.name;
-        this.expect(tokenType.leftparen, "Expect ( ");
-        //console.error("=====================", this.peek());
         return this.finishCall(fakeid, expr);
-
     }
 
     parseGet(expr: Expression): Expression {
@@ -281,7 +236,6 @@ export class Parser {
         if (this.isStructure(expr.datatype) && expr.type !== exprType.call) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             if (meta.offset === -1) {
-                //console.error("==========oo===========", this.peek());
                 return this.getFunctionFromStruct(expr, meta);
             }
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
@@ -306,14 +260,13 @@ export class Parser {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             var offset = incLocalOffset("", expr.datatype, "");
             var get = new Expression().newExprGet(meta.offset,
-                new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable),
+                new Expression().newExprIdentifier("", offset, expr.datatype),
                 meta.datatype);
             if (expr.datatype.size > 8) {
                 var vardecl = Statement.anonLargeReturnVar(expr, offset);
                 return new Expression().newExprDeclAnonForGet(vardecl, get);
             }
             var vardecl = Statement.anonSmallReturnVar(expr, offset);
-            //console.error("-------shold return-------");
             return new Expression().newExprDeclAnonForGet(vardecl, get);
 
         } else {
@@ -356,7 +309,6 @@ export class Parser {
         ret.datatype = expr.datatype.base;
         return ret;
     }
-
 
     parseArrayIndex(expr: Expression, index: Expression): Expression {
         var ret = new Expression().newExprDeref(
@@ -438,11 +390,11 @@ export class Parser {
             this.tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
         }
 
-        //return new Expression().newExprIdentifier()
+        var obj = getLocalOffset(struc?.name+fnname);
         // todo
-        return new Expression().newExprIdentifier(
-            struc?.name+fnname, -1,
-            u64, identifierType.func
+        return new Expression().newExprFnIdentifier(
+            struc?.name+fnname,
+            obj.datatype
         );
 
     }
@@ -453,13 +405,10 @@ export class Parser {
         while (true) {
             if (this.match([tokenType.leftparen])) {
                 expr = this.finishCall(expr);
-                //console.error(expr.datatype);
-                //expr.type = exprType.call;
             } else if (this.match([tokenType.dot])) {
                 expr = this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
                 expr = this.index(expr);
-                //console.error(expr);
             } else if(this.match([tokenType.doublecolon])) {
                 expr = this.parseMemberFunction(expr);
             } else {
@@ -596,24 +545,16 @@ export class Parser {
         // identifier 
         // a.c.foo -> get
         //  a[0] -> deref
-
-
-
-
         var equals: Token;
         if (this.match([tokenType.equal])) {
             equals = this.previous();
             var val = this.assign();
 
             if (val.type === exprType.call && expr.datatype.size > 8) {
-                var p = new Array(new Expression().newExprAddress(expr))
-                p.concat(val.params);
-                val.params = p;
+                val.params.splice(0,0, new Expression().newExprAddress(expr))
             }
 
             switch (expr.type) {
-                case exprType.call:
-                    break;
                 case exprType.identifier:
                 case exprType.deref:
                     // switch (expr.datatype.kind) {
@@ -676,7 +617,7 @@ export class Parser {
         if (expr.type === exprType.call && expr.datatype.size > 8) {
             var offset = incLocalOffset("", expr.datatype, "")
             expr.params.splice(0, 0, new Expression().newExprAddress(
-                new Expression().newExprIdentifier("", offset, expr.datatype, identifierType.variable)))
+                new Expression().newExprIdentifier("", offset, expr.datatype)))
         } else if (expr.type === exprType.string) {
 
         }
@@ -745,21 +686,17 @@ export class Parser {
             var len = this.expect(tokenType.number, "Expect size of array");
             this.expect(tokenType.rightsquare, "] expected");
             var base = this.parseType();
-            ///var def = 0
             var holder = new Type().newStruct("array", [
                 { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) },
             ])
             holder.size = len.value as number + 8;
             holder.kind = myType.array;
             holder.base = base;
-            //console.error(holder);
             return holder;
         }
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
-            var t = new Type().newPointer(this.parseType());
-            //console.error("=================", t);
-            return t;
+            return new Type().newPointer(this.parseType());
         }
 
 
@@ -816,8 +753,7 @@ export class Parser {
         var exprid = new Expression().newExprIdentifier(
             "",
             off,
-            string.datatype,
-            identifierType.struct
+            string.datatype
         );
 
         var initExpr: Expression[] = [];
@@ -874,28 +810,24 @@ export class Parser {
             type.base = u8;
             type.kind = myType.slice
         }
-
-
         type = type ?? initializer.datatype;
         //console.error(initializer);
         var offset = incLocalOffset(name.value as string, type as Type, getPresentModule() as string);
 
         if (initializer.type === exprType.call && type.size > 8) {
             initializer.params.splice(0, 0, new Expression().newExprAddress(
-                new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)));
-            //p.concat(initializer.params);
-            //initializer.params = p;
+                new Expression().newExprIdentifier(name.value as string, offset, type)));
         }
 
         if (initializer.datatype.kind === myType.string) {
             initializer =
                 new Expression().newExprAssign(
-                    new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable),
+                    new Expression().newExprIdentifier(name.value as string, offset, type),
                     new Expression().newExprSlideString(initializer))
         } else if (initializer.datatype.kind === myType.array) {
             initializer =
                 new Expression().newExprAssign(
-                    new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable),
+                    new Expression().newExprIdentifier(name.value as string, offset, type),
                     new Expression().newExprSlideArray(initializer,
                         new Expression().newExprNumber(0),
                         // len
@@ -903,13 +835,10 @@ export class Parser {
                     ))
         } else {
             initializer = new Expression().newExprAssign(
-                new Expression().newExprIdentifier(name.value as string, offset, type, identifierType.variable)
+                new Expression().newExprIdentifier(name.value as string, offset, type)
                 , initializer
             );
         }
-
-        //console.error("***", type);
-
         this.expect(tokenType.semicolon, ";");
         return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type);
     }
@@ -953,9 +882,6 @@ export class Parser {
                 var paramname = this.expect(tokenType.identifier, "param name");
                 this.expect(tokenType.colon, "Expect : after name");
                 var type = this.parseType();
-
-                //console.error("**", type);
-
                 params.push({ name: paramname.value as string, datatype: type, module_name: "" });
                 if (!this.check(tokenType.comma)) break;
                 this.advance();
@@ -1000,13 +926,11 @@ export class Parser {
 
     enumDeclaration(): Statement {
         var name = this.expect(tokenType.identifier, "expect enum name").value as string;
-        //var currstruct = pushStruct(name, isunion);
         this.expect(tokenType.leftbrace, "Expect enum body");
         var enumvalues: { name: string, value: number }[] = [];
 
         if (this.check(tokenType.rightbrace)) {
             this.advance();
-            //console.error("=======================");
             return new Statement();
         }
 
@@ -1047,8 +971,7 @@ export class Parser {
         popModule();
         return new Statement().newModule(name as string, statements);
     }
-
-
+    
     async implModuleDeclaration(): Promise<Statement> {
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value as string;
@@ -1057,13 +980,11 @@ export class Parser {
         if(struc === undefined) {
             this.tokenError("no such struct", this.previous());
         }
-        //console.error(struc);
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
             var member = await this.nativeFuncDeclaration(name as string);
             struc?.member_fn_names.push(member.name.substring(name.length));
             statements.push(member);
-            //logStructs();
         }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
@@ -1072,13 +993,6 @@ export class Parser {
 
     async moduleImport() {
         var path = this.expect(tokenType.string, "Expect path").value as string;
-                // return new Promise((resolve, reject) => {
-                //     compile(path).then(() => {
-                //         resolve(new Statement())
-                    // 
-                //     })
-                //         .catch((e) => { reject(e); })
-                // })
         await compile(path);
         return new Statement();
     }
@@ -1120,10 +1034,6 @@ export class Parser {
         this.tokenError("unexpected token", this.peek());
         return this.statement();
     }
-
-
-
-
 
     async parse(): Promise<Statement[]> {
         var stmts: Statement[] = [];
