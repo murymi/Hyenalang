@@ -101,6 +101,8 @@ export enum tokenType {
     bitnoteq,
     shl,
     shr,
+    shreq,
+    shleq,
 
     eof
 };
@@ -160,6 +162,11 @@ export class Lexer {
     peekNext() {
         if (!this.moreTokens()) return "eof";
         return this.text[this.current + 1];
+    }
+
+    peekNextNext() {
+        if(this.text.length < this.current + 3) return "eof";
+        return this.text[this.current + 2];
     }
 
     advance() {
@@ -389,6 +396,12 @@ export class Lexer {
                         continue;
                     }
                     if(this.peekNext() === ">") {
+                        if(this.peekNextNext() === "=") {
+                            this.push(tokenType.shreq, ">>=");
+                            this.advance();
+                            this.advance();
+                            continue;
+                        }
                         this.push(tokenType.shr, ">>");
                         this.advance();
                         continue;
@@ -410,6 +423,12 @@ export class Lexer {
                         continue;
                     }
                     if(this.peekNext() === "<") {
+                        if(this.peekNextNext() === "=") {
+                            this.push(tokenType.shleq, "<<=");
+                            this.advance();
+                            this.advance();
+                            continue;
+                        }
                         this.push(tokenType.shl, "<<");
                         this.advance();
                         continue;

@@ -466,7 +466,7 @@ export class Parser {
         return expr;
     }
 
-    shift():Expression {
+    shift(): Expression {
         var expr = this.term();
         while (this.match([tokenType.shl, tokenType.shr])) {
             var operator = this.previous();
@@ -570,6 +570,10 @@ export class Parser {
                 return tokenType.bitxor;
             case tokenType.bitnoteq:
                 return tokenType.bitnot;
+            case tokenType.shreq:
+                return tokenType.shr;
+            case tokenType.shleq:
+                return tokenType.shl;
             default:
                 this.tokenError("Unexpected operator", equals);
                 return tokenType.addeq
@@ -592,7 +596,9 @@ export class Parser {
             tokenType.bitandeq,
             tokenType.bitnoteq,
             tokenType.bitxoreq,
-            tokenType.bitnoteq
+            tokenType.bitnoteq,
+            tokenType.shleq,
+            tokenType.shleq
         ])) {
             equals = this.previous();
             var val = this.assign();

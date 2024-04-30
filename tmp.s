@@ -32,10 +32,23 @@ main:
    push rax
    mov rax, 4
    pop rdi
-mov rcx, rdi
+   mov rcx, rdi
 .L.shr.2:
-shr rax
-loop .L.shr.2
+   shr rax
+   loop .L.shr.2
+   pop rdi
+   mov [rdi], eax
+   lea rax, [rbp-4]
+   push rax
+   mov rax, 1
+   push rax
+   lea rax, [rbp-4]
+   movsxd rax, dword ptr [rax]
+   pop rdi
+   mov rcx, rdi
+.L.shl.3:
+   shl rax
+   loop .L.shl.3
    pop rdi
    mov [rdi], eax
    lea rax, [rbp-4]
