@@ -540,19 +540,48 @@ export class Parser {
         return expr;
     }
 
+    getOperator(equals:Token):tokenType {
+        switch(equals.type) {
+            case tokenType.addeq:
+                return tokenType.plus
+            case tokenType.subeq:
+                return tokenType.minus;
+            case tokenType.muleq:
+                return tokenType.multiply;
+            case tokenType.diveq:
+                return tokenType.diveq
+            default:
+                this.tokenError("Unexpected operator", equals);
+                return tokenType.addeq
+        }
+    }
+
     assign(): Expression {
         var expr = this.logicalOr();
         // identifier 
         // a.c.foo -> get
         //  a[0] -> deref
         var equals: Token;
-        if (this.match([tokenType.equal])) {
+        if (this.match([tokenType.equal, tokenType.addeq, tokenType.subeq, tokenType.diveq, tokenType.muleq])) {
             equals = this.previous();
             var val = this.assign();
 
+            
             if (val.type === exprType.call && expr.datatype.size > 8) {
                 val.params.splice(0,0, new Expression().newExprAddress(expr))
             }
+            
+            /**
+             * a += 1;
+             * a = a + 1;
+             */
+
+
+            if(equals.type !== tokenType.equal) {
+                var operator = this.getOperator(equals);
+                val = new Expression().newExprBinary(new Token(operator,"",0,0), expr, val)
+            }
+            
 
             switch (expr.type) {
                 case exprType.identifier:

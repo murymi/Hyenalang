@@ -82,6 +82,11 @@ export enum tokenType {
     doublecolon,
     import,
 
+    addeq,
+    muleq,
+    diveq,
+    subeq,
+
     eof
 };
 
@@ -315,15 +320,35 @@ export class Lexer {
 
             switch (char) {
                 case "+":
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.addeq, "+=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.plus, char);
                     break;
                 case "-":
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.subeq, "-=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.minus, char);
                     break;
                 case "/":
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.diveq, "/=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.divide, char);
                     break;
                 case "*":
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.muleq, "*=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.multiply, char);
                     break;
                 case "@":
