@@ -65,6 +65,20 @@ export function isNumber(T: Type): boolean {
 }
 
 
+var struct_types: Type[] = [];
+
+export function pushStructType(struc:Type) {
+    struct_types.push(struc);
+}
+
+export function searchStruct(name:string):Type|undefined {
+    return struct_types.find((s)=> s.name === name );
+}
+
+export function logStructs() {
+    console.error(struct_types);
+}
+
 export class Type {
     kind: myType;
     size: number;
@@ -78,6 +92,7 @@ export class Type {
     enumvalues:{name:string, value:number}[];
     name:string;
     module_name:string;
+    member_fn_names:string[];
 
     newPointer(base: Type) {
         this.base = base;
@@ -165,6 +180,7 @@ export class Type {
 
     constructor() {
         this.module_name = getPresentModule() as string;
+        this.member_fn_names = [];
     }
 }
 

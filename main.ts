@@ -6,7 +6,7 @@ import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
 import {resolve} from "path"
-import { Type, alignTo, getPresentModule, i64, searchModule } from "./type";
+import { Type, alignTo, getPresentModule, i64, searchModule, searchStruct } from "./type";
 
 export enum fnType {
     extern,
@@ -199,14 +199,18 @@ export function getOffsetOfMember(struct: Type, member: string) {
         }
     }
 
-    //console.error(struct);
+    console.error(struct);
 
-    if(searchModule(struct.name)) {
-        for (let i = functions.length - 1; i >= 0; i--) {
-            if (functions[i].name === member && functions[i].module_name === struct.name) {
-                return { offset: -1, datatype: i64 , name: struct.name+functions[i].name }
-            }
-        }
+    // if(searchModule(struct.name)) {
+    //     for (let i = functions.length - 1; i >= 0; i--) {
+    //         if (functions[i].name === member && functions[i].module_name === struct.name) {
+    //             return { offset: -1, datatype: i64 , name: struct.name+functions[i].name }
+    //         }
+    //     }
+    // }
+
+    if(struct.member_fn_names.find((n)=> n === member)) {
+            return { offset: -1, datatype: i64 , name: struct.name+member }
     }
 
     console.error("struct or union has no member named " + member);
@@ -215,47 +219,52 @@ export function getOffsetOfMember(struct: Type, member: string) {
 
 
 
-export function getLocalOffset(name: string, module_name:string): { offset: number, datatype: Type, glob: boolean, name:string } {
+export function getLocalOffset(name: string): { offset: number, datatype: Type, glob: boolean} {
     var fn = functions[currentFn];
 
     for (let i = fn.locals.length - 1; i >= 0; i--) {
-        if (fn.locals[i].name === name && fn.locals[i].module_name === module_name && fn.locals[i].scope <= scopeDepth) {
+        if (fn.locals[i].name === name && fn.locals[i].scope <= scopeDepth) {
             var off = fn.locals[i].offset;
             var type = fn.locals[i].datatype;
 
-            return { offset: off, datatype: type, glob: false, name:name }
+            return { offset: off, datatype: type, glob: false}
         }
     }
 
     for (let i = 0; i < globals.length; i++) {
-        if (globals[i].name === name && globals[i].module_name === module_name) {
-            return { offset: -2, datatype: globals[i].datatype, glob: true, name:module_name+globals[i].name }
+        if (globals[i].name === name) {
+            return { offset: -2, datatype: globals[i].datatype, glob: true }
         }
     }
 
     for (let e of enums) {
-        if (e.name === name && e.module_name === module_name) {
-            return { offset: -3, datatype: e, glob: false, name:name }
+        if (e.name === name) {
+            return { offset: -3, datatype: e, glob: false}
         }
     }
 
     for (let i = functions.length - 1; i >= 0; i--) {
-        if (functions[i].name === name && functions[i].module_name === module_name) {
-            return { offset: -1, datatype: i64, glob: true, name: module_name+functions[i].name }
+        if (functions[i].name === name) {
+            return { offset: -1, datatype: i64, glob: true}
         }
     }
 
-    throw new Error(`undefined variable ${name} in ${module_name}`);
+    if(searchStruct(name)) {
+        return { offset: -4, datatype: i64, glob: false };
+    }
+
+    throw new Error(`undefined variable ${name}`);
 }
 
 export function getFn(name: string): Function {
     for (let i = functions.length - 1; i >= 0; i--) {
-        if (functions[i].module_name+functions[i].name === name) {
+        if (functions[i].name === name) {
             return functions[i];
         }
     }
 
     console.error(`undefined function ${name}`);
+    //console.error(functions);
     process.exit(1);
 }
 

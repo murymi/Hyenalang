@@ -243,7 +243,6 @@ function genNumber(expr: Expression) {
 }
 
 function load(datatype: Type) {
-    console.log("                                                       # load");
     if (datatype.size === 1) {
         console.log("   movsx rax, byte ptr [rax]");
     } else if (datatype.size === 2) {
@@ -264,12 +263,10 @@ function load(datatype: Type) {
         process.exit(1);
     }
 
-    console.log("                                                       # end load")
 
 }
 
 function store(datatype: Type) {
-    console.log("                                                       # store")
     console.log("   pop rdi");
     //console.log("   pop rax");
 
@@ -290,7 +287,6 @@ function store(datatype: Type) {
         console.error("Invalid store", datatype.size);
         process.exit(1);
     }
-    console.log("                                                       # end store")
 }
 
 function storeStruct(datatype: Type) {
@@ -313,7 +309,6 @@ function generateAddress(expr: Expression | Statement) {
     //console.error(expr.type);
     switch (expr.type /** */) {
         case exprType.identifier:
-            console.log("                                               # load address of var");
             if (expr.is_glob) {
                 console.log("   push offset " + expr.name);
                 pop("rax");
@@ -323,18 +318,13 @@ function generateAddress(expr: Expression | Statement) {
             }
             break;
         case exprType.get:
-            console.log("                                               # getting struct member")
             generateAddress(expr.left as Expression);
-            console.log("                                               # add offset of member");
             console.log("   add rax, " + expr.offset);
-            console.log("                                               # end add offset");
             break;
         case exprType.deref_slice_index:
         case exprType.deref_array_index:
         case exprType.deref:
-            console.log("                                               # deref");
             generateCode(expr.left as Expression);
-            console.log("                                               # end deref");
             break;
         case exprType.decl_anon_for_get:
             generateCode(expr.left as Expression);
@@ -366,14 +356,10 @@ function genLvalue(expr: Expression | Statement) {
 }
 
 function genAssign(expr: Expression) {
-    console.log("                                                       # generate address of variable");
     generateAddress(expr.left as Expression);
-    console.log("                                                       # address of variable generated");
     push();
-    console.log("                                                       # generate value to assign");
     generateCode(expr.right as Expression);
     //console.error("======ooo======");
-    console.log("                                                       # store value to variable address");
     store(expr.left?.datatype as Type);
 }
 
@@ -490,7 +476,6 @@ function generateCode(expr: Expression) {
         case exprType.deref_slice_index:
         case exprType.deref_array_index:
         case exprType.deref:
-            console.log("                                               # deref ");
             // a.*
             generateCode(expr.left as Expression);
             if (expr.datatype.kind !== myType.array) {
@@ -519,10 +504,8 @@ function generateCode(expr: Expression) {
             //generateCode(expr.right as Expression);
             console.error(expr.datatype)
             if (expr.datatype.size > 8) {
-                console.log("                                           # assign [large]");
                 genAssignLarge(expr);
             } else {
-                console.log("                                           # assign [small]");
                 genAssign(expr);
             }
             break;
@@ -548,7 +531,6 @@ function generateCode(expr: Expression) {
 
             switch (expr.datatype.kind) {
                 case myType.slice:
-                    console.log("                                       # assign slice");
                     assignSlice(expr);
                     break;
                 case myType.string:
@@ -557,17 +539,14 @@ function generateCode(expr: Expression) {
                     break;
                 case myType.struct:
                     if (expr.datatype.size > 8) {
-                        console.log("                                   # assign struct [large]");
                         genAssignLarge(expr);
                     } else {
-                        console.log("                                   # assign struct [small]");
                         genAssign(expr);
                     }
                     break;
                 case myType.array:
                     break;
                 default:
-                    console.log("                                        # assign variable");
                     genAssign(expr);
 
             }
@@ -689,7 +668,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log("   jmp " + latestContinueLabel);
             break;
         case stmtType.ret:
-            if(stmt.expr.datatype.kind === myType.string) {
+            if (stmt.expr.datatype.kind === myType.string) {
                 //console.error(stmt.expr.datatype);
                 console.log("   mov rax, [rbp-8]");
                 push();
@@ -771,13 +750,9 @@ function genText(fns: Function[]) {
     fns.forEach((fn) => {
         var i = incLabel();
         if (fn.type === fnType.native) {
-            if(fn.name === "main" && fn.module_name === "mod_main") {
-                console.log(".global " + fn.name);
-                console.log(fn.name + ":");
-            } else {
-                console.log(".global " + fn.module_name+fn.name);
-                console.log(fn.module_name+fn.name + ":");
-            }
+            console.log(".global " + fn.name);
+            console.log(fn.name + ":");
+
             console.log("   push rbp");
             console.log("   mov rbp, rsp");
             console.log("   sub rsp, " + alignTo(8, fn.localOffset));
@@ -795,14 +770,14 @@ function genText(fns: Function[]) {
     })
 }
 
-function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type, module_name:string }[]) {
+function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type, module_name: string }[]) {
     globals.forEach((g) => {
         if (g.value) {
 
             if (g.value.type === exprType.undefnd) return;
 
             console.log(".align " + g.datatype.align);
-            console.log(g.module_name+g.name + ":");
+            console.log(g.module_name + g.name + ":");
 
             // if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
             //     console.log(`   .quad ${g.datatype.members[1].type.size}`);
@@ -838,7 +813,7 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
         if (g.value === undefined) {
 
             console.log(".align " + g.datatype.align);
-            console.log(g.module_name+g.name + ":");
+            console.log(g.module_name + g.name + ":");
             console.log("   .zero " + g.datatype.size);
         }
     });
@@ -855,7 +830,7 @@ function genAnonStrings(anons: { value: Expression }[]) {
 
 export function genStart(
     globstrings: { value: string }[],
-    globals: { name: string, value: Expression | undefined, datatype: Type, module_name:string }[],
+    globals: { name: string, value: Expression | undefined, datatype: Type, module_name: string }[],
     anons: { value: Expression }[],
     fns: Function[]
 ) {

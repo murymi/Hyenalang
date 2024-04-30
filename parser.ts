@@ -24,7 +24,7 @@ import {
     resetCurrentFunction,
     setCurrentFuction
 } from "./main";
-import { Type, bool, f32, getPresentModule, i16, i32, i64, i8, myType, popModule, pushModule, str, u16, u32, u64, u8, voidtype } from "./type";
+import { Type, bool, f32, getPresentModule, i16, i32, i64, i8, logStructs, myType, popModule, pushModule, pushStructType, searchStruct, str, u16, u32, u64, u8, voidtype } from "./type";
 import { error } from "console";
 
 export class Parser {
@@ -73,18 +73,18 @@ export class Parser {
         if (this.match([tokenType.identifier])) {
 
 
-            var mod_name = getPresentModule();
+            // var mod_name = getPresentModule();
             var id = this.previous().value as string;
-            while (this.check(tokenType.doublecolon)) {
-                mod_name = id;
-                this.advance();
-                id = this.expect(tokenType.identifier, "Expect member name").value as string
-            }
+            // while (this.check(tokenType.doublecolon)) {
+            //     mod_name = id;
+            //     this.advance();
+            //     id = this.expect(tokenType.identifier, "Expect member name").value as string
+            // }
 
-            var obj = getLocalOffset(id, mod_name as string);
+            var obj = getLocalOffset(id);
             if (obj.offset === -1) {
                 return new Expression().newExprIdentifier(
-                    obj.name, obj.offset,
+                    id, obj.offset,
                     obj.datatype, identifierType.func
                 );
             }
@@ -102,7 +102,7 @@ export class Parser {
 
             var expr = new Expression().newExprIdentifier(
                 //this.previous().value as string,
-                obj.name,
+                id,
                 offset,
                 obj.datatype,
                 idtype,
@@ -427,6 +427,26 @@ export class Parser {
         return new Expression();
     }
 
+    parseMemberFunction(expr:Expression):Expression {
+        var struc = searchStruct(expr.name);
+        if(struc === undefined) {
+            this.tokenError("No such struct", this.previous());
+        }
+        var fnname = this.expect(tokenType.identifier,"Expect fn name").value as string;
+
+        if(struc?.member_fn_names.find((f)=> f === fnname) === undefined) {
+            this.tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
+        }
+
+        //return new Expression().newExprIdentifier()
+        // todo
+        return new Expression().newExprIdentifier(
+            struc?.name+fnname, -1,
+            u64, identifierType.func
+        );
+
+    }
+
     // postfix
     call(): Expression {
         var expr = this.primary(); // identifier
@@ -440,6 +460,8 @@ export class Parser {
             } else if (this.match([tokenType.leftsquare])) {
                 expr = this.index(expr);
                 //console.error(expr);
+            } else if(this.match([tokenType.doublecolon])) {
+                expr = this.parseMemberFunction(expr);
             } else {
                 break;
             }
@@ -772,18 +794,15 @@ export class Parser {
                 t.kind = myType.slice;
                 return t;
             case tokenType.identifier:
-                var struc = getStruct(tok.value as string);
+                var struc = searchStruct(tok.value as string);
                 if (struc) {
-                    if (struc.is_union) {
-                        var un = new Type().newUnion(tok.value as string, struc.members);
-                        return un;
-                    }
-                    return new Type().newStruct(tok.value as string, struc.members);
+                    return struc;
                 }
                 var en = getEnum(tok.value as string);
                 if (en) {
                     return en;
                 }
+                this.tokenError("Undefined Type", tok);
                 break;
             default:
                 break;
@@ -921,8 +940,10 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    async nativeFuncDeclaration(): Promise<Statement> {
-        var name = this.expect(tokenType.identifier, "fn name");
+    async nativeFuncDeclaration(name_space?:string): Promise<Statement> {
+        var name = this.expect(tokenType.identifier, "fn name").value as string;
+
+        if(name_space) name = name_space+name;
         this.expect(tokenType.leftparen, "( after fn name");
 
         var params: { name: string, datatype: Type, module_name: string }[] = [];
@@ -943,11 +964,11 @@ export class Parser {
         this.expect(tokenType.rightparen, ") after params");
         var type = this.parseType();
         this.expect(tokenType.leftbrace, "function body");
-        var currFn = pushFunction(name.value as string, params, fnType.native, [], type);
+        var currFn = pushFunction(name as string, params, fnType.native, [], type);
         setCurrentFuction(currFn);
         var body = await this.block();
         resetCurrentFunction(body);
-        return new Statement().newNativeFnStatement(name.value as string);
+        return new Statement().newNativeFnStatement(name as string);
     }
 
     structDeclaration(isunion: boolean): Statement {
@@ -971,7 +992,9 @@ export class Parser {
         }
 
         this.expect(tokenType.rightbrace, "Expect } after struct body");
-        pushStruct(new Struct(name, isunion, strucmembers));
+        var struc = new Struct(name, isunion, strucmembers);
+        pushStruct(struc);
+        pushStructType(isunion? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers))
         return new Statement().newStructDeclStatement();
     }
 
@@ -1028,11 +1051,19 @@ export class Parser {
 
     async implModuleDeclaration(): Promise<Statement> {
         var statements: Statement[] = [];
-        var name = this.expect(tokenType.identifier, "Expect module name").value;
+        var name = this.expect(tokenType.identifier, "Expect module name").value as string;
         pushModule(name as string);
+        var struc = searchStruct(name as string);
+        if(struc === undefined) {
+            this.tokenError("no such struct", this.previous());
+        }
+        //console.error(struc);
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
-            statements.push(await this.nativeFuncDeclaration());
+            var member = await this.nativeFuncDeclaration(name as string);
+            struc?.member_fn_names.push(member.name.substring(name.length));
+            statements.push(member);
+            //logStructs();
         }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
