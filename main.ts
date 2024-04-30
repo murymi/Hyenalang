@@ -3,8 +3,9 @@ import { Parser } from "./parser";
 import { genStart } from "./codegen";
 import { Statement } from "./stmt";
 import { Expression } from "./expr";
-import { createWriteStream, readFile } from "fs";
+import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
+import {resolve} from "path"
 import { Type, alignTo, getPresentModule, i64, searchModule } from "./type";
 
 export enum fnType {
@@ -302,27 +303,71 @@ export function endScope() {
 
 
 
-function compile(path: string) {
-    readFile(path, { encoding: "utf-8" }, (err, data) => {
-        if (err) {
-            console.error("failed to open file");
-            process.exit(1);
+// function compile(path: string) {
+//     readFile(path, { encoding: "utf-8" }, (err, data) => {
+//         if (err) {
+//             console.error("failed to open file");
+//             process.exit(1);
+//         }
+// 
+//         var lexer = new Lexer(data);
+// 
+//         var tokens = lexer.lex();
+//         var parser = new Parser(tokens);
+//         var stmts = parser.parse();
+//         var bitstream = createWriteStream("./tmp.s");
+//         var orig = console.log;
+//         console.log = (data) => { bitstream.write(`${data}\n`); }
+//         genStart(globalstrings, globals, anon_strings, functions);
+//         bitstream.end();
+//         console.log = orig;
+//         spawn("make", ["bin"]);
+//     })
+// 
+// }
+// 
+// if (process.argv.length < 3) {
+//     console.error("Usage: make FILE=<file name>");
+// } else {
+//     if (process.argv[2] === "") {
+//         console.error("Usage: make FILE=<file name>");
+//         process.exit();
+//     }
+//     compile(process.argv[2]);
+// }
+// 
+// 
+
+var compiled_files: string[] = [];
+
+export function compile(path: string) {
+    return new Promise((resolv, reject) => {
+        var abs_path = resolve(path);
+        if(compiled_files.find((p)=> p===abs_path)) {
+            resolv(true);
+            return;
         }
 
-        var lexer = new Lexer(data);
+        readFile(path, { encoding: "utf-8" }, async (err, data) => {
+            if (err) {
+                reject(err)
+            } else {
 
-        var tokens = lexer.lex();
-        var parser = new Parser(tokens);
-        var stmts = parser.parse();
-        var bitstream = createWriteStream("./tmp.s");
-        var orig = console.log;
-        console.log = (data) => { bitstream.write(`${data}\n`); }
-        genStart(globalstrings, globals, anon_strings, functions);
-        bitstream.end();
-        console.log = orig;
-        spawn("make", ["bin"]);
+
+                compiled_files.push(abs_path);
+
+                if (err) {
+                    console.error("failed to open file");
+                    process.exit(1);
+                }
+                var lexer = new Lexer(data);
+                var tokens = lexer.lex();
+                var parser = new Parser(tokens);
+                var stmts = await parser.parse();
+                resolv(true);
+            }
+        })
     })
-
 }
 
 if (process.argv.length < 3) {
@@ -332,6 +377,18 @@ if (process.argv.length < 3) {
         console.error("Usage: make FILE=<file name>");
         process.exit();
     }
-    compile(process.argv[2]);
-}
+    truncate("./tmp.s", async () => {
+        compile(process.argv[2])
+            .then(() => {
+                var bitstream = createWriteStream("./tmp.s", { flags: "a" });
+                var orig = console.log;
+                console.log = (data) => { bitstream.write(`${data}\n`); }
+                genStart(globalstrings, globals, anon_strings, functions);
+                bitstream.end();
+                console.log = orig;
+                spawn("make", ["bin"]);
+            })
+            .catch((err) => { throw err; });
+    })
 
+}

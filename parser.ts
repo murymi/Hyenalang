@@ -1044,9 +1044,9 @@ export class Parser {
             return this.moduleDeclaration();
         }
 
-        if (this.match([tokenType.module])) {
-            return this.implModuleDeclaration();
-        }
+        // if (this.match([tokenType.module])) {
+        //     return this.implModuleDeclaration();
+        // }
 
         if (this.match([tokenType.var])) {
             return this.varDeclaration(false);
