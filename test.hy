@@ -3,15 +3,18 @@ struct foo {
     x:u64
 }
 
+import "inc.hy"
+import "inc.hy"
+
 impl foo {
-    fn new(v:u64, p:u64) foo {
+    new(v:u64, p:u64) foo {
         var struc:foo = undefined;
         struc.y = v;
         struc.x = p;
         return struc;
     }
 
-    fn zero(self:*foo) void {
+    zero(self:*foo) void {
         self.y = 5;
         self.x = 5;
     }

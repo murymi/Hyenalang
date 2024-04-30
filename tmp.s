@@ -2,6 +2,17 @@
 .data
 .bss
 .text
+.global mod_mainfoo
+mod_mainfoo:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 0
+   xor rax, rax
+.L.endfn.0:
+   mov rsp, rbp
+   pop rbp
+   ret
+
 .global foonew
 foonew:
    push rbp
@@ -61,9 +72,9 @@ foonew:
    movq [rdi+0], rcx
    movq rcx, [rax+8]
    movq [rdi+8], rcx
-   jmp .L.endfn.0
+   jmp .L.endfn.1
    xor rax, rax
-.L.endfn.0:
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret
@@ -119,7 +130,7 @@ foozero:
    mov [rdi], rax
                                                        # end store
    xor rax, rax
-.L.endfn.1:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret
@@ -178,9 +189,9 @@ main:
                                                        # end load
    pop rdi
    add rax, rdi
-   jmp .L.endfn.2
+   jmp .L.endfn.3
    xor rax, rax
-.L.endfn.2:
+.L.endfn.3:
    mov rsp, rbp
    pop rbp
    ret

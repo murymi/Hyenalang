@@ -8,6 +8,7 @@ import {
     addAnonString,
     addGlobal,
     beginScope,
+    compile,
     endScope,
     fnType,
     getEnum,
@@ -630,11 +631,11 @@ export class Parser {
         return stmt;
     }
 
-    block(): Statement {
+    async block(): Promise<Statement> {
         beginScope();
         var stmts: Statement[] = [];
         while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
-            stmts.push(this.declaration());
+            stmts.push(await this.declaration());
         }
         this.expect(tokenType.rightbrace, "}");
         endScope();
@@ -662,7 +663,7 @@ export class Parser {
         return new Statement().newReturnStatement(expr);
     }
 
-    statement(): Statement {
+    async statement(): Promise<Statement> {
 
         if (this.match([tokenType.contineu])) {
             this.expect(tokenType.semicolon, ";");
@@ -675,7 +676,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.leftbrace])) {
-            return this.block();
+            return await this.block();
         }
 
         if (this.match([tokenType.return])) {
@@ -686,10 +687,10 @@ export class Parser {
             this.expect(tokenType.leftparen, "( after if");
             var cond = this.expression();
             this.expect(tokenType.rightparen, ") after condition");
-            var then = this.statement();
+            var then = await this.statement();
             var else_: Statement | undefined = undefined;
             if (this.match([tokenType.else])) {
-                else_ = this.statement();
+                else_ = await this.statement();
             }
 
             return new Statement().newIfStatement(cond, then, else_);
@@ -699,7 +700,7 @@ export class Parser {
             this.expect(tokenType.leftparen, "( after while");
             var cond = this.expression();
             this.expect(tokenType.rightparen, ") after condition");
-            var then = this.statement();
+            var then = await this.statement();
 
             return new Statement().newWhileStatement(cond, then);
         }
@@ -920,7 +921,7 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    nativeFuncDeclaration(): Statement {
+    async nativeFuncDeclaration(): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "fn name");
         this.expect(tokenType.leftparen, "( after fn name");
 
@@ -944,7 +945,7 @@ export class Parser {
         this.expect(tokenType.leftbrace, "function body");
         var currFn = pushFunction(name.value as string, params, fnType.native, [], type);
         setCurrentFuction(currFn);
-        var body = this.block();
+        var body = await this.block();
         resetCurrentFunction(body);
         return new Statement().newNativeFnStatement(name.value as string);
     }
@@ -1010,14 +1011,14 @@ export class Parser {
         return new Statement();
     }
 
-    moduleDeclaration(): Statement {
+    async moduleDeclaration(): Promise<Statement> {
 
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
         pushModule(name as string);
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
-            statements.push(this.declaration());
+            statements.push(await this.declaration());
         }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
@@ -1025,28 +1026,40 @@ export class Parser {
     }
 
 
-    implModuleDeclaration(): Statement {
+    async implModuleDeclaration(): Promise<Statement> {
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
         pushModule(name as string);
-
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
-            statements.push(this.nativeFuncDeclaration());
+            statements.push(await this.nativeFuncDeclaration());
         }
         this.expect(tokenType.rightbrace, "Expect } after module body");
         popModule();
         return new Statement().newModule(name as string, statements);
     }
 
-    declaration(): Statement {
+    async moduleImport() {
+        var path = this.expect(tokenType.string, "Expect path").value as string;
+                // return new Promise((resolve, reject) => {
+                //     compile(path).then(() => {
+                //         resolve(new Statement())
+                    // 
+                //     })
+                //         .catch((e) => { reject(e); })
+                // })
+        await compile(path);
+        return new Statement();
+    }
+
+    async declaration(): Promise<Statement> {
         if (this.match([tokenType.impl])) {
-            return this.moduleDeclaration();
+            return this.implModuleDeclaration();
         }
 
-        // if (this.match([tokenType.module])) {
-        //     return this.implModuleDeclaration();
-        // }
+        if (this.match([tokenType.import])) {
+            return await this.moduleImport()
+        }
 
         if (this.match([tokenType.var])) {
             return this.varDeclaration(false);
@@ -1079,10 +1092,12 @@ export class Parser {
 
 
 
-    parse(): Statement[] {
+
+
+    async parse(): Promise<Statement[]> {
         var stmts: Statement[] = [];
         while (this.moreTokens()) {
-            stmts.push(this.declaration());
+            stmts.push(await this.declaration());
         }
 
         return stmts;

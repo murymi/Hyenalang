@@ -350,7 +350,7 @@ export function compile(path: string) {
 
         readFile(path, { encoding: "utf-8" }, async (err, data) => {
             if (err) {
-                reject(err)
+                throw err
             } else {
 
 
