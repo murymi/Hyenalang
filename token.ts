@@ -96,13 +96,15 @@ export class Token {
     line: number;
     col: number;
     isfloat: boolean;
+    file_name: string;
 
 
-    constructor(type: tokenType, value: string | number, line: number, col: number, isfloat?: boolean) {
+    constructor(type: tokenType, value: string | number, line: number, col: number,file:string, isfloat?: boolean) {
         this.type = type;
         this.value = value;
         this.col = col;
         this.line = line;
+        this.file_name = file;
 
         if (isfloat) {
             this.isfloat = isfloat;
@@ -117,10 +119,12 @@ export class Lexer {
     col: number;
     tokens: Token[] = [];
     tokenMap: any;
+    file_name:string;
 
-    constructor(text: string) {
+    constructor(text: string, file_name:string) {
         this.current = 0;
         this.text = text;
+        this.file_name = file_name;
         this.initTokenMap();
     }
 
@@ -182,7 +186,7 @@ export class Lexer {
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col, isfloat));
+        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col,this.file_name, isfloat));
     }
 
     getEscape() {
@@ -212,7 +216,7 @@ export class Lexer {
             this.advance();
         }
         this.expect('"');
-        return new Token(tokenType.string, value, this.line, this.col, true);
+        return new Token(tokenType.string, value, this.line, this.col,this.file_name, true);
     }
 
     initTokenMap() {
@@ -266,14 +270,14 @@ export class Lexer {
         var str = this.text.substring(start, this.current);
         var type = this.tokenMap[str];
         if (type) {
-            return new Token(type, str, this.line, this.col);
+            return new Token(type, str, this.line, this.col, this.file_name);
         }
 
-        return new Token(tokenType.identifier, str, this.line, this.col);
+        return new Token(tokenType.identifier, str, this.line, this.col, this.file_name);
     }
 
     tokenError(message: string): void {
-        console.error(message + " - [ line: " + this.line + " col: " + this.col + " ]");
+        console.error(`${this.file_name} [ line: ${this.line} col: ${this.col} ] ${message} '${this.peek()}'. `);
         process.exit();
     }
 
@@ -287,7 +291,7 @@ export class Lexer {
     }
 
     push(T: tokenType, val: string | number) {
-        this.tokens.push(new Token(T, val, this.line, this.col));
+        this.tokens.push(new Token(T, val, this.line, this.col, this.file_name));
         this.advance();
     }
 
@@ -314,7 +318,7 @@ export class Lexer {
             }
 
             if (char === "eof") {
-                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col));
+                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col,this.file_name));
                 break;
             }
 
@@ -450,7 +454,7 @@ export class Lexer {
                     break;
                 default:
                     //console.error(char);
-                    this.tokenError("unexpected token " + char);
+                    this.tokenError("unexpected token ");
             }
         }
 

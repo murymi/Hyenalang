@@ -328,7 +328,7 @@ export function compile(path: string) {
                     console.error("failed to open file");
                     process.exit(1);
                 }
-                var lexer = new Lexer(data);
+                var lexer = new Lexer(data, abs_path);
                 var tokens = lexer.lex();
                 var parser = new Parser(tokens);
                 var stmts = await parser.parse();

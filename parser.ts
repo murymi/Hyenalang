@@ -62,7 +62,7 @@ export class Parser {
     }
 
     tokenError(message: string, token: Token): void {
-        console.error(message + " - [ line: " + token.line + " col: " + token.col + " ]");
+        console.error(`${token.file_name} [ line: ${token.line} col: ${token.col} ] ${message} '${token.value}'. `);
         process.exit();
     }
 
@@ -147,7 +147,7 @@ export class Parser {
             }
             this.tokenError("expect character", this.previous());
         }
-        console.log(this.peek());
+        //console.log(this.peek());
         this.tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
 
@@ -297,9 +297,9 @@ export class Parser {
 
 
         var ret = new Expression().newExprDeref(
-            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), ex,
+            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), ex,
                 new Expression().newExprBinary(
-                    new Token(tokenType.multiply, "*", 0, 0),
+                    new Token(tokenType.multiply, "*", 0, 0, ""),
                     new Expression().newExprNumber(expr.datatype.base.size),
                     index
                 ))
@@ -312,10 +312,10 @@ export class Parser {
 
     parseArrayIndex(expr: Expression, index: Expression): Expression {
         var ret = new Expression().newExprDeref(
-            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0),
-                new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0), expr,
+            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""),
+                new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), expr,
                     new Expression().newExprBinary(
-                        new Token(tokenType.multiply, "*", 0, 0),
+                        new Token(tokenType.multiply, "*", 0, 0, ""),
                         new Expression().newExprNumber(expr.datatype.base.size),
                         index
                     )),
@@ -579,7 +579,7 @@ export class Parser {
 
             if(equals.type !== tokenType.equal) {
                 var operator = this.getOperator(equals);
-                val = new Expression().newExprBinary(new Token(operator,"",0,0), expr, val)
+                val = new Expression().newExprBinary(new Token(operator,"",0,0, ""), expr, val)
             }
             
 
