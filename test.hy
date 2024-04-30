@@ -23,7 +23,7 @@ impl point {
 }
 
 fn assert_eql(a:u8, b:u8) bool {
-    if(a eq b) { write("test passed\n"); } else { write("test failed\n"); }
+    if(a == b) { write("test passed\n"); } else { write("test failed\n"); }
 }
 
 fn main() void {

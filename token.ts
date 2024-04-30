@@ -375,6 +375,11 @@ export class Lexer {
                     this.push(tokenType.leftbrace, char);
                     break;
                 case '=':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.eq, "=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.equal, char);
                     break;
                 case ':':
