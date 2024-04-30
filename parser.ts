@@ -1,4 +1,4 @@
-import { Token } from "./token";
+import { Token, colors } from "./token";
 import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
@@ -62,7 +62,7 @@ export class Parser {
     }
 
     tokenError(message: string, token: Token): void {
-        console.error(`${token.file_name} [ line: ${token.line} col: ${token.col} ] ${message} '${token.value}'. `);
+        console.error(`${colors.yellow+token.file_name+colors.green} line: ${token.line} col: ${token.col} ${colors.red+message} '${token.value}'${colors.reset+"."} `);
         process.exit();
     }
 

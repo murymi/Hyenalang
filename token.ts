@@ -1,5 +1,13 @@
 //import process from "process";
 
+export var colors = {
+    reset: "\x1b[0m",
+    red: "\x1b[31m",
+    yellow:"\x1b[33m",
+    green:"\x1b[32m",
+    blue:"\x1b[34m"
+}
+
 export enum tokenType {
     plus,
     minus,
@@ -277,7 +285,7 @@ export class Lexer {
     }
 
     tokenError(message: string): void {
-        console.error(`${this.file_name} [ line: ${this.line} col: ${this.col} ] ${message} '${this.peek()}'. `);
+        console.error(`${colors.yellow+this.file_name+":"+colors.green} line: ${this.line} col: ${this.col} ${colors.red+message} '${this.peek()}'${colors.reset + "."} `);
         process.exit();
     }
 
