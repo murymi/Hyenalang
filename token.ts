@@ -94,6 +94,11 @@ export enum tokenType {
     muleq,
     diveq,
     subeq,
+    modeq,
+    bitandeq,
+    bitoreq,
+    bitxoreq,
+    bitnoteq,
 
     eof
 };
@@ -400,15 +405,35 @@ export class Lexer {
                     this.push(tokenType.less, char);
                     break;
                 case '^':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.bitxoreq, "^=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.bitxor, char);
                     break;
                 case '&':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.bitandeq, "&=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.bitand, char);
                     break;
                 case '|':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.bitoreq, "|=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.bitor, char);
                     break;
                 case '~':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.bitnoteq, "~=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.bitnot, char);
                     break;
                 case ')':

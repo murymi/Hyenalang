@@ -62,7 +62,7 @@ export class Parser {
     }
 
     tokenError(message: string, token: Token): void {
-        console.error(`${colors.yellow+token.file_name+colors.green} line: ${token.line} col: ${token.col} ${colors.red+message} '${token.value}'${colors.reset+"."} `);
+        console.error(`${colors.yellow + token.file_name + colors.green} line: ${token.line} col: ${token.col} ${colors.red + message} '${token.value}'${colors.reset + "."} `);
         process.exit();
     }
 
@@ -165,7 +165,7 @@ export class Parser {
     }
 
     finishCall(callee: Expression, optional?: Expression): Expression {
-        if(callee.datatype.kind !== myType.function) {
+        if (callee.datatype.kind !== myType.function) {
             this.tokenError("Not a fuction", this.previous());
         }
         var args: Expression[] = [];
@@ -379,21 +379,21 @@ export class Parser {
         return new Expression();
     }
 
-    parseMemberFunction(expr:Expression):Expression {
+    parseMemberFunction(expr: Expression): Expression {
         var struc = searchStruct(expr.name);
-        if(struc === undefined) {
+        if (struc === undefined) {
             this.tokenError("No such struct", this.previous());
         }
-        var fnname = this.expect(tokenType.identifier,"Expect fn name").value as string;
+        var fnname = this.expect(tokenType.identifier, "Expect fn name").value as string;
 
-        if(struc?.member_fn_names.find((f)=> f === fnname) === undefined) {
+        if (struc?.member_fn_names.find((f) => f === fnname) === undefined) {
             this.tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
         }
 
-        var obj = getLocalOffset(struc?.name+fnname);
+        var obj = getLocalOffset(struc?.name + fnname);
         // todo
         return new Expression().newExprFnIdentifier(
-            struc?.name+fnname,
+            struc?.name + fnname,
             obj.datatype
         );
 
@@ -409,7 +409,7 @@ export class Parser {
                 expr = this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
                 expr = this.index(expr);
-            } else if(this.match([tokenType.doublecolon])) {
+            } else if (this.match([tokenType.doublecolon])) {
                 expr = this.parseMemberFunction(expr);
             } else {
                 break;
@@ -540,8 +540,8 @@ export class Parser {
         return expr;
     }
 
-    getOperator(equals:Token):tokenType {
-        switch(equals.type) {
+    getOperator(equals: Token): tokenType {
+        switch (equals.type) {
             case tokenType.addeq:
                 return tokenType.plus
             case tokenType.subeq:
@@ -550,6 +550,16 @@ export class Parser {
                 return tokenType.multiply;
             case tokenType.diveq:
                 return tokenType.diveq
+            case tokenType.modeq:
+                return tokenType.mod;
+            case tokenType.bitandeq:
+                return tokenType.bitand
+            case tokenType.bitnoteq:
+                return tokenType.bitnot;
+            case tokenType.bitxoreq:
+                return tokenType.bitxor;
+            case tokenType.bitnoteq:
+                return tokenType.bitnot;
             default:
                 this.tokenError("Unexpected operator", equals);
                 return tokenType.addeq
@@ -562,26 +572,37 @@ export class Parser {
         // a.c.foo -> get
         //  a[0] -> deref
         var equals: Token;
-        if (this.match([tokenType.equal, tokenType.addeq, tokenType.subeq, tokenType.diveq, tokenType.muleq])) {
+        if (this.match([
+            tokenType.equal,
+            tokenType.addeq,
+            tokenType.subeq,
+            tokenType.diveq,
+            tokenType.muleq,
+            tokenType.modeq,
+            tokenType.bitandeq,
+            tokenType.bitnoteq,
+            tokenType.bitxoreq,
+            tokenType.bitnoteq
+        ])) {
             equals = this.previous();
             var val = this.assign();
 
-            
+
             if (val.type === exprType.call && expr.datatype.size > 8) {
-                val.params.splice(0,0, new Expression().newExprAddress(expr))
+                val.params.splice(0, 0, new Expression().newExprAddress(expr))
             }
-            
+
             /**
              * a += 1;
              * a = a + 1;
              */
 
 
-            if(equals.type !== tokenType.equal) {
+            if (equals.type !== tokenType.equal) {
                 var operator = this.getOperator(equals);
-                val = new Expression().newExprBinary(new Token(operator,"",0,0, ""), expr, val)
+                val = new Expression().newExprBinary(new Token(operator, "", 0, 0, ""), expr, val)
             }
-            
+
 
             switch (expr.type) {
                 case exprType.identifier:
@@ -898,10 +919,10 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    async nativeFuncDeclaration(name_space?:string): Promise<Statement> {
+    async nativeFuncDeclaration(name_space?: string): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "fn name").value as string;
 
-        if(name_space) name = name_space+name;
+        if (name_space) name = name_space + name;
         this.expect(tokenType.leftparen, "( after fn name");
 
         var params: { name: string, datatype: Type, module_name: string }[] = [];
@@ -949,7 +970,7 @@ export class Parser {
         this.expect(tokenType.rightbrace, "Expect } after struct body");
         var struc = new Struct(name, isunion, strucmembers);
         pushStruct(struc);
-        pushStructType(isunion? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers))
+        pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers))
         return new Statement().newStructDeclStatement();
     }
 
@@ -1006,7 +1027,7 @@ export class Parser {
         var name = this.expect(tokenType.identifier, "Expect module name").value as string;
         pushModule(name as string);
         var struc = searchStruct(name as string);
-        if(struc === undefined) {
+        if (struc === undefined) {
             this.tokenError("no such struct", this.previous());
         }
         this.expect(tokenType.leftbrace, "Expect module body");
