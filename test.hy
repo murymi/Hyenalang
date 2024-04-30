@@ -3,7 +3,6 @@ import "inc.hy"
 
 
 fn main() void {
-    var a = 0;
-    a  === 1;
+    var a = 4 >> 1;
     return a;
 }

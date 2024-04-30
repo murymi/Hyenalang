@@ -160,6 +160,22 @@ function genLogicalOr() {
 
 }
 
+function genShifLeft() {
+    var label = incLabel();
+    console.log("   mov rcx, rdi");
+    console.log(`.L.shl.${label}:`)
+    console.log("   shl rax");
+    console.log(`   loop .L.shl.${label}`);
+}
+
+function genShiftRight() {
+    var label = incLabel();
+    console.log("   mov rcx, rdi");
+    console.log(`.L.shr.${label}:`)
+    console.log("   shr rax");
+    console.log(`   loop .L.shr.${label}`);
+}
+
 function genBinary(operator: tokenType, datatype: Type) {
 
     console.log("   pop rdi");
@@ -215,6 +231,12 @@ function genBinary(operator: tokenType, datatype: Type) {
             break;
         case tokenType.mod:
             genMod();
+            break;
+        case tokenType.shl:
+            genShifLeft();
+            break;
+        case tokenType.shr:
+            genShiftRight();
             break;
         default:
             throw new error("unhandled operator");

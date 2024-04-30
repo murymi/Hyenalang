@@ -99,6 +99,8 @@ export enum tokenType {
     bitoreq,
     bitxoreq,
     bitnoteq,
+    shl,
+    shr,
 
     eof
 };
@@ -386,6 +388,11 @@ export class Lexer {
                         this.advance();
                         continue;
                     }
+                    if(this.peekNext() === ">") {
+                        this.push(tokenType.shr, ">>");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.greater, char);
                     break;
                 case '!':
@@ -399,6 +406,11 @@ export class Lexer {
                 case '<':
                     if(this.peekNext() === "=") {
                         this.push(tokenType.lte, "<=");
+                        this.advance();
+                        continue;
+                    }
+                    if(this.peekNext() === "<") {
+                        this.push(tokenType.shl, "<<");
                         this.advance();
                         continue;
                     }

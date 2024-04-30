@@ -466,12 +466,22 @@ export class Parser {
         return expr;
     }
 
-    comparisson(): Expression {
+    shift():Expression {
         var expr = this.term();
+        while (this.match([tokenType.shl, tokenType.shr])) {
+            var operator = this.previous();
+            var right = this.term();
+            expr = new Expression().newExprBinary(operator, expr, right);
+        }
+        return expr;
+    }
+
+    comparisson(): Expression {
+        var expr = this.shift();
 
         while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte])) {
             var operator = this.previous();
-            var right = this.term();
+            var right = this.shift();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
 
@@ -483,7 +493,7 @@ export class Parser {
 
         while (this.match([tokenType.neq, tokenType.eq])) {
             var operator = this.previous();
-            var right = this.term();
+            var right = this.comparisson();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
 
