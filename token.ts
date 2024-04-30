@@ -339,12 +339,27 @@ export class Lexer {
                     this.push(tokenType.semicolon, char);
                     break;
                 case '>':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.gte, ">=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.greater, char);
                     break;
                 case '!':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.neq, "!=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.bang, char);
                     break;
                 case '<':
+                    if(this.peekNext() === "=") {
+                        this.push(tokenType.lte, "<=");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.less, char);
                     break;
                 case '^':
@@ -376,7 +391,7 @@ export class Lexer {
                     break;
                 case '=':
                     if(this.peekNext() === "=") {
-                        this.push(tokenType.eq, "=");
+                        this.push(tokenType.eq, "==");
                         this.advance();
                         continue;
                     }
