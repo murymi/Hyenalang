@@ -214,7 +214,7 @@ export class Parser {
         }
 
         this.expect(tokenType.leftparen, "Expect ( ");
-        return this.finishCall(fakeid, expr);
+        return this.finishCall(fakeid, new Expression().newExprAddress(expr));
     }
 
 
@@ -971,7 +971,7 @@ export class Parser {
         popModule();
         return new Statement().newModule(name as string, statements);
     }
-    
+
     async implModuleDeclaration(): Promise<Statement> {
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value as string;
