@@ -1,9 +1,9 @@
 import "inc.hy"
 
+fn foo<T, V, J>(a:T, b:T) T {
 
+}
 
 fn main() void {
-    var a = 4 >> 1;
-    a <<= 1;
-    return a;
+    
 }

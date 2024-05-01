@@ -939,6 +939,17 @@ export class Parser {
         var name = this.expect(tokenType.identifier, "fn name").value as string;
 
         if (name_space) name = name_space + name;
+
+
+        if(this.match([tokenType.less])) {
+            while(true) {
+                this.expect(tokenType.identifier, "Expect type arg");
+                if(!this.check(tokenType.comma)) break;
+                this.advance();
+            }
+            this.expect(tokenType.greater, "Expect closing >");
+        }
+
         this.expect(tokenType.leftparen, "( after fn name");
 
         var params: { name: string, datatype: Type, module_name: string }[] = [];

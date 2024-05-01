@@ -41,6 +41,7 @@ export class Function {
     returnType: any;
     module_name: string;
     data_type:Type;
+    
 
     constructor(
         name: string,
@@ -118,6 +119,35 @@ export class Struct {
     }
 }
 
+class FnZombie {
+    name: string;
+    arity: number;
+    impilicit_arity: number;
+    type: fnType;
+    locals: { name: string, scope: number, datatype: Type|string, offset: number, module_name: string}[];
+    localOffset: number;
+    params: { name: string, datatype: Type|string }[];
+    body: Statement;
+    returnType: any|string;
+    data_type:Type|string;
+
+
+    constructor(
+        name: string,
+        type: fnType,
+        params: { name: string, datatype: Type|string, module_name: string }[],
+        locals: { name: string, scope: number, datatype: Type|string, offset: number, module_name: string }[],
+        retType: Type|string
+    ) {
+        this.name = name;
+        this.type = type;
+        this.params = params;
+        this.locals = locals;
+        this.returnType = retType;
+    }
+    
+}
+
 // export class Enum {
 //     name: string;
 //     values: { name: string, value: number }[];
@@ -134,6 +164,7 @@ export class Struct {
 var structs: Struct[] = [];
 
 var functions: Function[] = [];
+
 
 var enums: Type[] = [];
 
