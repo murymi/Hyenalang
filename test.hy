@@ -1,9 +1,5 @@
-import "inc.hy"
 
-fn foo<T, V, J>(a:T, b:T) T {
-
-}
-
+var a = "hello world";
 fn main() void {
-    
+   return a.len; 
 }

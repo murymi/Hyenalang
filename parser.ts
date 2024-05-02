@@ -5,6 +5,7 @@ import { exprType } from "./expr";
 import { Statement } from "./stmt";
 import {
     Struct,
+    Variable,
     addAnonString,
     beginScope,
     compile,
@@ -76,14 +77,7 @@ export class Parser {
                     obj.datatype
                 );
             }
-            var offset = obj.offset;
-            var expr = new Expression().newExprIdentifier(
-                id,
-                offset,
-                obj.datatype
-            );
-
-            expr.is_glob = obj.glob;
+            var expr = new Expression().newExprIdentifier( obj.variable as Variable);
             return expr;
         }
 
@@ -158,9 +152,9 @@ export class Parser {
     }
 
     makeAnonArg(arg: Expression) {
-        var offset = incLocalOffset("", arg.datatype, "");
-        var vardecl = Statement.anonLargeReturnVar(arg, offset);
-        var get = new Expression().newExprIdentifier("", offset, arg.datatype);
+        var new_var = incLocalOffset("", arg.datatype);
+        var vardecl = Statement.anonLargeReturnVar(arg, new_var);
+        var get = new Expression().newExprIdentifier(new_var);
         return new Expression().newExprDeclAnonForGet(vardecl, get)
     }
 
@@ -258,15 +252,15 @@ export class Parser {
             process.exit(1);
         } else if (expr.type === exprType.call && this.isStructure(expr.datatype)) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
-            var offset = incLocalOffset("", expr.datatype, "");
+            var variable = incLocalOffset("", expr.datatype);
             var get = new Expression().newExprGet(meta.offset,
-                new Expression().newExprIdentifier("", offset, expr.datatype),
+                new Expression().newExprIdentifier(variable),
                 meta.datatype);
             if (expr.datatype.size > 8) {
-                var vardecl = Statement.anonLargeReturnVar(expr, offset);
+                var vardecl = Statement.anonLargeReturnVar(expr, variable);
                 return new Expression().newExprDeclAnonForGet(vardecl, get);
             }
-            var vardecl = Statement.anonSmallReturnVar(expr, offset);
+            var vardecl = Statement.anonSmallReturnVar(expr, variable);
             return new Expression().newExprDeclAnonForGet(vardecl, get);
 
         } else {
@@ -681,9 +675,9 @@ export class Parser {
         var expr = this.expression();
 
         if (expr.type === exprType.call && expr.datatype.size > 8) {
-            var offset = incLocalOffset("", expr.datatype, "")
+            var variable = incLocalOffset("", expr.datatype)
             expr.params.splice(0, 0, new Expression().newExprAddress(
-                new Expression().newExprIdentifier("", offset, expr.datatype)))
+                new Expression().newExprIdentifier(variable)))
         } else if (expr.type === exprType.string) {
 
         }
@@ -815,33 +809,33 @@ export class Parser {
         return i64;
     }
 
-    makeStringInitializerFromPtr(off: number, string: Expression): Expression[] {
-        var exprid = new Expression().newExprIdentifier(
-            "",
-            off,
-            string.datatype
-        );
-
-        var initExpr: Expression[] = [];
-        var expr = new Expression().newExprGet(
-            string.datatype.members[1].offset,
-            exprid, string.datatype.members[1].type
-        );
-        var set = new Expression().newExprSet(expr, string);
-
-        initExpr.push(set);
-
-        var expr2 = new Expression().newExprGet(
-            string.datatype.members[0].offset,
-            exprid, string.datatype.members[0].type
-        );
-        var set2 = new Expression().newExprSet(expr2,
-            new Expression().newExprNumber(string.bytes.length, false)
-        );
-        initExpr.push(set2);
-
-        return initExpr;
-    }
+    // makeStringInitializerFromPtr(off: number, string: Expression): Expression[] {
+    //     var exprid = new Expression().newExprIdentifier(
+    //         "",
+    //         off,
+    //         string.datatype
+    //     );
+// 
+    //     var initExpr: Expression[] = [];
+    //     var expr = new Expression().newExprGet(
+    //         string.datatype.members[1].offset,
+    //         exprid, string.datatype.members[1].type
+    //     );
+    //     var set = new Expression().newExprSet(expr, string);
+// 
+    //     initExpr.push(set);
+// 
+    //     var expr2 = new Expression().newExprGet(
+    //         string.datatype.members[0].offset,
+    //         exprid, string.datatype.members[0].type
+    //     );
+    //     var set2 = new Expression().newExprSet(expr2,
+    //         new Expression().newExprNumber(string.bytes.length, false)
+    //     );
+    //     initExpr.push(set2);
+// 
+    //     return initExpr;
+    // }
 
     rvalue(): Expression {
         var initializer = this.expression();
@@ -878,22 +872,22 @@ export class Parser {
         }
         type = type ?? initializer.datatype;
         //console.error(initializer);
-        var offset = incLocalOffset(name.value as string, type as Type, getPresentModule() as string);
+        var variable = incLocalOffset(name.value as string, type as Type, initializer);
 
         if (initializer.type === exprType.call && type.size > 8) {
             initializer.params.splice(0, 0, new Expression().newExprAddress(
-                new Expression().newExprIdentifier(name.value as string, offset, type)));
+                new Expression().newExprIdentifier(variable)));
         }
 
         if (initializer.datatype.kind === myType.string) {
             initializer =
                 new Expression().newExprAssign(
-                    new Expression().newExprIdentifier(name.value as string, offset, type),
+                    new Expression().newExprIdentifier(variable),
                     new Expression().newExprSlideString(initializer))
         } else if (initializer.datatype.kind === myType.array) {
             initializer =
                 new Expression().newExprAssign(
-                    new Expression().newExprIdentifier(name.value as string, offset, type),
+                    new Expression().newExprIdentifier(variable),
                     new Expression().newExprSlideArray(initializer,
                         new Expression().newExprNumber(0),
                         // len
@@ -901,12 +895,12 @@ export class Parser {
                     ))
         } else {
             initializer = new Expression().newExprAssign(
-                new Expression().newExprIdentifier(name.value as string, offset, type)
+                new Expression().newExprIdentifier(variable)
                 , initializer
             );
         }
         this.expect(tokenType.semicolon, ";");
-        return new Statement().newVarstatement(name.value as string, initializer, offset, type as Type);
+        return new Statement().newVarstatement(initializer);
     }
 
     // member

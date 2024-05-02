@@ -1,4 +1,4 @@
-import { addGlobalString, fnType } from "./main";
+import { Variable, addGlobalString, fnType } from "./main";
 import { Statement } from "./stmt";
 import { Token } from "./token";
 import { Type, f32, i32, i64, myType, str, u64, u8, voidtype } from "./type";
@@ -52,8 +52,11 @@ export class Expression {
     // number
     val: number;
 
+    //struct
+    offset:number;
+
     // var
-    offset: number;
+    num: number;
 
     // call
     params: Expression[];
@@ -85,6 +88,8 @@ export class Expression {
 
     //slice
     id:Expression
+
+    variable:Variable
 
     newExprAddressSet(left:Expression, right:Expression) {
         this.left = left;// a deref
@@ -163,12 +168,10 @@ export class Expression {
         return this;
     }
 
-    newExprIdentifier(name: string,offset:number, datatype: Type):Expression{
+    newExprIdentifier(variable:Variable):Expression{
         this.type = exprType.identifier;
-        this.datatype = datatype;
-        this.datatype.kind = datatype.kind;
-        this.offset = offset;
-        this.name = name;
+        this.variable = variable;
+        this.datatype = variable.datatype;
         return this;
     }
 

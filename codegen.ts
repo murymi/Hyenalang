@@ -2,7 +2,7 @@ import { Token, tokenType } from "./token";
 import { Expression, identifierType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
-import { fnType } from "./main";
+import { Variable, fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
 import { Type, alignTo, f32, myType, u64 } from "./type";
@@ -23,7 +23,7 @@ function getArgRegister(index: number, size: number): string {
         case 4: return dwordArgRegisters[index];
         case 8: return argRegisters[index];
         default:
-            throw new Error("inavlid size");
+            throw new Error(`inavlid size ${size}`);
     }
 }
 
@@ -323,20 +323,19 @@ function storeStruct(datatype: Type) {
 }
 
 
-function genAddress(stmt: Statement | Expression) {
-    console.log("   lea rax, [rbp-" + (stmt.datatype.size + stmt.offset) + "]");
+function genAddress(expr: Expression) {
+    console.log(`   lea rax, [rbp-${expr.variable.offset}]`)
 }
 
 function generateAddress(expr: Expression | Statement) {
     //console.error(expr.type);
     switch (expr.type /** */) {
         case exprType.identifier:
-            if (expr.is_glob) {
-                console.log("   push offset " + expr.name);
+            if (expr.variable.is_global) {
+                console.log("   push offset " + expr.variable.name);
                 pop("rax");
             } else {
-
-                genAddress(expr);
+                genAddress(expr)
             }
             break;
         case exprType.fn_identifier:
@@ -396,7 +395,7 @@ function genAssignLarge(expr: Expression) {
 }
 
 function storeSliceFromArrayWithIndex(
-    to: Expression | Statement,
+    to: Expression,
     from: Expression,
     begin: Expression,
     end: Expression,
@@ -422,7 +421,7 @@ function storeSliceFromArrayWithIndex(
 }
 
 function storeSliceFromSliceWithIndex(
-    to: Expression | Statement,
+    to: Expression,
     from: Expression,
     begin: Expression,
     end: Expression,
@@ -633,27 +632,27 @@ function generateCode(expr: Expression) {
     }
 }
 
-function genAlignedCall() {
-    console.log(".global buitin_glibc_caller")
-    console.log("buitin_glibc_caller:")
-    console.log("   push rbp");
-    console.log("   mov rbp, rsp");
-    console.log("   mov rax, rsp");
-    console.log("   and rax, 15");
-    console.log("   jnz .L.call");
-    console.log("   mov rax, 0");
-    console.log("   call r15");
-    console.log("   jmp .L.end");
-    console.log(".L.call:");
-    console.log("   sub rsp, 8");
-    console.log("   mov rax, 0");
-    console.log("   call r15");
-    console.log("   add rsp, 8");
-    console.log(".L.end:");
-    console.log("   mov rsp, rbp");
-    console.log("   pop rbp");
-    console.log("   ret")
-}
+// function genAlignedCall() {
+//     console.log(".global buitin_glibc_caller")
+//     console.log("buitin_glibc_caller:")
+//     console.log("   push rbp");
+//     console.log("   mov rbp, rsp");
+//     console.log("   mov rax, rsp");
+//     console.log("   and rax, 15");
+//     console.log("   jnz .L.call");
+//     console.log("   mov rax, 0");
+//     console.log("   call r15");
+//     console.log("   jmp .L.end");
+//     console.log(".L.call:");
+//     console.log("   sub rsp, 8");
+//     console.log("   mov rax, 0");
+//     console.log("   call r15");
+//     console.log("   add rsp, 8");
+//     console.log(".L.end:");
+//     console.log("   mov rsp, rbp");
+//     console.log("   pop rbp");
+//     console.log("   ret")
+// }
 
 function genStmt(stmt: Statement, fnid: number): void {
     switch (stmt.type) {
@@ -802,14 +801,14 @@ function genText(fns: Function[]) {
     })
 }
 
-function genGlobals(globals: { name: string, value: Expression | undefined, datatype: Type, module_name: string }[]) {
+function genGlobals(globals: Variable[]) {
     globals.forEach((g) => {
-        if (g.value) {
+        if (g.initializer) {
 
-            if (g.value.type === exprType.undefnd) return;
+            if (g.initializer.type === exprType.undefnd) return;
 
             console.log(".align " + g.datatype.align);
-            console.log(g.module_name + g.name + ":");
+            console.log(g.name + ":");
 
             // if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
             //     console.log(`   .quad ${g.datatype.members[1].type.size}`);
@@ -824,15 +823,15 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
             // }
 
             if (g.datatype.kind === myType.slice) {
-                console.log(`   .quad ${g.value.bytes.length}`)
-                console.log(`   .quad offset .L.data.strings.${g.value.label} + 8`)
+                console.log(`   .quad ${g.initializer.bytes.length}`)
+                console.log(`   .quad offset .L.data.strings.${g.initializer.label} + 8`)
                 return;
             }
 
-            if (g.value.datatype.size === 1) {
-                console.log("   .byte " + g.value.right?.val);
+            if (g.initializer.datatype.size === 1) {
+                console.log("   .byte " + g.initializer.right?.val);
             } else {
-                console.log("   ." + g.value.datatype.size + "byte " + g.value.right?.val);
+                console.log("   ." + g.initializer.datatype.size + "byte " + g.initializer.right?.val);
             }
         }
     });
@@ -841,11 +840,11 @@ function genGlobals(globals: { name: string, value: Expression | undefined, data
 
     globals.forEach((g) => {
 
-        //console.error(g);
-        if (g.value === undefined) {
+        console.error(g);
+        if (g.initializer === undefined) {
 
             console.log(".align " + g.datatype.align);
-            console.log(g.module_name + g.name + ":");
+            console.log(g.name + ":");
             console.log("   .zero " + g.datatype.size);
         }
     });
@@ -862,7 +861,7 @@ function genAnonStrings(anons: { value: Expression }[]) {
 
 export function genStart(
     globstrings: { value: string }[],
-    globals: { name: string, value: Expression | undefined, datatype: Type, module_name: string }[],
+    globals: Variable[],
     anons: { value: Expression }[],
     fns: Function[]
 ) {
@@ -870,6 +869,5 @@ export function genStart(
     genAnonStrings(anons);
     genGlobals(globals);
     genText(fns);
-    genAlignedCall();
 }
 

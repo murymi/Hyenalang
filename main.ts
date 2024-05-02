@@ -5,7 +5,7 @@ import { Statement } from "./stmt";
 import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
-import {resolve} from "path"
+import { resolve } from "path"
 import { Type, alignTo, getPresentModule, i64, searchModule, searchStruct } from "./type";
 
 export enum fnType {
@@ -18,13 +18,43 @@ var anon_count = 0;
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
 var globalstrings: { value: string }[] = [];
-var globals: { name: string, value: Expression | undefined, datatype: Type, module_name:string }[] = [];
+var globals: Variable[] = [];
 var anon_strings: { value: Expression }[] = [];
 
 export function addAnonString(val: Expression) {
     anon_strings.push({ value: val });
     return anon_strings.length - 1;
 }
+
+//             // implicit ret ptr 
+//             if (retType.size > 8) {
+//                 this.localOffset = alignTo(8, this.localOffset);
+//                 args.push({
+//                     name: "",
+//                     scope: 0,
+//                     offset: this.localOffset,
+//                     datatype: new Type().newPointer(retType),
+//                     module_name:""
+//                 });
+//                 this.localOffset += 8;
+//                 //arg_types.push({name:"", type:new Type().newPointer(retType)});
+//             }
+// 
+//             params.forEach((p) => {
+//                 this.localOffset = alignTo(p.datatype.align, this.localOffset);
+//                 var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype):p.datatype
+//                 args.push({
+//                     name: p.name,
+//                     scope: 0,
+//                     offset: this.localOffset,
+//                     datatype: arg_data_type,
+//                     module_name:getPresentModule()
+//                 });
+//                 this.localOffset += p.datatype.size;
+//                 arg_types.push({name:p.name, type:arg_data_type});
+//             })
+//             args.concat(locals);
+//             this.locals = args;
 
 
 //class Variable
@@ -34,71 +64,44 @@ export class Function {
     arity: number;
     impilicit_arity: number;
     type: fnType;
-    locals: { name: string, scope: number, datatype: Type, offset: number, module_name: string}[];
+    locals: Variable[];
     localOffset: number;
-    params: { name: string, datatype: Type }[];
     body: Statement;
-    returnType: any;
     module_name: string;
-    data_type:Type;
-    
+    data_type: Type;
 
     constructor(
         name: string,
         type: fnType,
-        params: { name: string, datatype: Type, module_name: string }[],
-        locals: { name: string, scope: number, datatype: Type, offset: number, module_name: string }[],
+        params: { name: string, datatype: Type }[],
+        locals: Variable[],
         retType: Type
     ) {
-        this.module_name = getPresentModule() as string;
-        this.localOffset = 0;
         this.name = name;
         this.type = type;
-        this.params = params;
-
         this.locals = locals;
-        var arg_types:{name:string, type:Type}[] = [];
+        var arg_types: { name: string, type: Type }[] = [];
         //console.error(locals);
-        var args: { name: string, scope: number, datatype: Type, offset: number, module_name: string }[] = [];
+        //var args: Variable[] = [];
         if (type === fnType.native) {
-            // implicit ret ptr 
-            if (retType.size > 8) {
-                this.localOffset = alignTo(8, this.localOffset);
-                args.push({
-                    name: "",
-                    scope: 0,
-                    offset: this.localOffset,
-                    datatype: new Type().newPointer(retType),
-                    module_name:""
-                });
-                this.localOffset += 8;
-                //arg_types.push({name:"", type:new Type().newPointer(retType)});
-            }
-
+            var i = 0;
             params.forEach((p) => {
-                this.localOffset = alignTo(p.datatype.align, this.localOffset);
-                var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype):p.datatype
-                args.push({
-                    name: p.name,
-                    scope: 0,
-                    offset: this.localOffset,
-                    datatype: arg_data_type,
-                    module_name:getPresentModule()
-                });
-                this.localOffset += p.datatype.size;
-                arg_types.push({name:p.name, type:arg_data_type});
+                var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype) : p.datatype
+                this.locals.splice(i, 0, new Variable().local(p.name, arg_data_type));
+                i++;
             })
-            args.concat(locals);
-            this.locals = args;
         }
+
+        if (retType.size > 8) {
+            this.locals.splice(0, 0, new Variable().local("", new Type().newPointer(retType)))
+        }
+
+        //console.error(this.locals);
 
 
         this.arity = params.length;
         this.impilicit_arity = retType.size > 8 ? params.length + 1 : params.length;
-
         this.data_type = new Type().newFunction(retType, arg_types);
-
-        this.returnType = retType;
     }
 }
 
@@ -124,20 +127,20 @@ class FnZombie {
     arity: number;
     impilicit_arity: number;
     type: fnType;
-    locals: { name: string, scope: number, datatype: Type|string, offset: number, module_name: string}[];
+    locals: { name: string, scope: number, datatype: Type | string, offset: number, module_name: string }[];
     localOffset: number;
-    params: { name: string, datatype: Type|string }[];
+    params: { name: string, datatype: Type | string }[];
     body: Statement;
-    returnType: any|string;
-    data_type:Type|string;
+    returnType: any | string;
+    data_type: Type | string;
 
 
     constructor(
         name: string,
         type: fnType,
-        params: { name: string, datatype: Type|string, module_name: string }[],
-        locals: { name: string, scope: number, datatype: Type|string, offset: number, module_name: string }[],
-        retType: Type|string
+        params: { name: string, datatype: Type | string, module_name: string }[],
+        locals: { name: string, scope: number, datatype: Type | string, offset: number, module_name: string }[],
+        retType: Type | string
     ) {
         this.name = name;
         this.type = type;
@@ -145,7 +148,7 @@ class FnZombie {
         this.locals = locals;
         this.returnType = retType;
     }
-    
+
 }
 
 // export class Enum {
@@ -160,6 +163,32 @@ class FnZombie {
 //     }
 // }
 
+export class Variable {
+    name: string;
+    scope: number;
+    offset: number;
+    datatype: Type;
+    is_global: boolean;
+    initializer?: Expression;
+
+    global(name: string, datatype: Type, initializer?: Expression) {
+        this.name = name;
+        this.initializer = initializer;
+        this.datatype = datatype
+        return this;
+    }
+
+    local(name: string, datatype: Type) {
+        this.name = name;
+        this.datatype = datatype;
+        return this;
+    }
+
+    constructor() {
+        if (currentFn === -1) this.is_global = true;
+        this.scope = scopeDepth;
+    }
+}
 
 var structs: Struct[] = [];
 
@@ -189,15 +218,17 @@ export function checkStruct(name: string) {
 }
 
 // size in 8 bytes (for now)
-export function incLocalOffset(name: string, type: Type, module_name:string): number {
+export function incLocalOffset(name: string, type: Type, initializer?: Expression): Variable {
 
-    if(name === "") {
-        name = "anon"+anon_count.toString(2);
+    if (name === "") {
+        name = "anon" + anon_count.toString(2);
         anon_count++;
     }
 
     if (currentFn === -1) {
-        return -1;
+        //return -1;
+        globals.push(new Variable().global(name, type, initializer));
+        return globals[globals.length - 1];
     }
 
     for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
@@ -206,19 +237,10 @@ export function incLocalOffset(name: string, type: Type, module_name:string): nu
         }
     }
 
-    functions[currentFn].localOffset = alignTo(type.align, functions[currentFn].localOffset);
-    var old = functions[currentFn].localOffset;
-
-    functions[currentFn].locals.push({
-        name: name,
-        scope: scopeDepth,
-        offset: functions[currentFn].localOffset,
-        datatype: type,
-        module_name: module_name
-    });
-    functions[currentFn].localOffset += type.size;// ++;
-    // return start point for var
-    return old;
+    var old = functions[currentFn].locals.length;
+    functions[currentFn].locals.push(new Variable().local(name, type));
+    console.error(functions[currentFn].locals);
+    return functions[currentFn].locals[old];
 }
 
 export function addGlobalString(value: string): number {
@@ -226,20 +248,20 @@ export function addGlobalString(value: string): number {
     return globalstrings.length - 1;
 }
 
-export function addGlobal(name: string, value: Expression | undefined, datatype: Type): void {
-    globals.push({ name: name, value: value, datatype: datatype, module_name: getPresentModule() as string });
-}
+// export function addGlobal(name: string, value: Expression | undefined, datatype: Type): void {
+//     globals.push(new );
+// }
 
 
 export function getOffsetOfMember(struct: Type, member: string) {
     for (let m of struct.members) {
         if (m.name === member) {
-            return { offset: m.offset, datatype: m.type, name:"" };
+            return { offset: m.offset, datatype: m.type, name: "" };
         }
     }
 
-    if(struct.member_fn_names.find((n)=> n === member)) {
-            return { offset: -1, datatype: i64 , name: struct.name+member }
+    if (struct.member_fn_names.find((n) => n === member)) {
+        return { offset: -1, datatype: i64, name: struct.name + member }
     }
 
     console.error("struct or union has no member named " + member);
@@ -248,40 +270,43 @@ export function getOffsetOfMember(struct: Type, member: string) {
 
 
 
-export function getLocalOffset(name: string): { offset: number, datatype: Type, glob: boolean} {
+export function getLocalOffset(name: string): { offset: number, datatype: Type, variable: Variable | undefined } {
     var fn = functions[currentFn];
+
+    // todo remove offset
 
     for (let i = fn.locals.length - 1; i >= 0; i--) {
         if (fn.locals[i].name === name && fn.locals[i].scope <= scopeDepth) {
-            var off = fn.locals[i].offset;
+            //var off = fn.locals[i].offset;
             var type = fn.locals[i].datatype;
 
-            return { offset: off, datatype: type, glob: false}
+            return { offset: i, datatype: type, variable: fn.locals[i] }
         }
     }
 
     for (let i = 0; i < globals.length; i++) {
         if (globals[i].name === name) {
-            return { offset: -2, datatype: globals[i].datatype, glob: true }
+            return { offset: -2, datatype: globals[i].datatype, variable: globals[i] }
         }
     }
 
     for (let e of enums) {
         if (e.name === name) {
-            return { offset: -3, datatype: e, glob: false}
+            return { offset: -3, datatype: e, variable: undefined }
         }
     }
 
     for (let i = functions.length - 1; i >= 0; i--) {
         if (functions[i].name === name) {
-            return { offset: -1, datatype: functions[i].data_type, glob: true}
+            return { offset: -1, datatype: functions[i].data_type, variable: undefined }
         }
     }
 
-    if(searchStruct(name)) {
-        return { offset: -4, datatype: i64, glob: false };
+    if (searchStruct(name)) {
+        return { offset: -4, datatype: i64, variable: undefined };
     }
 
+    //console.error(fn.locals);
     throw new Error(`undefined variable ${name}`);
 }
 
@@ -339,10 +364,19 @@ export function endScope() {
 
 var compiled_files: string[] = [];
 
+function offsetLocalVariables(fn: Function) {
+    fn.localOffset = 0;
+    fn.locals.forEach((p) => {
+        fn.localOffset = alignTo(p.datatype.align, fn.localOffset);
+        fn.localOffset += p.datatype.size;
+        p.offset = fn.localOffset;
+    })
+}
+
 export function compile(path: string) {
     return new Promise((resolv, reject) => {
         var abs_path = resolve(path);
-        if(compiled_files.find((p)=> p===abs_path)) {
+        if (compiled_files.find((p) => p === abs_path)) {
             resolv(true);
             return;
         }
@@ -382,6 +416,9 @@ if (process.argv.length < 3) {
                 var bitstream = createWriteStream("./tmp.s", { flags: "a" });
                 var orig = console.log;
                 console.log = (data) => { bitstream.write(`${data}\n`); }
+                functions.forEach((fn)=>{
+                    offsetLocalVariables(fn);
+                })
                 genStart(globalstrings, globals, anon_strings, functions);
                 bitstream.end();
                 console.log = orig;

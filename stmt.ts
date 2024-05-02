@@ -1,7 +1,6 @@
-import { Expression, exprType, identifierType } from "./expr";
-import { addGlobal, incLocalOffset } from "./main";
-import { Token } from "./token";
-import { Type, myType, u64, u8, voidtype } from "./type";
+import { Expression, exprType } from "./expr";
+import { Variable, incLocalOffset } from "./main";
+import { Type } from "./type";
 
 export enum stmtType {
     vardeclstmt,
@@ -52,6 +51,7 @@ export class Statement {
 
     asm_lines :string[]
 
+    variable:Variable;
     // makeStructInitializer(off: number, datatype: Type): Expression[] {
     //     var exprid = new Expression().newExprIdentifier(
     //         "",
@@ -75,44 +75,39 @@ export class Statement {
 // 
     // }
 
-    static makeSliceCopy(to: number, from: Expression): Expression[] {
-        var xpr: Expression[] = [];
-        xpr.push(
-            new Expression().newExprSet(
-                new Expression().newExprGet(
-                    0,
-                    new Expression().newExprIdentifier(
-                        "", to, from.datatype),
-                    u64
-                ),
-                new Expression().newExprGet(0, from, u64)
-            )
-        );
+    // static makeSliceCopy(to: number, from: Expression): Expression[] {
+    //     var xpr: Expression[] = [];
+    //     xpr.push(
+    //         new Expression().newExprSet(
+    //             new Expression().newExprGet(
+    //                 0,
+    //                 new Expression().newExprIdentifier(
+    //                     "", to, from.datatype),
+    //                 u64
+    //             ),
+    //             new Expression().newExprGet(0, from, u64)
+    //         )
+    //     );
+// 
+    //     xpr.push(
+    //         new Expression().newExprSet(
+    //             new Expression().newExprGet(
+    //                 8,
+    //                 new Expression().newExprIdentifier(
+    //                     "", to, from.datatype),
+    //                 new Type().newPointer(u8)
+    //             ),
+    //             new Expression().newExprGet(8, from, new Type().newPointer(u8))
+    //         )
+    //     );
+// 
+    //     return xpr;
+    // }
 
-        xpr.push(
-            new Expression().newExprSet(
-                new Expression().newExprGet(
-                    8,
-                    new Expression().newExprIdentifier(
-                        "", to, from.datatype),
-                    new Type().newPointer(u8)
-                ),
-                new Expression().newExprGet(8, from, new Type().newPointer(u8))
-            )
-        );
 
-        return xpr;
-    }
-
-
-    newVarstatement(name: string, initializer: Expression, offset: number, datatype: Type): Statement {
+    newVarstatement(initializer: Expression): Statement {
         this.initializer = initializer;
         this.type = stmtType.vardeclstmt;
-        if (offset < 0) {
-            addGlobal(name,
-                initializer,
-                datatype);
-        }
         return this;
     }
 
@@ -176,19 +171,18 @@ export class Statement {
         return this;
     }
 
-    static anonLargeReturnVar(expr:Expression, offset:number) {
-        
+    static anonLargeReturnVar(expr:Expression, variable:Variable) {
         expr.params.splice(0, 0, new Expression().newExprAddress(
-            new Expression().newExprIdentifier("", offset, expr.datatype)))
+            new Expression().newExprIdentifier(variable)))
         return new Expression().newExprAssign(
-            new Expression().newExprIdentifier("", offset, expr.datatype)
+            new Expression().newExprIdentifier(variable)
             , expr
         );
     }
 
-    static anonSmallReturnVar(expr:Expression, offset:number) {
+    static anonSmallReturnVar(expr:Expression, variable:Variable) {
         return new Expression().newExprAssign(
-            new Expression().newExprIdentifier("", offset, expr.datatype)
+            new Expression().newExprIdentifier(variable)
             , expr
         );
     }
@@ -202,8 +196,8 @@ export class Statement {
         }
 
         if(expr.datatype.size > 8 && expr.type === exprType.call) {
-            var offset = incLocalOffset("", expr.datatype,"");
-            return new Statement().newVarstatement("", Statement.anonLargeReturnVar(expr, offset), offset, expr.datatype);
+            var variable = incLocalOffset("", expr.datatype);
+            return new Statement().newVarstatement(Statement.anonLargeReturnVar(expr, variable));
         }
 
         this.expr = expr;
