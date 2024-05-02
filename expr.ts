@@ -31,7 +31,8 @@ export enum exprType {
     deref_slice_index,
     anon_string,
     decl_anon_for_get,
-    fn_identifier
+    fn_identifier,
+    tmp_identifier
 }
 
 export enum identifierType {
@@ -180,6 +181,12 @@ export class Expression {
         this.type = exprType.fn_identifier;
         this.datatype = datatype;
         this.datatype.kind = datatype.kind;
+        this.name = name;
+        return this;
+    }
+
+    newExprTemplateIdentifier(name: string):Expression{
+        this.type = exprType.tmp_identifier;
         this.name = name;
         return this;
     }

@@ -281,6 +281,7 @@ function load(datatype: Type) {
         console.error("Invalid load");
         process.exit(1);
     } else {
+        console.error(datatype);
         console.error("Invalidx load");
         process.exit(1);
     }

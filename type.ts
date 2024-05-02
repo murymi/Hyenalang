@@ -43,7 +43,8 @@ export enum myType {
     ptr,
     array,
     bool,
-    function
+    function,
+    template
 }
 
 export function alignTo(align: number, n: number): number {
@@ -94,8 +95,12 @@ export class Type {
     name:string;
     module_name:string;
     member_fn_names:string[];
-    arguments: {name:string, type:Type}[];
+    arguments: {name:string, datatype:Type}[];
     return_type:Type
+
+    place_holder:string;
+
+    arity:number;
 
     newPointer(base: Type) {
         this.base = base;
@@ -181,17 +186,23 @@ export class Type {
         return this;
     }
 
-    newFunction(return_type:Type, args_types:{name:string, type:Type}[]) {
+    newFunction(return_type:Type, args_types:{name:string, datatype:Type}[]) {
         this.size = 8;
         this.align = 8;
         this.return_type = return_type;
         this.arguments = args_types;
         this.kind = myType.function;
+        this.arity = args_types.length;
+        return this;
+    }
+
+    newTemp(place_holder:string) {
+        this.place_holder = place_holder;
+        this.kind = myType.template;
         return this;
     }
 
     constructor() {
-        this.module_name = getPresentModule() as string;
         this.member_fn_names = [];
     }
 }

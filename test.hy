@@ -1,5 +1,7 @@
 
-var a = "hello world";
+fn foo<T> (a:T) T {
+}
+
 fn main() void {
-   return a.len; 
+    foo<u8>(1);
 }
