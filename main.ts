@@ -180,6 +180,32 @@ export class Templatefn {
 
 }
 
+
+export class Templatestruct {
+    name: string;
+    place_holders:string[];
+    tokens:Token[];
+    count:number;
+
+    getCount() {
+        return this.count;
+    }
+
+    incCount() {
+        this.count++;
+    }
+
+    constructor(
+        name: string,
+        p:string[]
+    ) {
+        this.name = name;
+        this.place_holders = p;
+        this.count = 0;
+    }
+
+}
+
 // export class Enum {
 //     name: string;
 //     values: { name: string, value: number }[];
@@ -447,9 +473,10 @@ function offsetLocalVariables(fn: Function) {
         fn.localOffset = alignTo(p.datatype.align, fn.localOffset);
         fn.localOffset += p.datatype.size;
         p.offset = fn.localOffset;
+        p.is_global = false;
     })
 
-    console.error(fn.locals);
+    //console.error(fn.locals[0].datatype);
 }
 
 export function compile(path: string) {

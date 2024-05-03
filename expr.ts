@@ -172,7 +172,9 @@ export class Expression {
     newExprIdentifier(variable:Variable):Expression{
         this.type = exprType.identifier;
         this.variable = variable;
-        this.datatype = variable.datatype;
+        if(variable) {
+            this.datatype = variable.datatype;
+        }
         return this;
     }
 
@@ -272,11 +274,7 @@ export class Expression {
         this.left = begin;
         this.right = end;
         this.id = expr;
-        this.datatype = new Type().newStruct("slice", [
-            { name: "len", datatype: u64, default: undefined },
-            { name: "ptr", datatype: new Type().newPointer(expr.datatype.base), default: undefined }
-        ])
-        this.datatype.kind = myType.slice;
+        this.datatype = new Type().newSlice(expr.datatype.base);
         return this;
     }
 
@@ -285,12 +283,7 @@ export class Expression {
         this.left = begin;
         this.right = end;
         this.id = expr;
-        this.datatype = new Type().newStruct("slice",[
-            { name: "len", datatype: u64, default: undefined },
-            { name: "ptr", datatype: new Type().newPointer(expr.datatype.base), default: undefined }
-        ])
-        //console.log(expr.datatype);
-        this.datatype.base = new Type().newPointer(expr.datatype.members[1].type.base);
+        this.datatype = new Type().newSlice(expr.datatype.base);
         this.datatype.kind = myType.slice;
         return this;
     }

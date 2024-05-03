@@ -1,4 +1,4 @@
-fn write(data:&u8) void {
+fn write(data:str) void {
     asm {
         "mov rsi, [rdi+8]"
         "mov rdx, [rdi +0]"

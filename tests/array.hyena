@@ -1,4 +1,4 @@
-fn write(data:&u8) void {
+fn write(data:str) void {
     asm {
         "mov rsi, [rdi+8]"
         "mov rdx, [rdi +0]"
@@ -19,14 +19,20 @@ fn test_eq(a:u64, b:u64) void {
 }
 
 fn main() void {
-    var a:[5]u8 = undefined;
+    var a:[10]u8 = undefined;
+    a[0] = 'a';
+    a[1] = 'b';
+    a[2] = 'c';
+    a[3] = 'd';
+    a[4] = 'e';
+
+    test_eq(a.len, 10);
+    test_eq(a[0], 'a');
+    test_eq(a[4], 'e');
+
     var b = a[0:5];
 
-    b[0] = 'j';
+    test_eq(b.len, 5);
 
-    var k = 1;
-
-    var c = b[0:k];
-
-    write(c);
+    write(b);
 }

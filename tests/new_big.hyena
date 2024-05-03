@@ -1,0 +1,53 @@
+struct Bar {
+    a:u64,
+    b:u64
+}
+
+impl Bar {
+    new(a:u8, b:u8) Bar {
+        var tmp:Bar = undefined;
+        tmp.a = a;
+        tmp.b = b;
+        return tmp;
+    }
+}
+
+fn write(data:str) void {
+    asm {
+        "mov rsi, [rdi+8]"
+        "mov rdx, [rdi +0]"
+        "mov rdi, 1"
+        "mov rax, 1"
+        "syscall"
+    }
+}
+
+
+fn test_eq(a:u64, b:u64) void {
+    if(a == b) {
+        write("ok\n");
+        return;
+    }
+
+    write("fail\n");
+}
+
+fn main() void {
+    var a:[10]Bar = undefined;
+
+    var j:Bar = Bar::new(1,3);
+    var k:Bar = Bar::new(2,4);
+    var l:Bar = Bar::new(4,5);
+
+    a[0] = j;
+    a[1] = k;
+    a[2] = l;
+
+    test_eq(j.a, 1);
+    test_eq(k.a, 2);
+    test_eq(l.a, 4);
+
+    test_eq(j.b, 3);
+    test_eq(k.b, 4);
+    test_eq(l.b, 5);
+}

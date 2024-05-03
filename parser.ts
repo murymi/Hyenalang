@@ -152,6 +152,7 @@ export class Parser {
             if (obj.offset === -7) {
                 return await this.createFunction(id);
             }
+            //console.error(this.peek())
             var expr = new Expression().newExprIdentifier( obj.variable as Variable);
             return expr;
         }
@@ -248,8 +249,9 @@ export class Parser {
                     if (arg.type === exprType.call && arg.datatype.kind === myType.struct) {
                         args.push(this.makeAnonArg(arg));
                     } else {
-                        console.error(arg);
-                        throw new error("Large arg detected");
+                        args.push(new Expression().newExprAddress(arg))
+                        //console.error(arg);
+                        //throw new error("Large arg detected");
                     }
                 } else {
                     args.push(arg);
@@ -449,10 +451,10 @@ export class Parser {
         return new Expression();
     }
 
-    parseMemberFunction(expr: Expression): Expression {
-        var struc = searchStruct(expr.name);
+    parseMemberFunction(name: Token): Expression {
+        var struc = searchStruct(name.value as string);
         if (struc === undefined) {
-            this.tokenError("No such struct", this.previous());
+            this.tokenError("No such struct",name );
         }
         var fnname = this.expect(tokenType.identifier, "Expect fn name").value as string;
 
@@ -472,6 +474,7 @@ export class Parser {
     // postfix
     async call(): Promise<Expression> {
         var expr = await this.primary(); // identifier
+        var name = this.previous();
         while (true) {
             if (this.match([tokenType.leftparen])) {
                 expr = await this.finishCall(expr);
@@ -480,7 +483,7 @@ export class Parser {
             } else if (this.match([tokenType.leftsquare])) {
                 expr = await this.index(expr);
             } else if (this.match([tokenType.doublecolon])) {
-                expr = this.parseMemberFunction(expr);
+                expr = this.parseMemberFunction(name);
             } else {
                 break;
             }
@@ -819,17 +822,16 @@ export class Parser {
 
     parseType(is_template:boolean, holders?:string[]): Type {
         if (this.match([tokenType.leftsquare])) {
-            var len = this.expect(tokenType.number, "Expect size of array");
+            var len = this.expect(tokenType.number, "Expect size of array").value;
             this.expect(tokenType.rightsquare, "] expected");
             var base = this.parseType(is_template, holders);
-            var holder = new Type().newStruct("array", [
-                { name: "len", datatype: u64, default: new Expression().newExprNumber(len.value as number, false) },
-            ])
-            holder.size = len.value as number + 8;
-            holder.kind = myType.array;
-            holder.base = base;
-            return holder;
+            return new Type().newArray(base, len as number);
         }
+
+        if(this.match([tokenType.bitand])) {
+            return new Type().newSlice(this.parseType(is_template, holders));
+        }
+
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
             return new Type().newPointer(this.parseType(is_template, holders));

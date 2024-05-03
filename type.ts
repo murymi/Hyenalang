@@ -111,11 +111,27 @@ export class Type {
     }
 
     newArray(base: Type, len: number) {
+        this.members = [];
+        this.members.push(
+            { name: "len", offset:0, type: u64, default: new Expression().newExprNumber(len, false) }
+        )
         this.kind = myType.array;
         this.arrayLen = len;
         this.base = base;
-        this.size = base.size * len;
+        this.size = base.size * len + 8;
         this.align = base.align;
+        return this;
+    }
+
+    newSlice(base:Type):Type {
+        this.members =  [
+            { name: "len", offset:0, type: u64, default: undefined },
+            { name: "ptr", offset:8, type: new Type().newPointer(base), default: undefined }
+        ]
+        this.kind = myType.slice;
+        this.size = 16;
+        this.align = 16;
+        this.base = base;
         return this;
     }
 
