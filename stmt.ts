@@ -1,6 +1,6 @@
 import { Expression, exprType } from "./expr";
 import { Variable, incLocalOffset } from "./main";
-import { Type } from "./type";
+import { Type, u64 } from "./type";
 
 export enum stmtType {
     vardeclstmt,
@@ -165,11 +165,11 @@ export class Statement {
         return this;
     }
 
-    newPrintStatement(expr: Expression): Statement {
-        this.expr = expr;
-        this.type = stmtType.print;
-        return this;
-    }
+    //newPrintStatement(expr: Expression): Statement {
+    //    this.expr = expr;
+    //    this.type = stmtType.print;
+    //    return this;
+    //}
 
     static anonLargeReturnVar(expr:Expression, variable:Variable) {
         expr.params.splice(0, 0, new Expression().newExprAddress(
@@ -204,15 +204,17 @@ export class Statement {
         return this;
     }
 
-    newVarAccessStatement(offset: number): Statement {
-        this.offset = offset;
-        this.type = stmtType.varAccess;
-        return this;
-    }
+    // newVarAccessStatement(offset: number): Statement {
+    //     this.offset = offset;
+    //     this.type = stmtType.varAccess;
+    //     this.datatype = u64;
+    //     return this;
+    // }
 
     newAsmStatement(lines: string[]){
         this.type = stmtType.inline_asm;
         this.asm_lines = lines;
+        this.datatype = u64;
         return this;
     }
 

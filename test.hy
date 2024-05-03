@@ -19,7 +19,5 @@ fn test_eq(a:u64, b:u64) void {
 }
 
 fn main() void {
-    var a = if (false) 1 else 4;
-
-    return a;
+    test_eq("kwenda huko\n".len, 12);
 }

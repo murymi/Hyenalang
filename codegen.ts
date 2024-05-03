@@ -724,6 +724,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 console.log("   lea rcx, [rax + 8]");
                 console.log("   mov [rdi+8], rcx");
                 console.log("   mov rax, [rbp-8]");
+                console.log(`   jmp .L.endfn.${fnid}`);
                 return;
             }
 
@@ -760,17 +761,19 @@ function genGlobalStrings(globs: { value: string }[]): number {
     globs.forEach((glob, i) => {
         //console.log(".align 1");
         console.log(`.align 8`);
-        console.log(".L.data.strings." + i + ":");
+        console.log(".L.data.bytes." + i + ":");
         console.log(`   .quad ${glob.value.length}`);
         for (let i = 0; i < glob.value.length; i++) {
             console.log(`   .byte 0x${glob.value.charCodeAt(i).toString(16)} `);
         }
         console.log("   .byte " + 0);
         loffset = i;
-        // console.log(`.align 8`);
-        // console.log(`.L.data.strings.${i}:`);
-        // console.log(`   .quad ${glob.value.length}`);
-        // console.log(`   .quad .L.data.${i}`);
+        console.log(`.align 8`);
+        console.log(`.L.data.strings.${i}:`);
+        console.log(`   .quad ${glob.value.length}`);
+        //console.log(`   .quad .L.data.${i}`);
+        console.log(`   .quad offset .L.data.bytes.${i} + 8`)
+
     })
 
     return loffset + 1;

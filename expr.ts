@@ -101,7 +101,7 @@ export class Expression {
         this.right = right;
         this.type = exprType.if_expr;
         this.datatype = left.datatype;
-        return this;
+        return this
     }
 
     newExprAddressSet(left:Expression, right:Expression) {
@@ -253,9 +253,7 @@ export class Expression {
         this.label = label;
         this.bytes = strng;
         this.type = exprType.string;
-        this.datatype = new Type();
-        this.datatype.kind = myType.string;
-        this.datatype.size = strng.length+8;
+        this.datatype = new Type().newSlice(u8);
         return this;
     }
 

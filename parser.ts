@@ -75,58 +75,58 @@ export class Parser {
         process.exit();
     }
 
-    getTempPos(templates:string[], char:string):number{
+    getTempPos(templates: string[], char: string): number {
         let j = 0;
-        for(let i of templates){
-            if(i === char) return j;
+        for (let i of templates) {
+            if (i === char) return j;
             j++;
         }
         return -20;
     }
 
-    replaceTokens(tokens:Token[],old:string, nu:string) {
-        tokens.forEach((tok)=>{
-            if(tok.value === old) {
+    replaceTokens(tokens: Token[], old: string, nu: string) {
+        tokens.forEach((tok) => {
+            if (tok.value === old) {
                 tok.value = nu;
             }
         })
     }
 
-    cloneTokens(tokens:Token[]) {
-        var toks:Token[] =[];
-        for(let i of tokens) {
+    cloneTokens(tokens: Token[]) {
+        var toks: Token[] = [];
+        for (let i of tokens) {
             toks.push(i.clone());
         }
         //console.error(toks);
         return toks;
     }
 
-    async createFunction(name:string):Promise<Expression> {
+    async createFunction(name: string): Promise<Expression> {
         var template = getTemplate(name);
         //console.error(template);
         //console.log(this.peek().type === tokenType.less);
         this.expect(tokenType.less, "Expect type args ");
         //console.error("=========================");
-        var types:Type[] = [];
-        while(true) {
+        var types: Type[] = [];
+        while (true) {
             //var T = this.expect(tokenType.identifier, "Expect type arg").value as string;
             types.push(this.parseType(false));
-            if(!this.check(tokenType.comma)) break;
+            if (!this.check(tokenType.comma)) break;
             this.advance();
         }
 
         this.expect(tokenType.greater, "Expect > after type args");
         //console.error(types);
-        if(types.length !== template.place_holders.length) {
+        if (types.length !== template.place_holders.length) {
             this.tokenError(`${template.name} expects ${template.place_holders.length} types args.`, this.peek())
         }
 
-        var tokens:Token[] = this.cloneTokens(template.tokens);
-        var fakename ="test_template"+template.getCount();
-        tokens.splice(0, 0, new Token(tokenType.identifier,fakename , 0, 0, ""));
-        
+        var tokens: Token[] = this.cloneTokens(template.tokens);
+        var fakename = "test_template" + template.getCount();
+        tokens.splice(0, 0, new Token(tokenType.identifier, fakename, 0, 0, ""));
+
         //this.replaceTokens(tokens, template.place_holders);
-        
+
         template.place_holders.forEach((ph, i) => {
             this.replaceTokens(tokens, ph, types[i].toString())
         })
@@ -153,7 +153,7 @@ export class Parser {
                 return await this.createFunction(id);
             }
             //console.error(this.peek())
-            var expr = new Expression().newExprIdentifier( obj.variable as Variable);
+            var expr = new Expression().newExprIdentifier(obj.variable as Variable);
             return expr;
         }
 
@@ -243,10 +243,8 @@ export class Parser {
         if (!this.check(tokenType.rightparen)) {
             do {
                 var arg = await this.expression();
-                if (arg.type === exprType.string) {
-                    args.push(new Expression().newExprAnonString(addAnonString(arg)))
-                } else if (arg.datatype.size > 8) {
-                    if (arg.type === exprType.call && arg.datatype.kind === myType.struct) {
+                if (arg.datatype.size > 8) {
+                    if (arg.type === exprType.call && arg.datatype.size > 8) {
                         args.push(this.makeAnonArg(arg));
                     } else {
                         args.push(new Expression().newExprAddress(arg))
@@ -454,7 +452,7 @@ export class Parser {
     parseMemberFunction(name: Token): Expression {
         var struc = searchStruct(name.value as string);
         if (struc === undefined) {
-            this.tokenError("No such struct",name );
+            this.tokenError("No such struct", name);
         }
         var fnname = this.expect(tokenType.identifier, "Expect fn name").value as string;
 
@@ -653,9 +651,9 @@ export class Parser {
         }
     }
 
-    async ternary():Promise<Expression> {
+    async ternary(): Promise<Expression> {
         //var expr = await this.logicalOr();
-        if(this.match([tokenType.if])) {
+        if (this.match([tokenType.if])) {
             this.expect(tokenType.leftparen, "Expect (");
             var cond = await this.expression();
             this.expect(tokenType.rightparen, "Expect )");
@@ -780,6 +778,19 @@ export class Parser {
         return new Statement().newReturnStatement(expr);
     }
 
+    async ifStatement(): Promise<Statement> {
+        this.expect(tokenType.leftparen, "( after if");
+        var cond = await this.expression();
+        this.expect(tokenType.rightparen, ") after condition");
+        var then = await this.statement();
+        var else_: Statement | undefined = undefined;
+        if (this.match([tokenType.else])) {
+            else_ = await this.statement();
+        }
+
+        return new Statement().newIfStatement(cond, then, else_);
+    }
+
     async statement(): Promise<Statement> {
 
         if (this.match([tokenType.contineu])) {
@@ -801,16 +812,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.if])) {
-            this.expect(tokenType.leftparen, "( after if");
-            var cond = await this.expression();
-            this.expect(tokenType.rightparen, ") after condition");
-            var then = await this.statement();
-            var else_: Statement | undefined = undefined;
-            if (this.match([tokenType.else])) {
-                else_ = await this.statement();
-            }
-
-            return new Statement().newIfStatement(cond, then, else_);
+            return await this.ifStatement();
         }
 
         if (this.match([tokenType.while])) {
@@ -835,7 +837,7 @@ export class Parser {
         return this.ExprStatement();
     }
 
-    parseType(is_template:boolean, holders?:string[]): Type {
+    parseType(is_template: boolean, holders?: string[]): Type {
         if (this.match([tokenType.leftsquare])) {
             var len = this.expect(tokenType.number, "Expect size of array").value;
             this.expect(tokenType.rightsquare, "] expected");
@@ -843,7 +845,7 @@ export class Parser {
             return new Type().newArray(base, len as number);
         }
 
-        if(this.match([tokenType.bitand])) {
+        if (this.match([tokenType.bitand])) {
             return new Type().newSlice(this.parseType(is_template, holders));
         }
 
@@ -892,11 +894,11 @@ export class Parser {
                 if (en) {
                     return en;
                 }
-                if(is_template) {
-                    if(holders?.find((h)=>h === tok.value)) return new Type().newTemp(tok.value as string);
+                if (is_template) {
+                    if (holders?.find((h) => h === tok.value)) return new Type().newTemp(tok.value as string);
                 }
                 var tbn = Type.getTypeByName(tok.value as string)
-                if(tbn) {
+                if (tbn) {
                     return tbn;
                 }
                 this.tokenError("Undefined Type", tok);
@@ -915,16 +917,16 @@ export class Parser {
     //         off,
     //         string.datatype
     //     );
-// 
+    // 
     //     var initExpr: Expression[] = [];
     //     var expr = new Expression().newExprGet(
     //         string.datatype.members[1].offset,
     //         exprid, string.datatype.members[1].type
     //     );
     //     var set = new Expression().newExprSet(expr, string);
-// 
+    // 
     //     initExpr.push(set);
-// 
+    // 
     //     var expr2 = new Expression().newExprGet(
     //         string.datatype.members[0].offset,
     //         exprid, string.datatype.members[0].type
@@ -933,7 +935,7 @@ export class Parser {
     //         new Expression().newExprNumber(string.bytes.length, false)
     //     );
     //     initExpr.push(set2);
-// 
+    // 
     //     return initExpr;
     // }
 
@@ -942,7 +944,7 @@ export class Parser {
         return initializer;
     }
 
-    async varDeclaration(is_template:boolean, holders?:string[]): Promise<Statement> {
+    async varDeclaration(is_template: boolean, holders?: string[]): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression;
         var type: Type | undefined = undefined;
@@ -1025,13 +1027,13 @@ export class Parser {
         this.expect(tokenType.rightparen, ") after params");
         var type = this.parseType(false);
         this.expect(tokenType.semicolon, ";");
-        pushFunction(name.value as string, params, fnType.extern,type);
+        pushFunction(name.value as string, params, fnType.extern, type);
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    copyTokens(start:number, end:number) {
-        var toks:Token[] =[];
-        for(let i = start; i <= end; i++) {
+    copyTokens(start: number, end: number) {
+        var toks: Token[] = [];
+        for (let i = start; i <= end; i++) {
             toks.push(this.tokens[i]);
         }
         //console.error(toks);
@@ -1044,12 +1046,12 @@ export class Parser {
         if (name_space) name = name_space + name;
 
         var is_template = false;
-        var holders:string[] = [];
-        if(this.match([tokenType.less])) {
+        var holders: string[] = [];
+        if (this.match([tokenType.less])) {
             is_template = true;
-            while(true) {
+            while (true) {
                 holders.push(this.expect(tokenType.identifier, "Expect type arg").value as string);
-                if(!this.check(tokenType.comma)) break;
+                if (!this.check(tokenType.comma)) break;
                 this.advance();
             }
             this.expect(tokenType.greater, "Expect closing >");
@@ -1074,8 +1076,8 @@ export class Parser {
         var type = this.parseType(is_template, holders);
         this.expect(tokenType.leftbrace, "function body");
 
-        var currFn = is_template ? pushTemplatefn(name, params,type, holders):pushFunction(name as string, params, fnType.native,type);
-        is_template? setCurrentTemplate(currFn):setCurrentFuction(currFn);
+        var currFn = is_template ? pushTemplatefn(name, params, type, holders) : pushFunction(name as string, params, fnType.native, type);
+        is_template ? setCurrentTemplate(currFn) : setCurrentFuction(currFn);
         var body = await this.block();
         var last_tok_index = this.previous().index;
 
