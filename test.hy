@@ -19,14 +19,7 @@ fn test_eq(a:u64, b:u64) void {
 }
 
 fn main() void {
-    var a:[5]u8 = undefined;
-    var b = a[0:5];
+    var a = if (false) 1 else 4;
 
-    b[0] = 'j';
-
-    var k = 1;
-
-    var c = b[0:k];
-
-    write(c);
+    return a;
 }

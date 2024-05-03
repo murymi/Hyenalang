@@ -627,6 +627,18 @@ function generateCode(expr: Expression) {
         case exprType.fn_identifier:
             console.log(`   lea rax, [${expr.name}]`);
             break;
+        case exprType.if_expr:
+            var label = incLabel();
+            generateCode(expr.cond);
+            console.log("cmp rax, 0");
+            console.log(`jz .L.else.${label}`);
+            console.log(`.L.if.${label}:`);
+            generateCode(expr.left as Expression);
+            console.log(`jmp .L.endif.${label}`);
+            console.log(`.L.else.${label}:`);
+            generateCode(expr.right as Expression);
+            console.log(`.L.endif.${label}:`);
+            break;
         default:
             console.error(expr);
             throw new Error("Unexpected expression");

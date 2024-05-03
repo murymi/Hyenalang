@@ -653,8 +653,23 @@ export class Parser {
         }
     }
 
+    async ternary():Promise<Expression> {
+        //var expr = await this.logicalOr();
+        if(this.match([tokenType.if])) {
+            this.expect(tokenType.leftparen, "Expect (");
+            var cond = await this.expression();
+            this.expect(tokenType.rightparen, "Expect )");
+            var if_expr = await this.expression();
+            this.expect(tokenType.else, "Expect else ");
+            var else_expr = await this.expression();
+            return new Expression().newIfExpr(cond, if_expr, else_expr)
+        }
+
+        return this.logicalOr();
+    }
+
     async assign(): Promise<Expression> {
-        var expr = await this.logicalOr();
+        var expr = await this.ternary();
         // identifier 
         // a.c.foo -> get
         //  a[0] -> deref

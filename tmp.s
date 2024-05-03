@@ -92,75 +92,23 @@ test_eq:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 64
-   lea rax, [rbp-13]
+   sub rsp, 8
+   lea rax, [rbp-4]
    push rax
-   mov rax, 5
-   pop rdi
-   mov [rdi], rax
    mov rax, 0
-mov rdx, rax
-   push rax
-   mov rax, 5
-   pop rdi
-   sub rax, rdi
-mov rcx, rax
-   lea rax, [rbp-32]
-mov [rax], rcx
-add rax, 8
-   push rax
-   lea rax, [rbp-13]
-add rax, 8
-imul rdx, 1
-add rax, rdx
-   pop rdi
-mov [rdi], rax
-   mov rax, 0
-   push rax
+cmp rax, 0
+jz .L.else.4
+.L.if.4:
    mov rax, 1
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-32]
-   add rax, 8
-   mov rax, [rax]
-   pop rdi
-   add rax, rdi
-   push rax
-   mov rax, 106
-   pop rdi
-   mov [rdi], al
-   lea rax, [rbp-36]
-   push rax
-   mov rax, 1
+jmp .L.endif.4
+.L.else.4:
+   mov rax, 4
+.L.endif.4:
    pop rdi
    mov [rdi], eax
-   mov rax, 0
-mov rdx, rax
-   push rax
-   lea rax, [rbp-36]
+   lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
-   pop rdi
-   sub rax, rdi
-mov rcx, rax
-   lea rax, [rbp-64]
-mov [rax], rcx
-add rax, 8
-   push rax
-   lea rax, [rbp-32]
-add rax, 8
-mov rax, [rax]
-imul rdx, 1
-add rax, rdx
-   pop rdi
-mov [rdi], rax
-   lea rax, [write]
-   push rax
-   lea rax, [rbp-64]
-   push rax
-   pop rdi
-   pop rax
-   call rax
+   jmp .L.endfn.3
    xor rax, rax
 .L.endfn.3:
    mov rsp, rbp

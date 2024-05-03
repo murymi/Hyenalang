@@ -32,7 +32,8 @@ export enum exprType {
     anon_string,
     decl_anon_for_get,
     fn_identifier,
-    tmp_identifier
+    tmp_identifier,
+    if_expr
 }
 
 export enum identifierType {
@@ -91,6 +92,17 @@ export class Expression {
     id:Expression
 
     variable:Variable
+
+    cond:Expression;
+
+    newIfExpr(cond:Expression, left:Expression, right:Expression){
+        this.cond = cond;
+        this.left = left;
+        this.right = right;
+        this.type = exprType.if_expr;
+        this.datatype = left.datatype;
+        return this;
+    }
 
     newExprAddressSet(left:Expression, right:Expression) {
         this.left = left;// a deref
