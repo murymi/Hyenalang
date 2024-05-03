@@ -656,6 +656,7 @@ function generateCode(expr: Expression) {
 // }
 
 function genStmt(stmt: Statement, fnid: number): void {
+    //console.error(stmt);
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
@@ -772,7 +773,7 @@ function genArgs(
         // if(i < params.length - arity) {
         //     console.log(`   mov ${getArgRegister(i, p.datatype.size)}, [${getArgRegister(i, p.datatype.size)}]`)
         // }
-        console.log(`   mov [rbp-${p.offset + p.datatype.size}], ${getArgRegister(i, p.datatype.size)}`);
+        console.log(`   mov [rbp-${p.offset}], ${getArgRegister(i, p.datatype.size)}`);
         i++;
     }
 }

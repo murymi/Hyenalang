@@ -202,6 +202,72 @@ export class Type {
         return this;
     }
 
+    toString() {
+        switch(this.kind) {
+            case myType.void:
+                return "void";
+            case myType.i8:
+                return "i8";
+            case myType.i16:
+                return "i16";
+            case myType.i32:
+                return "i32";
+            case myType.i64:
+                return "i64";
+            case myType.u8:
+                return "u8";
+            case myType.u16:
+                return "u16";
+            case myType.u32:
+                return "u32";
+            case myType.u64:
+                return "u64";
+            case myType.bool:
+                return "bool";
+            case myType.enum:
+            case myType.struct:
+                return this.name;
+            case myType.ptr:
+                return "*"+this.base.toString();
+            case myType.array:
+                return `[${this.arrayLen}]`+this.base.toString();
+            default:
+                throw new Error("Unhandled type");
+        }
+    }
+
+    static getTypeByName(name:string):Type|undefined {
+        switch(name) {
+            case "void":
+                return voidtype;
+            case "i8":
+                return i8;
+            case "i16":
+                return i16;
+            case "i32":
+                return i32;
+            case "i64":
+                return i64;
+            case "u8":
+                return u8;
+            case "u16":
+                return u16;
+            case "u32":
+                return u32;
+            case "u64":
+                return u64;
+            case "bool":
+                return bool;
+            case "f32":
+                return f32;
+            case "str":
+                return str;
+            default:
+                return undefined;
+                //throw new Error("Unhandled type");
+        }
+    }
+
     constructor() {
         this.member_fn_names = [];
     }

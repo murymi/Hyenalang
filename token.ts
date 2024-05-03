@@ -114,14 +114,19 @@ export class Token {
     col: number;
     isfloat: boolean;
     file_name: string;
+    index: number;
 
+    clone() {
+        return new Token(this.type, this.value, this.line,this.col, this.file_name, this.index, this.isfloat);
+    }
 
-    constructor(type: tokenType, value: string | number, line: number, col: number,file:string, isfloat?: boolean) {
+    constructor(type: tokenType, value: string | number, line: number, col: number,file:string,index:number = -1, isfloat?: boolean) {
         this.type = type;
         this.value = value;
         this.col = col;
         this.line = line;
         this.file_name = file;
+        this.index = index;
 
         if (isfloat) {
             this.isfloat = isfloat;
@@ -208,7 +213,7 @@ export class Lexer {
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col,this.file_name, isfloat));
+        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col,this.file_name,this.tokens.length, isfloat));
     }
 
     getEscape() {
@@ -238,7 +243,7 @@ export class Lexer {
             this.advance();
         }
         this.expect('"');
-        return new Token(tokenType.string, value, this.line, this.col,this.file_name, true);
+        return new Token(tokenType.string, value, this.line, this.col,this.file_name,this.tokens.length, true);
     }
 
     initTokenMap() {
@@ -292,10 +297,10 @@ export class Lexer {
         var str = this.text.substring(start, this.current);
         var type = this.tokenMap[str];
         if (type) {
-            return new Token(type, str, this.line, this.col, this.file_name);
+            return new Token(type, str, this.line, this.col, this.file_name, this.tokens.length);
         }
 
-        return new Token(tokenType.identifier, str, this.line, this.col, this.file_name);
+        return new Token(tokenType.identifier, str, this.line, this.col, this.file_name, this.tokens.length);
     }
 
     tokenError(message: string): void {
@@ -313,7 +318,7 @@ export class Lexer {
     }
 
     push(T: tokenType, val: string | number) {
-        this.tokens.push(new Token(T, val, this.line, this.col, this.file_name));
+        this.tokens.push(new Token(T, val, this.line, this.col, this.file_name, this.tokens.length));
         this.advance();
     }
 
@@ -340,7 +345,7 @@ export class Lexer {
             }
 
             if (char === "eof") {
-                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col,this.file_name));
+                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col,this.file_name, this.tokens.length));
                 break;
             }
 

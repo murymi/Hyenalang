@@ -1,4 +1,4 @@
-import { Token, colors } from "./token";
+import { Lexer, Token, colors } from "./token";
 import { tokenType } from "./token";
 import { Expression } from "./expr";
 import { exprType } from "./expr";
@@ -15,6 +15,7 @@ import {
     endScope,
     fnType,
     getEnum,
+    getFn,
     getLocalOffset,
     getOffsetOfMember,
     getTemplate,
@@ -25,6 +26,7 @@ import {
     pushStruct,
     pushTemplatefn,
     resetCurrentFunction,
+    restoreFn,
     setCurrentFuction,
     setCurrentTemplate
 } from "./main";
@@ -82,7 +84,24 @@ export class Parser {
         return -20;
     }
 
-    createFunction(name:string):Expression {
+    replaceTokens(tokens:Token[],old:string, nu:string) {
+        tokens.forEach((tok)=>{
+            if(tok.value === old) {
+                tok.value = nu;
+            }
+        })
+    }
+
+    cloneTokens(tokens:Token[]) {
+        var toks:Token[] =[];
+        for(let i of tokens) {
+            toks.push(i.clone());
+        }
+        //console.error(toks);
+        return toks;
+    }
+
+    async createFunction(name:string):Promise<Expression> {
         var template = getTemplate(name);
         //console.error(template);
         //console.log(this.peek().type === tokenType.less);
@@ -95,36 +114,31 @@ export class Parser {
             if(!this.check(tokenType.comma)) break;
             this.advance();
         }
+
+        this.expect(tokenType.greater, "Expect > after type args");
         //console.error(types);
         if(types.length !== template.place_holders.length) {
             this.tokenError(`${template.name} expects ${template.place_holders.length} types args.`, this.peek())
         }
-        var params:{name:string, datatype:Type}[] = [];
-        var return_type:Type = template.return_type;
-        if(template.return_type.kind === myType.template) {
-            return_type = types[this.getTempPos(template.place_holders, template.return_type.place_holder)];
-            //console.error(return_type);
-        }
 
-        // if(return_type.size > 8) {
-        //     params.push({name:"", datatype: new Type().newPointer(return_type)});
-        // }
-
-        template.locals.forEach((local)=>{
-            params.push({name:local.name, datatype:types[this.getTempPos(template.place_holders, template.return_type.place_holder)]})
+        var tokens:Token[] = this.cloneTokens(template.tokens);
+        var fakename ="test_template"+template.getCount();
+        tokens.splice(0, 0, new Token(tokenType.identifier,fakename , 0, 0, ""));
+        
+        //this.replaceTokens(tokens, template.place_holders);
+        
+        template.place_holders.forEach((ph, i) => {
+            this.replaceTokens(tokens, ph, types[i].toString())
         })
-
-        var fn = new Function("test_template", fnType.native, params, [], return_type);
-        fn.body = template.body;
-        fn.arity = template.arity;
-        //console.error(template.arity);
-        addGenericFunction(fn);
-        //var fn = new Function("temp_test", fnType.native, )
-        this.expect(tokenType.greater, "Expect closing > after type args");
-        return new Expression().newExprFnIdentifier("test_template", fn.data_type);
+        var curr_fn = getcurrFn();
+        await new Parser(tokens).nativeFuncDeclaration();
+        var obj = getFn(fakename);
+        restoreFn(curr_fn);
+        template.incCount();
+        return new Expression().newExprFnIdentifier(obj.name, obj.data_type);
     }
 
-    primary(): Expression {
+    async primary(): Promise<Expression> {
         if (this.match([tokenType.identifier])) {
             var id = this.previous().value as string;
             var obj = getLocalOffset(id);
@@ -136,7 +150,7 @@ export class Parser {
             }
 
             if (obj.offset === -7) {
-                return this.createFunction(id)
+                return await this.createFunction(id);
             }
             var expr = new Expression().newExprIdentifier( obj.variable as Variable);
             return expr;
@@ -160,7 +174,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.leftparen])) {
-            var expr = this.expression();
+            var expr = await this.expression();
             this.expect(tokenType.rightparen, ")");
             return new Expression().newExprGrouping(expr);
         }
@@ -174,7 +188,7 @@ export class Parser {
                     this.expect(tokenType.leftparen, "expect ( ");
                     var size = 0;
                     if (this.check(tokenType.identifier) || this.check(tokenType.number)) {
-                        size = what.value === "sizeof" ? this.expression().datatype.size : this.expression().datatype.align;
+                        size = what.value === "sizeof" ? (await this.expression()).datatype.size : (await this.expression()).datatype.align;
                     } else {
                         size = what.value === "sizeof" ? this.parseType(false).size : this.parseType(false).align
                     }
@@ -219,7 +233,7 @@ export class Parser {
         return new Expression().newExprDeclAnonForGet(vardecl, get)
     }
 
-    finishCall(callee: Expression, optional?: Expression): Expression {
+    async finishCall(callee: Expression, optional?: Expression): Promise<Expression> {
 
         if (callee.datatype.kind !== myType.function) {
             this.tokenError("Not a function", this.previous());
@@ -227,7 +241,7 @@ export class Parser {
         var args: Expression[] = [];
         if (!this.check(tokenType.rightparen)) {
             do {
-                var arg = this.expression();
+                var arg = await this.expression();
                 if (arg.type === exprType.string) {
                     args.push(new Expression().newExprAnonString(addAnonString(arg)))
                 } else if (arg.datatype.size > 8) {
@@ -262,7 +276,7 @@ export class Parser {
         return a.module_name === b.module_name && a.name === b.name;
     }
 
-    getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
+    async getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Promise<Expression> {
         var obj = getLocalOffset(meta.name);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype)) {
@@ -270,21 +284,21 @@ export class Parser {
         }
 
         this.expect(tokenType.leftparen, "Expect ( ");
-        return this.finishCall(fakeid, new Expression().newExprAddress(expr));
+        return await this.finishCall(fakeid, new Expression().newExprAddress(expr));
     }
 
 
-    getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Expression {
+    async getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Promise<Expression> {
         var obj = getLocalOffset(meta.name);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         this.expect(tokenType.leftparen, "Expect ( ");
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype.base)) {
             this.tokenError(`${expr.datatype.base.name} has no such member function`, this.previous());
         }
-        return this.finishCall(fakeid, expr);
+        return await this.finishCall(fakeid, expr);
     }
 
-    parseGet(expr: Expression): Expression {
+    async parseGet(expr: Expression): Promise<Expression> {
         var propname = this.advance();
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             this.tokenError("expect property name after dot", this.peek());
@@ -292,7 +306,7 @@ export class Parser {
         if (this.isStructure(expr.datatype) && expr.type !== exprType.call) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             if (meta.offset === -1) {
-                return this.getFunctionFromStruct(expr, meta);
+                return await this.getFunctionFromStruct(expr, meta);
             }
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
         } else if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
@@ -300,7 +314,7 @@ export class Parser {
         } else if (expr.datatype.kind === myType.ptr && expr.datatype.base.kind === myType.struct) {
             var meta = getOffsetOfMember(expr.datatype.base, propname.value as string);
             if (meta.offset === -1) {
-                return this.getFunctionFromStructPtr(expr, meta);
+                return await this.getFunctionFromStructPtr(expr, meta);
             }
             return new Expression().newExprGet(meta.offset,
                 new Expression().newExprDeref(expr)
@@ -384,24 +398,24 @@ export class Parser {
         return ret;
     }
 
-    parseArraySlide(expr: Expression, index: Expression): Expression {
-        var end = this.expression();
+    async parseArraySlide(expr: Expression, index: Expression): Promise<Expression> {
+        var end = await this.expression();
         this.expect(tokenType.rightsquare, "Expect ] ");
         var s = new Expression().newExprSlideArray(expr, index, end);
         s.type = exprType.slice_array;
         return s;
     }
 
-    parseSliceSlide(expr: Expression, index: Expression): Expression {
-        var end = this.expression();
+    async parseSliceSlide(expr: Expression, index: Expression): Promise<Expression> {
+        var end = await this.expression();
         this.expect(tokenType.rightsquare, "Expect ] ");
         var s = new Expression().newExprSlideSlice(expr, index, end);
         s.type = exprType.slice_slice;
         return s;
     }
 
-    index(expr: Expression): Expression {
-        var index = this.expression();
+    async index(expr: Expression): Promise<Expression> {
+        var index = await this.expression();
         var t = this.advance();
         switch (expr.datatype.kind) {
             case myType.slice:// likes char*
@@ -456,15 +470,15 @@ export class Parser {
     }
 
     // postfix
-    call(): Expression {
-        var expr = this.primary(); // identifier
+    async call(): Promise<Expression> {
+        var expr = await this.primary(); // identifier
         while (true) {
             if (this.match([tokenType.leftparen])) {
-                expr = this.finishCall(expr);
+                expr = await this.finishCall(expr);
             } else if (this.match([tokenType.dot])) {
-                expr = this.parseGet(expr);
+                expr = await this.parseGet(expr);
             } else if (this.match([tokenType.leftsquare])) {
-                expr = this.index(expr);
+                expr = await this.index(expr);
             } else if (this.match([tokenType.doublecolon])) {
                 expr = this.parseMemberFunction(expr);
             } else {
@@ -474,22 +488,22 @@ export class Parser {
         return expr;
     }
 
-    unary(): Expression {
+    async unary(): Promise<Expression> {
         if (this.match([tokenType.minus])) {
             var operator = this.previous();
-            var right = this.unary();
+            var right = await this.unary();
             return new Expression().newExprUnary(operator, right);
         }
 
 
         if (this.match([tokenType.bitnot])) {
             var operator = this.previous();
-            var right = this.unary();
+            var right = await this.unary();
             return new Expression().newExprUnary(operator, right);
         }
 
         if (this.match([tokenType.andsand, tokenType.bitand])) {
-            var left = this.unary();
+            var left = await this.unary();
             if (left.type === exprType.address) {
                 console.error("wtf bro!,, thats unsupported here");
                 process.exit(1);
@@ -497,110 +511,110 @@ export class Parser {
             return new Expression().newExprAddress(left);
         }
 
-        return this.call();
+        return await this.call();
     }
 
-    factor(): Expression {
-        var expr = this.unary();
+    async factor(): Promise<Expression> {
+        var expr = await this.unary();
         while (this.match([tokenType.divide, tokenType.multiply, tokenType.mod])) {
             var operator = this.previous();
-            var right = this.unary();
+            var right = await this.unary();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
 
-    term(): Expression {
-        var expr = this.factor();
+    async term(): Promise<Expression> {
+        var expr = await this.factor();
 
         while (this.match([tokenType.plus, tokenType.minus])) {
             var operator = this.previous();
-            var right = this.factor();
+            var right = await this.factor();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
 
         return expr;
     }
 
-    shift(): Expression {
-        var expr = this.term();
+    async shift(): Promise<Expression> {
+        var expr = await this.term();
         while (this.match([tokenType.shl, tokenType.shr])) {
             var operator = this.previous();
-            var right = this.term();
+            var right = await this.term();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
 
-    comparisson(): Expression {
-        var expr = this.shift();
+    async comparisson(): Promise<Expression> {
+        var expr = await this.shift();
 
         while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte])) {
             var operator = this.previous();
-            var right = this.shift();
+            var right = await this.shift();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
 
         return expr;
     }
 
-    relational(): Expression {
-        var expr = this.comparisson();
+    async relational(): Promise<Expression> {
+        var expr = await this.comparisson();
 
         while (this.match([tokenType.neq, tokenType.eq])) {
             var operator = this.previous();
-            var right = this.comparisson();
+            var right = await this.comparisson();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
 
         return expr;
     }
 
-    BitwiseAnd(): Expression {
-        var expr = this.relational();
+    async BitwiseAnd(): Promise<Expression> {
+        var expr = await this.relational();
         if (this.match([tokenType.bitand])) {
             var operator = this.previous();
-            var right = this.relational();
+            var right = await this.relational();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
 
-    bitwiseXor(): Expression {
-        var expr = this.BitwiseAnd();
+    async bitwiseXor(): Promise<Expression> {
+        var expr = await this.BitwiseAnd();
         if (this.match([tokenType.bitxor])) {
             var operator = this.previous();
-            var right = this.BitwiseAnd();
+            var right = await this.BitwiseAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
 
-    bitwiseOr(): Expression {
-        var expr = this.bitwiseXor();
+    async bitwiseOr(): Promise<Expression> {
+        var expr = await this.bitwiseXor();
         if (this.match([tokenType.bitor])) {
             var operator = this.previous();
-            var right = this.bitwiseXor();
+            var right = await this.bitwiseXor();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
 
-    logicalAnd(): Expression {
-        var expr = this.bitwiseOr();
+    async logicalAnd(): Promise<Expression> {
+        var expr = await this.bitwiseOr();
         if (this.match([tokenType.and])) {
             var operator = this.previous();
-            var right = this.bitwiseOr();
+            var right = await this.bitwiseOr();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
 
-    logicalOr(): Expression {
-        var expr = this.logicalAnd();
+    async logicalOr(): Promise<Expression> {
+        var expr = await this.logicalAnd();
         if (this.match([tokenType.or])) {
             var operator = this.previous();
-            var right = this.logicalAnd();
+            var right = await this.logicalAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
@@ -636,8 +650,8 @@ export class Parser {
         }
     }
 
-    assign(): Expression {
-        var expr = this.logicalOr();
+    async assign(): Promise<Expression> {
+        var expr = await this.logicalOr();
         // identifier 
         // a.c.foo -> get
         //  a[0] -> deref
@@ -657,7 +671,7 @@ export class Parser {
             tokenType.shleq
         ])) {
             equals = this.previous();
-            var val = this.assign();
+            var val = await this.assign();
 
 
             if (val.type === exprType.call && expr.datatype.size > 8) {
@@ -704,13 +718,13 @@ export class Parser {
         return expr;
     }
 
-    expression(): Expression {
+    async expression(): Promise<Expression> {
         return this.assign();
     }
 
-    ExprStatement(): Statement {
+    async ExprStatement(): Promise<Statement> {
 
-        var expr = this.expression();
+        var expr = await this.expression();
         this.expect(tokenType.semicolon, ";");
         var stmt = new Statement().newExprStatement(expr);
         return stmt;
@@ -727,14 +741,14 @@ export class Parser {
         return new Statement().newBlockStatement(stmts);
     }
 
-    re_turn(): Statement {
+    async re_turn(): Promise<Statement> {
         if (this.match([tokenType.semicolon])) {
             var expr = new Expression().newExprNumber(0);
             expr.datatype = i64;
             return new Statement().newReturnStatement(expr);
         }
 
-        var expr = this.expression();
+        var expr = await this.expression();
 
         if (expr.type === exprType.call && expr.datatype.size > 8) {
             var variable = incLocalOffset("", expr.datatype)
@@ -770,7 +784,7 @@ export class Parser {
 
         if (this.match([tokenType.if])) {
             this.expect(tokenType.leftparen, "( after if");
-            var cond = this.expression();
+            var cond = await this.expression();
             this.expect(tokenType.rightparen, ") after condition");
             var then = await this.statement();
             var else_: Statement | undefined = undefined;
@@ -783,7 +797,7 @@ export class Parser {
 
         if (this.match([tokenType.while])) {
             this.expect(tokenType.leftparen, "( after while");
-            var cond = this.expression();
+            var cond = await this.expression();
             this.expect(tokenType.rightparen, ") after condition");
             var then = await this.statement();
 
@@ -864,6 +878,10 @@ export class Parser {
                 if(is_template) {
                     if(holders?.find((h)=>h === tok.value)) return new Type().newTemp(tok.value as string);
                 }
+                var tbn = Type.getTypeByName(tok.value as string)
+                if(tbn) {
+                    return tbn;
+                }
                 this.tokenError("Undefined Type", tok);
                 break;
             default:
@@ -902,12 +920,12 @@ export class Parser {
     //     return initExpr;
     // }
 
-    rvalue(): Expression {
-        var initializer = this.expression();
+    async rvalue(): Promise<Expression> {
+        var initializer = await this.expression();
         return initializer;
     }
 
-    varDeclaration(is_template:boolean, holders?:string[]): Statement {
+    async varDeclaration(is_template:boolean, holders?:string[]): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression;
         var type: Type | undefined = undefined;
@@ -915,7 +933,7 @@ export class Parser {
             type = this.parseType(is_template, holders)
         }
         this.expect(tokenType.equal, "var initializer");
-        initializer = this.rvalue();
+        initializer = await this.rvalue();
 
 
         if (initializer.type === exprType.undefnd && type === undefined) {
@@ -994,6 +1012,15 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
+    copyTokens(start:number, end:number) {
+        var toks:Token[] =[];
+        for(let i = start; i <= end; i++) {
+            toks.push(this.tokens[i]);
+        }
+        //console.error(toks);
+        return toks;
+    }
+
     async nativeFuncDeclaration(name_space?: string): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "fn name").value as string;
 
@@ -1012,6 +1039,7 @@ export class Parser {
         }
 
         this.expect(tokenType.leftparen, "( after fn name");
+        var first_tok_index = this.previous().index;
 
         var params: { name: string, datatype: Type }[] = [];
 
@@ -1028,10 +1056,13 @@ export class Parser {
         this.expect(tokenType.rightparen, ") after params");
         var type = this.parseType(is_template, holders);
         this.expect(tokenType.leftbrace, "function body");
-        var currFn = is_template? pushTemplatefn(name, params,type, holders ):pushFunction(name as string, params, fnType.native,type);
+
+        var currFn = is_template ? pushTemplatefn(name, params,type, holders):pushFunction(name as string, params, fnType.native,type);
         is_template? setCurrentTemplate(currFn):setCurrentFuction(currFn);
         var body = await this.block();
-        resetCurrentFunction(body);
+        var last_tok_index = this.previous().index;
+
+        resetCurrentFunction(name, body, this.copyTokens(first_tok_index, last_tok_index));
         return new Statement().newNativeFnStatement(name as string);
     }
 
@@ -1183,6 +1214,7 @@ export class Parser {
     }
 
     constructor(tokens: Token[]) {
+        //console.error(tokens);
         this.tokens = tokens;
         this.current = 0;
     }

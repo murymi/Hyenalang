@@ -1,4 +1,4 @@
-import { Lexer } from "./token";
+import { Lexer, Token } from "./token";
 import { Parser } from "./parser";
 import { genStart } from "./codegen";
 import { Statement } from "./stmt";
@@ -144,9 +144,18 @@ export class Templatefn {
     arity: number;
     type: fnType;
     locals: Variable[];
-    body: Statement;
     return_type: Type;
     place_holders:string[];
+    tokens:Token[];
+    count:number;
+
+    getCount() {
+        return this.count;
+    }
+
+    incCount() {
+        this.count++;
+    }
 
     constructor(
         name: string,
@@ -160,6 +169,7 @@ export class Templatefn {
         this.name = name;
         this.place_holders = p;
         this.arity = params.length;
+        this.count = 0;
         var i = 0;
         params.forEach((p) => {
             var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype) : p.datatype
@@ -407,11 +417,15 @@ export function setCurrentFuction(n: number) {
 }
 
 export function getcurrFn() { return currentFn; }
+export function restoreFn(num:number) {
+    currentFn = num;
+}
 
-export function resetCurrentFunction(body: Statement) {
+export function resetCurrentFunction(name:string, body: Statement, tokens?:Token[]) {
     if (template_on) {
-        templatefns[currentFn].body = body;
+        templatefns[currentFn].tokens = tokens as Token[];
     } else {
+        //console.error(functions[currentFn])
         functions[currentFn].body = body;
     }
     currentFn = -1;
@@ -434,6 +448,8 @@ function offsetLocalVariables(fn: Function) {
         fn.localOffset += p.datatype.size;
         p.offset = fn.localOffset;
     })
+
+    console.error(fn.locals);
 }
 
 export function compile(path: string) {

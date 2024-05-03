@@ -1,7 +1,8 @@
 
 fn foo<T> (a:T) T {
+    return a;
 }
 
 fn main() void {
-    foo<u8>(1);
+    return foo<u64>(2);
 }
