@@ -43,7 +43,7 @@ export enum tokenType {
     leftsquare,
     rightsquare,
 
-    andsand,
+    //andsand,
     mod,
 
     u8,
@@ -477,9 +477,6 @@ export class Lexer {
                     break;
                 case '(':
                     this.push(tokenType.leftparen, char);
-                    break;
-                case '&':
-                    this.push(tokenType.andsand, char);
                     break;
                 case '}':
                     this.push(tokenType.rightbrace, char);

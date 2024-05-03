@@ -505,7 +505,7 @@ export class Parser {
             return new Expression().newExprUnary(operator, right);
         }
 
-        if (this.match([tokenType.andsand, tokenType.bitand])) {
+        if (this.match([tokenType.bitand])) {
             var left = await this.unary();
             if (left.type === exprType.address) {
                 console.error("wtf bro!,, thats unsupported here");
