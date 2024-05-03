@@ -17,7 +17,8 @@ export enum stmtType {
     structdecl,
     ret,
     inline_asm,
-    module
+    module,
+    switch
 }
 
 export class Statement {
@@ -48,6 +49,10 @@ export class Statement {
 
     // struct
     defaults: Expression[] | undefined;
+
+    //switch
+    prongs:Statement[];
+    cases:Expression[];
 
     asm_lines :string[]
 
@@ -104,6 +109,14 @@ export class Statement {
     //     return xpr;
     // }
 
+    newSwitch(cond:Expression,cases:Expression[], prongs:Statement[], else_:Statement) {
+        this.cond = cond;
+        this.cases = cases;
+        this.prongs = prongs;
+        this.type = stmtType.switch;
+        this.else_ = else_;
+        return this;
+    }
 
     newVarstatement(initializer: Expression): Statement {
         this.initializer = initializer;

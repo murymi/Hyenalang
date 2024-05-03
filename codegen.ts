@@ -751,6 +751,35 @@ function genStmt(stmt: Statement, fnid: number): void {
         case stmtType.module:
             stmt.stmts.forEach((s, i) => { genStmt(s, fnid); })
             break;
+        case stmtType.switch:
+            var label = incLabel();
+            generateCode(stmt.cond);
+            console.error(stmt.cases);
+            stmt.cases.forEach((cas)=> {
+                switch(cas.left?.type) {
+                    case exprType.number:
+                        console.log(`   cmp rax, ${cas.left?.val}`);
+                        console.log(`   je .L.${label}.p.${cas.prong}`);
+                        break;
+                    case exprType.range:
+                        console.log(`cmp rax, ${cas.left.left?.val}`);
+                        console.log(`jl .L.${label}.p.else`);
+                        console.log(`cmp rax, ${cas.left.right?.val}`);
+                        console.log(`jg .L.${label}.p.else`);
+                        console.log(`jmp jmp .L.${label}.p.${cas.prong}`);
+                        break;
+                }
+            });
+            console.log(`   jmp .L.${label}.p.else`);
+            stmt.prongs.forEach((prong, i)=>{
+                console.log(`.L.${label}.p.${i}:`);
+                genStmt(prong, fnid);
+                console.log(`   jmp .L.end.${label}`)
+            });
+            console.log(`.L.${label}.p.else:`)
+            genStmt(stmt.else_ as Statement, fnid);
+            console.log(`.L.end.${label}:`);
+            break;
         default:
             throw new Error("unhandled statement");
     }

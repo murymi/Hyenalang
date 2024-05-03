@@ -103,7 +103,9 @@ export enum tokenType {
     shr,
     shreq,
     shleq,
-
+    plong,
+    switch,
+    range,
     eof
 };
 
@@ -284,7 +286,8 @@ export class Lexer {
             asm: tokenType.asm,
             module: tokenType.module,
             impl: tokenType.impl,
-            import: tokenType.import
+            import: tokenType.import,
+            switch: tokenType.switch
         }
     }
 
@@ -490,6 +493,11 @@ export class Lexer {
                         this.advance();
                         continue;
                     }
+                    if(this.peekNext() === ">") {
+                        this.push(tokenType.plong, "=>");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.equal, char);
                     break;
                 case ':':
@@ -507,6 +515,11 @@ export class Lexer {
                     this.push(tokenType.rightsquare, char);
                     break;
                 case '.':
+                    if(this.peekNext() === ".") {
+                        this.push(tokenType.range, "..");
+                        this.advance();
+                        continue;
+                    }
                     this.push(tokenType.dot, char);
                     break;
                 case '%':

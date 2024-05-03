@@ -33,7 +33,9 @@ export enum exprType {
     decl_anon_for_get,
     fn_identifier,
     tmp_identifier,
-    if_expr
+    if_expr,
+    range,
+    case
 }
 
 export enum identifierType {
@@ -95,6 +97,8 @@ export class Expression {
 
     cond:Expression;
 
+    prong:number;
+
     newIfExpr(cond:Expression, left:Expression, right:Expression){
         this.cond = cond;
         this.left = left;
@@ -102,6 +106,14 @@ export class Expression {
         this.type = exprType.if_expr;
         this.datatype = left.datatype;
         return this
+    }
+
+    newExprRange(left:Expression, right:Expression) {
+        this.type = exprType.range;
+        this.left = left;
+        this.right = right;
+        this.datatype = left.datatype;
+        return this;
     }
 
     newExprAddressSet(left:Expression, right:Expression) {
@@ -256,6 +268,16 @@ export class Expression {
         this.datatype = new Type().newSlice(u8);
         return this;
     }
+
+    newExprCase(prong:number, left:Expression) {
+        this.prong = prong;
+        this.left = left;
+        this.type = exprType.case;
+        this.datatype = left.datatype;
+        return this;
+    }
+
+
 
     newExprSlideString(id:Expression):Expression{
         this.type = exprType.slice_array;

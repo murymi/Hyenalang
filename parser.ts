@@ -791,6 +791,65 @@ export class Parser {
         return new Statement().newIfStatement(cond, then, else_);
     }
 
+    async switchStatement():Promise<Statement> {
+        this.expect(tokenType.leftparen, "Expect ( after switch");
+        var cond = await this.expression();
+        this.expect(tokenType.rightparen, ") after condition");
+        this.expect(tokenType.leftbrace, "Expect switch body");
+
+        var prongs:Statement[] = [];
+        var cases:Expression[] = [];
+        var default_prong = new Statement();
+
+        //var items:{prong:Statement, cases:Expression[]}[] = [];
+
+        var default_prong_found = false;
+        while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
+            var can_else = true;
+            while(true) {
+                if(this.check(tokenType.else) && can_else) {
+                    this.advance();
+                    default_prong_found = true;
+                    break;
+                } else {
+                    var expr = await this.expression();
+                    if(this.match([tokenType.range])) {
+                        var expr2 = await this.expression();
+                        cases.push(new Expression().newExprCase(prongs.length,new Expression().newExprRange(expr, expr2)));
+                    } else {
+                        cases.push(new Expression().newExprCase(prongs.length,expr));
+                    }
+                }
+
+                if(!this.check(tokenType.comma)) { can_else = true; break; };
+                this.advance();
+                can_else = false;
+            }
+
+            this.expect(tokenType.plong, "Expect plong");
+            var pron = await this.statement();
+
+            if(default_prong_found) {
+                default_prong = pron;
+            } else {
+                prongs.push(pron);
+            }
+
+            //items.push({ prong:pron, cases:casez });
+
+            if(!this.check(tokenType.rightbrace)) {
+                this.expect(tokenType.comma, "Expect comma after plong");
+            }
+        }
+
+        if(default_prong_found === false) {
+            this.tokenError("missing else branch", this.peek());
+        }
+
+        this.expect(tokenType.rightbrace, "Expect } after switch body");
+        return new Statement().newSwitch(cond, cases, prongs, default_prong);
+    }
+
     async statement(): Promise<Statement> {
 
         if (this.match([tokenType.contineu])) {
@@ -822,6 +881,11 @@ export class Parser {
             var then = await this.statement();
 
             return new Statement().newWhileStatement(cond, then);
+        }
+
+        if(this.match([tokenType.switch])) {
+            return this.switchStatement
+            ();
         }
 
         if (this.match([tokenType.asm])) {

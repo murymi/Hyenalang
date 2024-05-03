@@ -9,17 +9,19 @@ fn write(data:&u8) void {
 }
 
 
-fn test_eq(a:u64, b:u64) void {
-    if(a == b) {
-        write("ok\n");
-        return;
-    }
-
-    write("fail\n");
-}
-
 fn main() void {
-    var a = if (true) "hello world\n" else "kwenda huko\n";
+    var a = 42;
 
-    write(a);
+    switch(a) {
+        20 => {
+        },
+        30..50, 0 => {
+            write("hello world\n");
+        },
+        40 => {
+
+        }, 
+        else => {
+        }
+    }
 }
