@@ -19,5 +19,7 @@ fn test_eq(a:u64, b:u64) void {
 }
 
 fn main() void {
-    test_eq("kwenda huko\n".len, 12);
+    var a = if (true) "hello world\n" else "kwenda huko\n";
+
+    write(a);
 }

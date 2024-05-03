@@ -365,6 +365,9 @@ function generateAddress(expr: Expression | Statement) {
         case exprType.string:
             generateCode(expr);
             break;
+        case exprType.if_expr:
+            generateCode(expr);
+            break;
         default:
             console.error(expr);
             console.error("not an lvalue");

@@ -27,6 +27,26 @@
 .align 8
 .L.data.bytes.2:
    .quad 12
+   .byte 0x68 
+   .byte 0x65 
+   .byte 0x6c 
+   .byte 0x6c 
+   .byte 0x6f 
+   .byte 0x20 
+   .byte 0x77 
+   .byte 0x6f 
+   .byte 0x72 
+   .byte 0x6c 
+   .byte 0x64 
+   .byte 0xa 
+   .byte 0
+.align 8
+.L.data.strings.2:
+   .quad 12
+   .quad offset .L.data.bytes.2 + 8
+.align 8
+.L.data.bytes.3:
+   .quad 12
    .byte 0x6b 
    .byte 0x77 
    .byte 0x65 
@@ -41,9 +61,9 @@
    .byte 0xa 
    .byte 0
 .align 8
-.L.data.strings.2:
+.L.data.strings.3:
    .quad 12
-   .quad offset .L.data.bytes.2 + 8
+   .quad offset .L.data.bytes.3 + 8
 .bss
 .text
 .global write
@@ -112,16 +132,27 @@ test_eq:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
-   lea rax, [test_eq]
+   sub rsp, 16
+   lea rax, [rbp-16]
    push rax
+   mov rax, 1
+cmp rax, 0
+jz .L.else.4
+.L.if.4:
    lea rax, .L.data.strings.2
-   add rax, 0
-   mov rax, [rax]
+jmp .L.endif.4
+.L.else.4:
+   lea rax, .L.data.strings.3
+.L.endif.4:
+   pop rdi
+   movq rcx, [rax+0]
+   movq [rdi+0], rcx
+   movq rcx, [rax+8]
+   movq [rdi+8], rcx
+   lea rax, [write]
    push rax
-   mov rax, 12
+   lea rax, [rbp-16]
    push rax
-   pop rsi
    pop rdi
    pop rax
    call rax
