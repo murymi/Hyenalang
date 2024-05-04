@@ -11,7 +11,7 @@ fn write(data:&u8) void {
 
 fn main() void {
     var a = "hello world";
-    for (a, 97..120) |*c, j| {
+    for (a, 97..) |*c, j| {
         c.* = j;
     }
 

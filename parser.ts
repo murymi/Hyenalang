@@ -852,9 +852,13 @@ export class Parser {
 
     async makeIntRange(bottom: Expression): Promise<Expression> {
         if (this.match([tokenType.range])) {
-            var top = await this.expression();
             bottom.val -= 1;
-            return new Expression().newExprRange(bottom, top);
+            if(this.check(tokenType.comma) || this.check(tokenType.rightparen)) {
+                return new Expression().newExprRange(bottom, new Expression().newExprNumber(0xfffffffffffff));
+            } else {
+                var top = await this.expression();
+                return new Expression().newExprRange(bottom, top);
+            }
         } else {
             return new Expression().newExprRange(new Expression().newExprNumber(-1), bottom);
         }
@@ -907,8 +911,6 @@ export class Parser {
             } else {
                 variables.push({ ptr: false, name: this.expect(tokenType.identifier, "identifier").value as string });
             }
-            // if(!this.check(tokenType.comma)) break;
-            // this.advance();
             if (i < ranges.length - 1) {
                 this.expect(tokenType.comma, ",");
             }
@@ -923,21 +925,7 @@ export class Parser {
             ptr: boolean | undefined, array_id: Expression | undefined, index_var: Variable | undefined
         }[] = [];
         beginScope();
-        // ranges.forEach((range, i) => {
-        //     //var type = range.range_type === rangeType.array ? range.id.datatype.base:u64
-        //     vars.push(incLocalOffset(variables[i], u64, range.left));
-        // })
-
         for (let i = 0; i < ranges.length; i++) {
-            // if (ranges[i].range_type === rangeType.array) {
-            //     vars.push({counter:incLocalOffset("", u64, ranges[i].left),ptr: variables[i].ptr, compound:});
-            //     //console.error(ranges[i].datatype.base)
-            //     // vars.push(incLocalOffset(variables[i].name, variables[i].ptr ?
-            //     //     new Type().newPointer(ranges[i].id.datatype.base)
-            //     //     : ranges[i].id.datatype.base, new Expression().newExprUndefined()));
-            //     // i++;
-            // } else {
-            //}
             if (ranges[i].range_type === rangeType.array || ranges[i].range_type === rangeType.slice) {
                 var r_id = ranges[i].id as Expression;
                 var is_ptr = variables[i].ptr;
@@ -965,19 +953,6 @@ export class Parser {
         endScope();
 
         var body = await this.block();
-
-        //body.stmts.push();
-
-        // ranges.forEach((range, i)=> {
-        //     body.stmts.push(new Statement().newExprStatement(new Expression().newExprAssign(
-        //         new Expression().newExprIdentifier(getLocalOffset(variables[i]).variable as Variable),
-        //         new Expression().newExprBinary(new Token(tokenType.plus, 0, 0, 0, ""),
-        //         new Expression().newExprIdentifier(getLocalOffset(variables[i]).variable as Variable),
-        //         new Expression().newExprNumber(1)
-        //         )
-        //     )))
-        // })
-
         return new Statement().newIntLoop(body, metadata);
     }
 
@@ -985,8 +960,6 @@ export class Parser {
         this.expect(tokenType.leftparen, "( after while");
 
         return await this.integerLoop();
-
-
     }
 
     async whileStatement(): Promise<Statement> {
