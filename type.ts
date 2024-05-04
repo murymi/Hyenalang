@@ -284,6 +284,23 @@ export class Type {
         }
     }
 
+    isInteger():boolean {
+        switch(this.kind) {
+            case myType.u8:
+            case myType.u16:
+            case myType.u32:
+            case myType.u64:
+            case myType.i8:
+            case myType.i16:
+            case myType.i32:
+            case myType.i64:
+            case myType.f32:
+            case myType.f64:
+            return true;
+        }
+        return false;
+    }
+
     constructor() {
         this.member_fn_names = [];
     }

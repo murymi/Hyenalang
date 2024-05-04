@@ -65,7 +65,7 @@ export class Parser {
 
     expect(type, name): Token {
         if (this.peek().type !== type) {
-            this.tokenError("Expected " + name, this.peek());
+            this.tokenError("Expected " + name+" found " , this.peek());
         }
         return this.advance();
     }
@@ -850,6 +850,86 @@ export class Parser {
         return new Statement().newSwitch(cond, cases, prongs, default_prong);
     }
 
+    async integerLoop(bottom:Expression):Promise<Statement> {
+        var ranges: Expression[] = [];
+        var first_time = true;
+        while(true) {
+            if(first_time) {
+                first_time = false;
+            } else {
+                bottom = await this.expression()
+            }
+            if(this.match([tokenType.range])) {
+                var top = await this.expression();
+                ranges.push(new Expression().newExprRange(bottom, top));
+            } else {
+                ranges.push(new Expression().newExprRange(new Expression().newExprNumber(0), bottom));
+            }
+
+            if(!this.check(tokenType.comma)) break;
+            this.advance();
+        }
+
+        this.expect(tokenType.rightparen, ") after condition");
+        this.expect(tokenType.pipe, "loop payload");
+        var variables:string[] = [];
+        for(let i = 0; i < ranges.length; i++) {
+            variables.push(this.expect(tokenType.identifier, "identifier").value as string);
+            // if(!this.check(tokenType.comma)) break;
+            // this.advance();
+            if(i < ranges.length-1) {
+                this.expect(tokenType.comma, ",");
+            }
+        }
+
+        this.expect(tokenType.pipe,"|");
+        this.expect(tokenType.leftbrace, "{");
+        var vars:Variable[] = [];
+        beginScope();
+        ranges.forEach((range, i)=>{
+            vars.push(incLocalOffset(variables[i], u64, range.left));
+        })
+        endScope();
+
+        var body = await this.block();
+
+        body.stmts.push();
+
+        // ranges.forEach((range, i)=> {
+        //     body.stmts.push(new Statement().newExprStatement(new Expression().newExprAssign(
+        //         new Expression().newExprIdentifier(getLocalOffset(variables[i]).variable as Variable),
+        //         new Expression().newExprBinary(new Token(tokenType.plus, 0, 0, 0, ""),
+        //         new Expression().newExprIdentifier(getLocalOffset(variables[i]).variable as Variable),
+        //         new Expression().newExprNumber(1)
+        //         )
+        //     )))
+        // })
+
+        return new Statement().newIntLoop(body, vars, ranges);
+    }
+
+    async forStatement(): Promise<Statement> {
+        this.expect(tokenType.leftparen, "( after while");
+        var cond = await this.expression();
+
+        if(cond.datatype.isInteger()) {
+            return await this.integerLoop(cond);
+        }
+
+        this.expect(tokenType.rightparen, ") after condition");
+        this.expect(tokenType.pipe, "Expect |var|");
+        return await this.statement();
+    }
+
+    async whileStatement(): Promise<Statement> {
+        this.expect(tokenType.leftparen, "( after while");
+        var cond = await this.expression();
+        this.expect(tokenType.rightparen, ") after condition");
+        var then = await this.statement();
+
+        return new Statement().newWhileStatement(cond, then);
+    }
+
     async statement(): Promise<Statement> {
 
         if (this.match([tokenType.contineu])) {
@@ -874,13 +954,12 @@ export class Parser {
             return await this.ifStatement();
         }
 
-        if (this.match([tokenType.while])) {
-            this.expect(tokenType.leftparen, "( after while");
-            var cond = await this.expression();
-            this.expect(tokenType.rightparen, ") after condition");
-            var then = await this.statement();
+        if(this.match([tokenType.for])) {
+            return await this.forStatement();
+        }
 
-            return new Statement().newWhileStatement(cond, then);
+        if (this.match([tokenType.while])) {
+            return await this.whileStatement();
         }
 
         if(this.match([tokenType.switch])) {

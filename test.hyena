@@ -12,16 +12,11 @@ fn write(data:&u8) void {
 fn main() void {
     var a = 42;
 
-    switch(a) {
-        20 => {
-        },
-        30..50, 0 => {
-            write("hello world\n");
-        },
-        40 => {
-
-        }, 
-        else => {
+    for (0..10, 0..10) |a, b| {
+        if(a == 0) {
+            write("zero\n");
+        } else {
+            write("hi from loop\n");
         }
     }
 }

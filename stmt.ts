@@ -18,7 +18,8 @@ export enum stmtType {
     ret,
     inline_asm,
     module,
-    switch
+    switch,
+    intloop,
 }
 
 export class Statement {
@@ -57,6 +58,8 @@ export class Statement {
     asm_lines :string[]
 
     variable:Variable;
+
+    vars:Variable[];
     // makeStructInitializer(off: number, datatype: Type): Expression[] {
     //     var exprid = new Expression().newExprIdentifier(
     //         "",
@@ -115,6 +118,14 @@ export class Statement {
         this.prongs = prongs;
         this.type = stmtType.switch;
         this.else_ = else_;
+        return this;
+    }
+
+    newIntLoop(body:Statement, vars:Variable[], ranges:Expression[]){
+        this.type = stmtType.intloop;
+        this.body = body;
+        this.vars = vars;
+        this.cases = ranges;
         return this;
     }
 

@@ -2,24 +2,38 @@
 .data
 .align 8
 .L.data.bytes.0:
-   .quad 12
-   .byte 0x68 
+   .quad 5
+   .byte 0x7a 
    .byte 0x65 
-   .byte 0x6c 
-   .byte 0x6c 
-   .byte 0x6f 
-   .byte 0x20 
-   .byte 0x77 
-   .byte 0x6f 
    .byte 0x72 
-   .byte 0x6c 
-   .byte 0x64 
+   .byte 0x6f 
    .byte 0xa 
    .byte 0
 .align 8
 .L.data.strings.0:
-   .quad 12
+   .quad 5
    .quad offset .L.data.bytes.0 + 8
+.align 8
+.L.data.bytes.1:
+   .quad 13
+   .byte 0x68 
+   .byte 0x69 
+   .byte 0x20 
+   .byte 0x66 
+   .byte 0x72 
+   .byte 0x6f 
+   .byte 0x6d 
+   .byte 0x20 
+   .byte 0x6c 
+   .byte 0x6f 
+   .byte 0x6f 
+   .byte 0x70 
+   .byte 0xa 
+   .byte 0
+.align 8
+.L.data.strings.1:
+   .quad 13
+   .quad offset .L.data.bytes.1 + 8
 .bss
 .text
 .global write
@@ -45,29 +59,27 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
+   sub rsp, 24
    lea rax, [rbp-4]
    push rax
    mov rax, 42
    pop rdi
    mov [rdi], eax
-   lea rax, [rbp-4]
-   movsxd rax, dword ptr [rax]
-   cmp rax, 20
-   je .L.2.p.0
-cmp rax, 30
-jl .L.2.p.else
-cmp rax, 50
-jg .L.2.p.else
-jmp jmp .L.2.p.1
+   mov qword ptr [rbp-16], -1
+   mov qword ptr [rbp-24], -1
+.L.continue.2:
+   inc qword ptr [rbp-16]
+   inc qword ptr [rbp-24]
+   mov rax, 0
+   push rax
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   pop rdi
+   cmp rax, rdi
+   sete al
+   movzb rax, al
    cmp rax, 0
-   je .L.2.p.1
-   cmp rax, 40
-   je .L.2.p.2
-   jmp .L.2.p.else
-.L.2.p.0:
-   jmp .L.end.2
-.L.2.p.1:
+   je .L.else.3
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.0
@@ -75,11 +87,21 @@ jmp jmp .L.2.p.1
    pop rdi
    pop rax
    call rax
-   jmp .L.end.2
-.L.2.p.2:
-   jmp .L.end.2
-.L.2.p.else:
-.L.end.2:
+   jmp .L.end.3
+.L.else.3:
+   lea rax, [write]
+   push rax
+   lea rax, .L.data.strings.1
+   push rax
+   pop rdi
+   pop rax
+   call rax
+.L.end.3:
+   mov rax, [rbp-16]
+   cmp rax, 9
+   jge .L.break.2
+   jmp .L.continue.2
+.L.break.2:
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp

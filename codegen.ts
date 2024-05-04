@@ -780,6 +780,27 @@ function genStmt(stmt: Statement, fnid: number): void {
             genStmt(stmt.else_ as Statement, fnid);
             console.log(`.L.end.${label}:`);
             break;
+        case stmtType.intloop:
+            var labeloffset = incLabel();
+            stmt.vars.forEach((va, i)=> {
+                console.log(`   mov qword ptr [rbp-${va.offset}], ${stmt.cases[i].left?.val as number - 1}`);
+            })
+            latestBreakLabel = ".L.break." + labeloffset;
+            latestContinueLabel = ".L.continue." + labeloffset;
+            console.log(".L.continue." + labeloffset + ":");
+
+            stmt.vars.forEach((va)=> {
+                console.log(`   inc qword ptr [rbp-${va.offset}]`);
+            })
+            
+            genStmt(stmt.body, fnid);
+            //generateCode(stmt.cond);
+            console.log(`   mov rax, [rbp-${stmt.vars[0].offset}]`);
+            console.log(`   cmp rax, ${stmt.cases[0].right?.val as number - 1}`)
+            console.log("   jge .L.break." + labeloffset);
+            console.log("   jmp .L.continue." + labeloffset);
+            console.log(".L.break." + labeloffset + ":");
+            break;
         default:
             throw new Error("unhandled statement");
     }

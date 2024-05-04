@@ -3,9 +3,9 @@
 export var colors = {
     reset: "\x1b[0m",
     red: "\x1b[31m",
-    yellow:"\x1b[33m",
-    green:"\x1b[32m",
-    blue:"\x1b[34m"
+    yellow: "\x1b[33m",
+    green: "\x1b[32m",
+    blue: "\x1b[34m"
 }
 
 export enum tokenType {
@@ -106,6 +106,8 @@ export enum tokenType {
     plong,
     switch,
     range,
+    for,
+    pipe,
     eof
 };
 
@@ -119,10 +121,10 @@ export class Token {
     index: number;
 
     clone() {
-        return new Token(this.type, this.value, this.line,this.col, this.file_name, this.index, this.isfloat);
+        return new Token(this.type, this.value, this.line, this.col, this.file_name, this.index, this.isfloat);
     }
 
-    constructor(type: tokenType, value: string | number, line: number, col: number,file:string,index:number = -1, isfloat?: boolean) {
+    constructor(type: tokenType, value: string | number, line: number, col: number, file: string, index: number = -1, isfloat?: boolean) {
         this.type = type;
         this.value = value;
         this.col = col;
@@ -143,9 +145,9 @@ export class Lexer {
     col: number;
     tokens: Token[] = [];
     tokenMap: any;
-    file_name:string;
+    file_name: string;
 
-    constructor(text: string, file_name:string) {
+    constructor(text: string, file_name: string) {
         this.current = 0;
         this.text = text;
         this.file_name = file_name;
@@ -172,7 +174,7 @@ export class Lexer {
     }
 
     peekNextNext() {
-        if(this.text.length < this.current + 3) return "eof";
+        if (this.text.length < this.current + 3) return "eof";
         return this.text[this.current + 2];
     }
 
@@ -215,7 +217,7 @@ export class Lexer {
             this.advance();
         }
         var str = this.text.substring(start, this.current);
-        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col,this.file_name,this.tokens.length, isfloat));
+        this.tokens.push(new Token(tokenType.number, parseFloat(str), this.line, this.col, this.file_name, this.tokens.length, isfloat));
     }
 
     getEscape() {
@@ -245,7 +247,7 @@ export class Lexer {
             this.advance();
         }
         this.expect('"');
-        return new Token(tokenType.string, value, this.line, this.col,this.file_name,this.tokens.length, true);
+        return new Token(tokenType.string, value, this.line, this.col, this.file_name, this.tokens.length, true);
     }
 
     initTokenMap() {
@@ -287,7 +289,8 @@ export class Lexer {
             module: tokenType.module,
             impl: tokenType.impl,
             import: tokenType.import,
-            switch: tokenType.switch
+            switch: tokenType.switch,
+            for: tokenType.for
         }
     }
 
@@ -307,7 +310,7 @@ export class Lexer {
     }
 
     tokenError(message: string): void {
-        console.error(`${colors.yellow+this.file_name+":"+colors.green} line: ${this.line} col: ${this.col} ${colors.red+message} '${this.peek()}'${colors.reset + "."} `);
+        console.error(`${colors.yellow + this.file_name + ":" + colors.green} line: ${this.line} col: ${this.col} ${colors.red + message} '${this.peek()}'${colors.reset + "."} `);
         process.exit();
     }
 
@@ -348,13 +351,13 @@ export class Lexer {
             }
 
             if (char === "eof") {
-                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col,this.file_name, this.tokens.length));
+                this.tokens.push(new Token(tokenType.eof, "eof", this.line, this.col, this.file_name, this.tokens.length));
                 break;
             }
 
             switch (char) {
                 case "+":
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.addeq, "+=");
                         this.advance();
                         continue;
@@ -362,7 +365,7 @@ export class Lexer {
                     this.push(tokenType.plus, char);
                     break;
                 case "-":
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.subeq, "-=");
                         this.advance();
                         continue;
@@ -370,7 +373,7 @@ export class Lexer {
                     this.push(tokenType.minus, char);
                     break;
                 case "/":
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.diveq, "/=");
                         this.advance();
                         continue;
@@ -378,7 +381,7 @@ export class Lexer {
                     this.push(tokenType.divide, char);
                     break;
                 case "*":
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.muleq, "*=");
                         this.advance();
                         continue;
@@ -394,17 +397,20 @@ export class Lexer {
                 case '(':
                     this.push(tokenType.leftparen, char);
                     break;
+                case '|':
+                    this.push(tokenType.pipe, char);
+                    break;
                 case ';':
                     this.push(tokenType.semicolon, char);
                     break;
                 case '>':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.gte, ">=");
                         this.advance();
                         continue;
                     }
-                    if(this.peekNext() === ">") {
-                        if(this.peekNextNext() === "=") {
+                    if (this.peekNext() === ">") {
+                        if (this.peekNextNext() === "=") {
                             this.push(tokenType.shreq, ">>=");
                             this.advance();
                             this.advance();
@@ -417,7 +423,7 @@ export class Lexer {
                     this.push(tokenType.greater, char);
                     break;
                 case '!':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.neq, "!=");
                         this.advance();
                         continue;
@@ -425,13 +431,13 @@ export class Lexer {
                     this.push(tokenType.bang, char);
                     break;
                 case '<':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.lte, "<=");
                         this.advance();
                         continue;
                     }
-                    if(this.peekNext() === "<") {
-                        if(this.peekNextNext() === "=") {
+                    if (this.peekNext() === "<") {
+                        if (this.peekNextNext() === "=") {
                             this.push(tokenType.shleq, "<<=");
                             this.advance();
                             this.advance();
@@ -444,7 +450,7 @@ export class Lexer {
                     this.push(tokenType.less, char);
                     break;
                 case '^':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.bitxoreq, "^=");
                         this.advance();
                         continue;
@@ -452,7 +458,7 @@ export class Lexer {
                     this.push(tokenType.bitxor, char);
                     break;
                 case '&':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.bitandeq, "&=");
                         this.advance();
                         continue;
@@ -460,7 +466,7 @@ export class Lexer {
                     this.push(tokenType.bitand, char);
                     break;
                 case '|':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.bitoreq, "|=");
                         this.advance();
                         continue;
@@ -468,7 +474,7 @@ export class Lexer {
                     this.push(tokenType.bitor, char);
                     break;
                 case '~':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.bitnoteq, "~=");
                         this.advance();
                         continue;
@@ -488,12 +494,12 @@ export class Lexer {
                     this.push(tokenType.leftbrace, char);
                     break;
                 case '=':
-                    if(this.peekNext() === "=") {
+                    if (this.peekNext() === "=") {
                         this.push(tokenType.eq, "==");
                         this.advance();
                         continue;
                     }
-                    if(this.peekNext() === ">") {
+                    if (this.peekNext() === ">") {
                         this.push(tokenType.plong, "=>");
                         this.advance();
                         continue;
@@ -501,7 +507,7 @@ export class Lexer {
                     this.push(tokenType.equal, char);
                     break;
                 case ':':
-                    if(this.peekNext() === ":") {
+                    if (this.peekNext() === ":") {
                         this.push(tokenType.doublecolon, "::");
                         this.advance();
                         continue;
@@ -515,7 +521,7 @@ export class Lexer {
                     this.push(tokenType.rightsquare, char);
                     break;
                 case '.':
-                    if(this.peekNext() === ".") {
+                    if (this.peekNext() === ".") {
                         this.push(tokenType.range, "..");
                         this.advance();
                         continue;
