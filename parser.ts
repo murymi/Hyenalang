@@ -1,6 +1,6 @@
 import { Lexer, Token, colors } from "./token";
 import { tokenType } from "./token";
-import { Expression } from "./expr";
+import { Expression, rangeType } from "./expr";
 import { exprType } from "./expr";
 import { Statement } from "./stmt";
 import {
@@ -65,7 +65,7 @@ export class Parser {
 
     expect(type, name): Token {
         if (this.peek().type !== type) {
-            this.tokenError("Expected " + name+" found " , this.peek());
+            this.tokenError("Expected " + name + " found ", this.peek());
         }
         return this.advance();
     }
@@ -791,14 +791,14 @@ export class Parser {
         return new Statement().newIfStatement(cond, then, else_);
     }
 
-    async switchStatement():Promise<Statement> {
+    async switchStatement(): Promise<Statement> {
         this.expect(tokenType.leftparen, "Expect ( after switch");
         var cond = await this.expression();
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.leftbrace, "Expect switch body");
 
-        var prongs:Statement[] = [];
-        var cases:Expression[] = [];
+        var prongs: Statement[] = [];
+        var cases: Expression[] = [];
         var default_prong = new Statement();
 
         //var items:{prong:Statement, cases:Expression[]}[] = [];
@@ -806,22 +806,22 @@ export class Parser {
         var default_prong_found = false;
         while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
             var can_else = true;
-            while(true) {
-                if(this.check(tokenType.else) && can_else) {
+            while (true) {
+                if (this.check(tokenType.else) && can_else) {
                     this.advance();
                     default_prong_found = true;
                     break;
                 } else {
                     var expr = await this.expression();
-                    if(this.match([tokenType.range])) {
+                    if (this.match([tokenType.range])) {
                         var expr2 = await this.expression();
-                        cases.push(new Expression().newExprCase(prongs.length,new Expression().newExprRange(expr, expr2)));
+                        cases.push(new Expression().newExprCase(prongs.length, new Expression().newExprRange(expr, expr2)));
                     } else {
-                        cases.push(new Expression().newExprCase(prongs.length,expr));
+                        cases.push(new Expression().newExprCase(prongs.length, expr));
                     }
                 }
 
-                if(!this.check(tokenType.comma)) { can_else = true; break; };
+                if (!this.check(tokenType.comma)) { can_else = true; break; };
                 this.advance();
                 can_else = false;
             }
@@ -829,7 +829,7 @@ export class Parser {
             this.expect(tokenType.plong, "Expect plong");
             var pron = await this.statement();
 
-            if(default_prong_found) {
+            if (default_prong_found) {
                 default_prong = pron;
             } else {
                 prongs.push(pron);
@@ -837,12 +837,12 @@ export class Parser {
 
             //items.push({ prong:pron, cases:casez });
 
-            if(!this.check(tokenType.rightbrace)) {
+            if (!this.check(tokenType.rightbrace)) {
                 this.expect(tokenType.comma, "Expect comma after plong");
             }
         }
 
-        if(default_prong_found === false) {
+        if (default_prong_found === false) {
             this.tokenError("missing else branch", this.peek());
         }
 
@@ -850,50 +850,123 @@ export class Parser {
         return new Statement().newSwitch(cond, cases, prongs, default_prong);
     }
 
-    async integerLoop(bottom:Expression):Promise<Statement> {
-        var ranges: Expression[] = [];
-        var first_time = true;
-        while(true) {
-            if(first_time) {
-                first_time = false;
+    async makeIntRange(bottom: Expression): Promise<Expression> {
+        if (this.match([tokenType.range])) {
+            var top = await this.expression();
+            bottom.val -= 1;
+            return new Expression().newExprRange(bottom, top);
+        } else {
+            return new Expression().newExprRange(new Expression().newExprNumber(-1), bottom);
+        }
+
+    }
+
+    async integerLoop(): Promise<Statement> {
+        var ranges: { range: Expression, range_type: rangeType, id: Expression | undefined }[] = []
+        while (true) {
+            var bottom = await this.expression();
+            if (bottom.datatype.isInteger()) {
+                ranges.push({ range: await this.makeIntRange(bottom), range_type: rangeType.int, id: undefined });
             } else {
-                bottom = await this.expression()
-            }
-            if(this.match([tokenType.range])) {
-                var top = await this.expression();
-                ranges.push(new Expression().newExprRange(bottom, top));
-            } else {
-                ranges.push(new Expression().newExprRange(new Expression().newExprNumber(0), bottom));
+                switch (bottom.datatype.kind) {
+                    case myType.array:
+                        ranges.push({
+                            range: new Expression().newExprRange(
+                                new Expression().newExprNumber(-1),
+                                new Expression().newExprNumber(bottom.datatype.arrayLen)),
+                            range_type: rangeType.array,
+                            id: bottom
+                        }
+                        )
+                        break;
+                    case myType.slice:
+                        ranges.push({
+                            range: new Expression().newExprRange(
+                                new Expression().newExprNumber(-1),
+                                new Expression().newExprNumber(bottom.datatype.arrayLen)),
+                            range_type: rangeType.slice,
+                            id: bottom
+                        }
+                        )
+                        break;
+                    default:
+                        this.tokenError("attemp to loop unsupported type", this.previous());
+                }
             }
 
-            if(!this.check(tokenType.comma)) break;
+            if (!this.check(tokenType.comma)) break;
             this.advance();
         }
 
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.pipe, "loop payload");
-        var variables:string[] = [];
-        for(let i = 0; i < ranges.length; i++) {
-            variables.push(this.expect(tokenType.identifier, "identifier").value as string);
+        var variables: { ptr: boolean, name: string }[] = [];
+        for (let i = 0; i < ranges.length; i++) {
+            if (this.match([tokenType.multiply])) {
+                variables.push({ ptr: true, name: this.expect(tokenType.identifier, "identifier").value as string });
+            } else {
+                variables.push({ ptr: false, name: this.expect(tokenType.identifier, "identifier").value as string });
+            }
             // if(!this.check(tokenType.comma)) break;
             // this.advance();
-            if(i < ranges.length-1) {
+            if (i < ranges.length - 1) {
                 this.expect(tokenType.comma, ",");
             }
         }
 
-        this.expect(tokenType.pipe,"|");
+        this.expect(tokenType.pipe, "|");
         this.expect(tokenType.leftbrace, "{");
-        var vars:Variable[] = [];
+        var metadata: {
+            counter: Variable,
+            range_type: rangeType,
+            range: Expression,
+            ptr: boolean | undefined, array_id: Expression | undefined, index_var: Variable | undefined
+        }[] = [];
         beginScope();
-        ranges.forEach((range, i)=>{
-            vars.push(incLocalOffset(variables[i], u64, range.left));
-        })
+        // ranges.forEach((range, i) => {
+        //     //var type = range.range_type === rangeType.array ? range.id.datatype.base:u64
+        //     vars.push(incLocalOffset(variables[i], u64, range.left));
+        // })
+
+        for (let i = 0; i < ranges.length; i++) {
+            // if (ranges[i].range_type === rangeType.array) {
+            //     vars.push({counter:incLocalOffset("", u64, ranges[i].left),ptr: variables[i].ptr, compound:});
+            //     //console.error(ranges[i].datatype.base)
+            //     // vars.push(incLocalOffset(variables[i].name, variables[i].ptr ?
+            //     //     new Type().newPointer(ranges[i].id.datatype.base)
+            //     //     : ranges[i].id.datatype.base, new Expression().newExprUndefined()));
+            //     // i++;
+            // } else {
+            //}
+            if (ranges[i].range_type === rangeType.array || ranges[i].range_type === rangeType.slice) {
+                var r_id = ranges[i].id as Expression;
+                var is_ptr = variables[i].ptr;
+                var data_type = is_ptr ? new Type().newPointer(r_id.datatype.base) : r_id.datatype.base;
+                var ptr_var = incLocalOffset(variables[i].name, data_type, new Expression().newExprUndefined());
+                var counter = incLocalOffset("", u64, ranges[i].range.left);
+                metadata.push({
+                    counter: counter,
+                    range_type: ranges[i].range_type,
+                    range: ranges[i].range,
+                    ptr: is_ptr,
+                    array_id: r_id,
+                    index_var: ptr_var
+                })
+
+            } else {
+                metadata.push({
+                    counter: incLocalOffset(variables[i].name, u64, ranges[i].range.left),
+                    range_type: rangeType.int,
+                    range: ranges[i].range,
+                    ptr: undefined, array_id: undefined, index_var: undefined
+                });
+            }
+        }
         endScope();
 
         var body = await this.block();
 
-        body.stmts.push();
+        //body.stmts.push();
 
         // ranges.forEach((range, i)=> {
         //     body.stmts.push(new Statement().newExprStatement(new Expression().newExprAssign(
@@ -905,20 +978,15 @@ export class Parser {
         //     )))
         // })
 
-        return new Statement().newIntLoop(body, vars, ranges);
+        return new Statement().newIntLoop(body, metadata);
     }
 
     async forStatement(): Promise<Statement> {
         this.expect(tokenType.leftparen, "( after while");
-        var cond = await this.expression();
 
-        if(cond.datatype.isInteger()) {
-            return await this.integerLoop(cond);
-        }
+        return await this.integerLoop();
 
-        this.expect(tokenType.rightparen, ") after condition");
-        this.expect(tokenType.pipe, "Expect |var|");
-        return await this.statement();
+
     }
 
     async whileStatement(): Promise<Statement> {
@@ -954,7 +1022,7 @@ export class Parser {
             return await this.ifStatement();
         }
 
-        if(this.match([tokenType.for])) {
+        if (this.match([tokenType.for])) {
             return await this.forStatement();
         }
 
@@ -962,9 +1030,9 @@ export class Parser {
             return await this.whileStatement();
         }
 
-        if(this.match([tokenType.switch])) {
+        if (this.match([tokenType.switch])) {
             return this.switchStatement
-            ();
+                ();
         }
 
         if (this.match([tokenType.asm])) {

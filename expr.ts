@@ -46,6 +46,12 @@ export enum identifierType {
     //structvar
 }
 
+export enum rangeType {
+    array,
+    slice,
+    int
+}
+
 export class Expression {
     type: exprType;
 

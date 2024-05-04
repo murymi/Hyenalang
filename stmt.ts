@@ -1,4 +1,4 @@
-import { Expression, exprType } from "./expr";
+import { Expression, exprType, rangeType } from "./expr";
 import { Variable, incLocalOffset } from "./main";
 import { Type, u64 } from "./type";
 
@@ -52,14 +52,24 @@ export class Statement {
     defaults: Expression[] | undefined;
 
     //switch
-    prongs:Statement[];
-    cases:Expression[];
+    prongs: Statement[];
+    cases: Expression[];
 
-    asm_lines :string[]
+    asm_lines: string[]
 
-    variable:Variable;
+    variable: Variable;
 
-    vars:Variable[];
+    vars: Variable[];
+
+    metadata: {
+        counter: Variable,
+        range_type:rangeType,
+        range:Expression,
+        ptr: boolean | undefined,
+        array_id: Expression | undefined,
+        index_var: Variable | undefined
+    }[];
+
     // makeStructInitializer(off: number, datatype: Type): Expression[] {
     //     var exprid = new Expression().newExprIdentifier(
     //         "",
@@ -80,7 +90,7 @@ export class Statement {
     // }
 
     // newStructVarStatement(offset: number, defaults: Expression[]) {
-// 
+    // 
     // }
 
     // static makeSliceCopy(to: number, from: Expression): Expression[] {
@@ -96,7 +106,7 @@ export class Statement {
     //             new Expression().newExprGet(0, from, u64)
     //         )
     //     );
-// 
+    // 
     //     xpr.push(
     //         new Expression().newExprSet(
     //             new Expression().newExprGet(
@@ -108,11 +118,11 @@ export class Statement {
     //             new Expression().newExprGet(8, from, new Type().newPointer(u8))
     //         )
     //     );
-// 
+    // 
     //     return xpr;
     // }
 
-    newSwitch(cond:Expression,cases:Expression[], prongs:Statement[], else_:Statement) {
+    newSwitch(cond: Expression, cases: Expression[], prongs: Statement[], else_: Statement) {
         this.cond = cond;
         this.cases = cases;
         this.prongs = prongs;
@@ -121,11 +131,17 @@ export class Statement {
         return this;
     }
 
-    newIntLoop(body:Statement, vars:Variable[], ranges:Expression[]){
+    newIntLoop(body: Statement, metadata: {
+        counter: Variable,
+        range_type:rangeType,
+        range:Expression,
+        ptr: boolean | undefined,
+        array_id: Expression | undefined,
+        index_var: Variable | undefined
+    }[]) {
         this.type = stmtType.intloop;
         this.body = body;
-        this.vars = vars;
-        this.cases = ranges;
+        this.metadata = metadata;
         return this;
     }
 
@@ -195,7 +211,7 @@ export class Statement {
     //    return this;
     //}
 
-    static anonLargeReturnVar(expr:Expression, variable:Variable) {
+    static anonLargeReturnVar(expr: Expression, variable: Variable) {
         expr.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(variable)))
         return new Expression().newExprAssign(
@@ -204,7 +220,7 @@ export class Statement {
         );
     }
 
-    static anonSmallReturnVar(expr:Expression, variable:Variable) {
+    static anonSmallReturnVar(expr: Expression, variable: Variable) {
         return new Expression().newExprAssign(
             new Expression().newExprIdentifier(variable)
             , expr
@@ -214,12 +230,12 @@ export class Statement {
     newExprStatement(expr: Expression): Statement {
         this.type = stmtType.exprstmt;
 
-        if(expr.type === exprType.decl_anon_for_get) {
+        if (expr.type === exprType.decl_anon_for_get) {
             this.expr = expr;
             return this;
         }
 
-        if(expr.datatype.size > 8 && expr.type === exprType.call) {
+        if (expr.datatype.size > 8 && expr.type === exprType.call) {
             var variable = incLocalOffset("", expr.datatype);
             return new Statement().newVarstatement(Statement.anonLargeReturnVar(expr, variable));
         }
@@ -235,14 +251,14 @@ export class Statement {
     //     return this;
     // }
 
-    newAsmStatement(lines: string[]){
+    newAsmStatement(lines: string[]) {
         this.type = stmtType.inline_asm;
         this.asm_lines = lines;
         this.datatype = u64;
         return this;
     }
 
-    newModule(name:string,statements:Statement[]):Statement {
+    newModule(name: string, statements: Statement[]): Statement {
         this.type = stmtType.module;
         this.stmts = statements;
         return this;

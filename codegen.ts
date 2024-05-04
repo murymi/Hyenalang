@@ -1,5 +1,5 @@
 import { Token, tokenType } from "./token";
-import { Expression, identifierType } from "./expr";
+import { Expression, identifierType, rangeType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import { Variable, fnType } from "./main";
@@ -755,8 +755,8 @@ function genStmt(stmt: Statement, fnid: number): void {
             var label = incLabel();
             generateCode(stmt.cond);
             console.error(stmt.cases);
-            stmt.cases.forEach((cas)=> {
-                switch(cas.left?.type) {
+            stmt.cases.forEach((cas) => {
+                switch (cas.left?.type) {
                     case exprType.number:
                         console.log(`   cmp rax, ${cas.left?.val}`);
                         console.log(`   je .L.${label}.p.${cas.prong}`);
@@ -771,7 +771,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 }
             });
             console.log(`   jmp .L.${label}.p.else`);
-            stmt.prongs.forEach((prong, i)=>{
+            stmt.prongs.forEach((prong, i) => {
                 console.log(`.L.${label}.p.${i}:`);
                 genStmt(prong, fnid);
                 console.log(`   jmp .L.end.${label}`)
@@ -782,21 +782,56 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.intloop:
             var labeloffset = incLabel();
-            stmt.vars.forEach((va, i)=> {
-                console.log(`   mov qword ptr [rbp-${va.offset}], ${stmt.cases[i].left?.val as number - 1}`);
+
+            stmt.metadata.forEach((m)=>{
+                generateCode(m.range.left as Expression);
+                console.log(`mov [rbp-${m.counter.offset}], rax`)
             })
+
             latestBreakLabel = ".L.break." + labeloffset;
             latestContinueLabel = ".L.continue." + labeloffset;
             console.log(".L.continue." + labeloffset + ":");
-
-            stmt.vars.forEach((va)=> {
-                console.log(`   inc qword ptr [rbp-${va.offset}]`);
+            stmt.metadata.forEach((m)=>{
+                console.log(`inc qword ptr [rbp-${m.counter.offset}]`);
+                if(m.range_type === rangeType.array) {
+                    console.log(`lea rax, [rbp-${m.index_var?.offset}]`);
+                    push();
+                    generateAddress(m.array_id as Expression);
+                    console.log(`mov rdi, qword ptr [rbp-${m.counter.offset}]`);
+                    console.log(`imul rdi, ${m.array_id?.datatype.base.size}`);
+                    console.log(`add rdi, 8`);
+                    console.log(`add rax, rdi`);
+                    if(m.ptr) {
+                        pop("rdi");
+                        console.log("mov [rdi], rax");
+                    }else{
+                        store(m.index_var?.datatype as Type);
+                    }
+                } else if(m.range_type === rangeType.slice) {
+                    console.log(`lea rax, [rbp-${m.index_var?.offset}]`);
+                    push();
+                    generateAddress(m.array_id as Expression);
+                    console.log("add rax, 8");
+                    console.log("mov rax, [rax]");
+                    console.log(`mov rdi, qword ptr [rbp-${m.counter.offset}]`);
+                    console.log(`imul rdi, ${m.array_id?.datatype.base.size}`);
+                    console.log(`add rax, rdi`);
+                    if(m.ptr) {
+                        pop("rdi");
+                        console.log("mov [rdi], rax");
+                    }else{
+                        store(m.index_var?.datatype as Type);
+                    }
+                } 
             })
-            
             genStmt(stmt.body, fnid);
-            //generateCode(stmt.cond);
-            console.log(`   mov rax, [rbp-${stmt.vars[0].offset}]`);
-            console.log(`   cmp rax, ${stmt.cases[0].right?.val as number - 1}`)
+            if(stmt.metadata[0].range_type !== rangeType.slice) {
+                generateCode(stmt.metadata[0].range.right as Expression);
+            } else {
+                generateAddress(stmt.metadata[0].array_id as Expression);
+                console.log("mov rax, [rax]");
+            }
+            console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
             console.log("   jge .L.break." + labeloffset);
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
