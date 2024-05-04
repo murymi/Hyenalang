@@ -4,7 +4,7 @@
 ##### file: hello.hyena
 ```hyena
 # The hardest hello world project
-fn write(data:str) void {
+fn write(data:&u8) void {
     asm {
         "mov rsi, [rdi+8]"
         "mov rdx, [rdi +0]"
