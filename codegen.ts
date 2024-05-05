@@ -893,15 +893,12 @@ function genText(fns: Function[]) {
         if (fn.type === fnType.native) {
             console.log(".global " + fn.name);
             console.log(fn.name + ":");
-
             console.log("   push rbp");
             console.log("   mov rbp, rsp");
             console.log("   sub rsp, " + alignTo(8, fn.localOffset));
-
             genArgs(fn.locals.slice(0, fn.impilicit_arity));
             genStmt(fn.body, i);
-
-            console.log("   xor rax, rax");
+            //console.log("   xor rax, rax");
             console.log(`.L.endfn.${i}:`);
             console.log("   mov rsp, rbp");
             console.log("   pop rbp");
@@ -987,7 +984,6 @@ function genEntry() {
     console.log("   mov rdi, rax");
     console.log("   mov rax, 60");
     console.log("   syscall");
-
 }
 
 export function genStart(

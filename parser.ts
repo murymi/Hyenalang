@@ -790,7 +790,6 @@ export class Parser {
     }
 
     async ExprStatement(): Promise<Statement> {
-
         var expr = await this.expression();
         this.expect(tokenType.semicolon, ";");
         var stmt = new Statement().newExprStatement(expr);
@@ -1159,34 +1158,6 @@ export class Parser {
         this.tokenError("Expected type", this.peek());
         return i64;
     }
-
-    // makeStringInitializerFromPtr(off: number, string: Expression): Expression[] {
-    //     var exprid = new Expression().newExprIdentifier(
-    //         "",
-    //         off,
-    //         string.datatype
-    //     );
-    // 
-    //     var initExpr: Expression[] = [];
-    //     var expr = new Expression().newExprGet(
-    //         string.datatype.members[1].offset,
-    //         exprid, string.datatype.members[1].type
-    //     );
-    //     var set = new Expression().newExprSet(expr, string);
-    // 
-    //     initExpr.push(set);
-    // 
-    //     var expr2 = new Expression().newExprGet(
-    //         string.datatype.members[0].offset,
-    //         exprid, string.datatype.members[0].type
-    //     );
-    //     var set2 = new Expression().newExprSet(expr2,
-    //         new Expression().newExprNumber(string.bytes.length, false)
-    //     );
-    //     initExpr.push(set2);
-    // 
-    //     return initExpr;
-    // }
 
     async rvalue(): Promise<Expression> {
         var initializer = await this.expression();

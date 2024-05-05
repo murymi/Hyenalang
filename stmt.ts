@@ -234,6 +234,13 @@ export class Statement {
         );
     }
 
+    static anonLargeVar(expr: Expression, variable: Variable) {
+        return new Expression().newExprAssign(
+            new Expression().newExprIdentifier(variable)
+            , expr
+        );
+    }
+
     newExprStatement(expr: Expression): Statement {
         this.type = stmtType.exprstmt;
 
@@ -245,6 +252,11 @@ export class Statement {
         if (expr.datatype.size > 8 && expr.type === exprType.call) {
             var variable = incLocalOffset("", expr.datatype);
             return new Statement().newVarstatement(Statement.anonLargeReturnVar(expr, variable));
+        }
+
+        if (expr.datatype.size > 8) {
+            var variable = incLocalOffset("", expr.datatype);
+            return new Statement().newVarstatement(Statement.anonLargeVar(expr, variable));
         }
 
         this.expr = expr;

@@ -31,7 +31,6 @@ write:
    mov rax, 1
    syscall
 # [end]
-   xor rax, rax
 .L.endfn.0:
    mov rsp, rbp
    pop rbp
@@ -42,7 +41,7 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 16
-   lea rax, [rbp-12]
+   lea rax, [rbp-10]
    add rax, 8
    push rax
    pop rdi
@@ -56,25 +55,10 @@ main:
    push rdi
    add rdi, 1
    push rdi
-   mov rax, 4
-   pop rdi
-   mov [rdi], al
-   pop rdi
-   push rdi
-   add rdi, 2
-   push rdi
-   mov rax, 1
-   pop rdi
-   mov [rdi], al
-   pop rdi
-   push rdi
-   add rdi, 3
-   push rdi
-   mov rax, 4
+   mov rax, 2
    pop rdi
    mov [rdi], al
    add rsp, 8
-   xor rax, rax
 .L.endfn.1:
    mov rsp, rbp
    pop rbp

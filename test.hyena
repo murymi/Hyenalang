@@ -8,22 +8,6 @@ fn write(data:&u8) void {
     }
 }
 
-struct Baz {
-    t:u64
-}
-
-struct Bar {
-    k:Baz
-}
-
-struct Foo {
-    x:u8,
-    y:u8
-}
-
 fn main() void {
-    var d = []Foo{
-        Foo { .x = 1, .y = 4},
-        Foo { .x = 1, .y = 4}
-    };
+    []u8{1,2};
 }
