@@ -494,14 +494,7 @@ export class Parser {
     }
 
     async unary(): Promise<Expression> {
-        if (this.match([tokenType.minus])) {
-            var operator = this.previous();
-            var right = await this.unary();
-            return new Expression().newExprUnary(operator, right);
-        }
-
-
-        if (this.match([tokenType.bitnot])) {
+        if (this.match([tokenType.bitnot, tokenType.minus, tokenType.bang])) {
             var operator = this.previous();
             var right = await this.unary();
             return new Expression().newExprUnary(operator, right);
@@ -521,10 +514,11 @@ export class Parser {
 
     async cast():Promise<Expression> {
 
-        if(this.match([tokenType.leftparen])) {
+        if(this.match([tokenType.cast])) {
+            this.expect(tokenType.leftparen, "(");
             var type = this.parseType(false);
             this.expect(tokenType.rightparen, ")");
-            var expr = await this.unary();
+            var expr = await this.cast();
             expr.datatype = type;
             return expr;
         }

@@ -243,6 +243,12 @@ function genBinary(operator: tokenType, datatype: Type) {
     }
 }
 
+function genBang() {
+    console.log("   cmp rax, 0");
+    console.log("   sete al");
+    console.log("   movzb rax, al");
+}
+
 function genUnary(operator: Token) {
     switch (operator.type) {
         case tokenType.minus:
@@ -250,6 +256,9 @@ function genUnary(operator: Token) {
             break;
         case tokenType.bitnot:
             genBitNot();
+            break;
+        case tokenType.bang:
+            genBang();
             break;
     }
 }

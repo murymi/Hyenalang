@@ -209,6 +209,7 @@ export class Expression {
     newExprGrouping(expr: Expression):Expression{
         this.left = expr;
         this.type = exprType.grouping;
+        this.datatype = expr.datatype;
         return this;
     }
 

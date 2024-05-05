@@ -15,7 +15,7 @@ struct foo {
 
 fn main() void {
 
-    var a = (*foo)null;
-    a.x= 9;
-    a.y = 67;
+    if(!20) {
+        write("hello\n");
+    }
 }

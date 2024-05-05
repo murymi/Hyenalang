@@ -110,6 +110,7 @@ export enum tokenType {
     pipe,
     defer,
     null,
+    cast,
     eof
 };
 
@@ -294,7 +295,8 @@ export class Lexer {
             switch: tokenType.switch,
             for: tokenType.for,
             defer: tokenType.defer,
-            null: tokenType.null
+            null: tokenType.null,
+            cast: tokenType.cast
         }
     }
 
