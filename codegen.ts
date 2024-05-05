@@ -264,13 +264,7 @@ function genUnary(operator: Token) {
 }
 
 function genNumber(expr: Expression) {
-    if (expr.datatype === f32) {
-        //console.log("sub rsp, 8");
-        //console.log(`movq [rsp], ${expr.val}`)
-    } else {
         console.log("   mov rax, " + expr.val);
-    }
-
 }
 
 function load(datatype: Type) {
@@ -294,14 +288,10 @@ function load(datatype: Type) {
         console.error("Invalidx load");
         process.exit(1);
     }
-
-
 }
 
 function store(datatype: Type) {
     console.log("   pop rdi");
-    //console.log("   pop rax");
-
     if (datatype.size === 1) {
         console.log("   mov [rdi], al");
     } else if (datatype.size === 2) {
@@ -338,7 +328,6 @@ function genAddress(expr: Expression) {
 }
 
 function generateAddress(expr: Expression | Statement) {
-    //console.error(expr.type);
     switch (expr.type /** */) {
         case exprType.identifier:
             if (expr.variable.is_global) {
@@ -393,7 +382,6 @@ function genLvalue(expr: Expression | Statement) {
 }
 
 function assignLit(offset: number, expr: Expression) {
-    //console.error(expr);
     expr.setters.forEach((s) => {
         if (s.data_type.kind === myType.struct) {
             assignLit(s.field_offset + offset, s.value);
@@ -401,9 +389,9 @@ function assignLit(offset: number, expr: Expression) {
             assignLit(s.field_offset + offset, s.value);
         } else {
             pop("rdi");
-            console.log("push rdi");
-            console.log(`add rdi, ${s.field_offset + offset}`);
-            console.log("push rdi");
+            console.log("   push rdi");
+            console.log(`   add rdi, ${s.field_offset + offset}`);
+            console.log("   push rdi");
             generateCode(s.value);
             store(s.data_type);
         }
@@ -415,16 +403,16 @@ function genAssignStructLiteral(expr: Expression) {
     generateAddress(expr.left as Expression);
     push();
     assignLit(0, expr.right as Expression);
-    console.log("add rsp, 8");
+    console.log("   add rsp, 8");
 }
 
 
 function assignArrayLiteral(expr: Expression) {
     generateAddress(expr.left as Expression);
-    console.log("add rax, 8");
+    console.log("   add rax, 8");
     push();
     assignLit(0, expr.right as Expression);
-    console.log("add rsp, 8");
+    console.log("   add rsp, 8");
 }
 
 function genAssign(expr: Expression) {
@@ -505,7 +493,6 @@ function storeSliceFromSliceWithIndex(
 
 }
 
-
 function assignSlice(expr: Expression) {
     switch (expr.right?.type) {
         case exprType.slice_array:
@@ -531,8 +518,6 @@ function assignSlice(expr: Expression) {
             storeStruct(expr.left?.datatype as Type);
     }
 }
-
-
 
 function generateCode(expr: Expression) {
     switch (expr.type/**comment */) {
@@ -640,9 +625,7 @@ function generateCode(expr: Expression) {
         case exprType.call:
             generateCode(expr.callee);
             push();
-
             expr.params.forEach((p) => {
-                //console.error(p);
                 if (p.datatype.size > 8) {
                     generateAddress(p);
                 } else {
@@ -650,13 +633,9 @@ function generateCode(expr: Expression) {
                 }
                 push();
             });
-
             for (let i = expr.params.length - 1; i >= 0; i--) {
                 pop(argRegisters[i]);
-                //console.log(`movsx  ${argRegisters[i]}, ${dwordArgRegisters[i]}`);
-
             }
-
             if (expr.fntype === fnType.extern) {
                 console.log("   lea r15, " + expr.callee.name);
                 console.log("   call buitin_glibc_caller");
@@ -666,7 +645,6 @@ function generateCode(expr: Expression) {
             }
             break;
         case exprType.string:
-            //genString(expr.name);
             console.log(`   lea rax, .L.data.strings.${expr.label}`);
             break;
         case exprType.anon_string:
@@ -698,29 +676,6 @@ function generateCode(expr: Expression) {
             throw new Error("Unexpected expression");
     }
 }
-
-// function genAlignedCall() {
-//     console.log(".global buitin_glibc_caller")
-//     console.log("buitin_glibc_caller:")
-//     console.log("   push rbp");
-//     console.log("   mov rbp, rsp");
-//     console.log("   mov rax, rsp");
-//     console.log("   and rax, 15");
-//     console.log("   jnz .L.call");
-//     console.log("   mov rax, 0");
-//     console.log("   call r15");
-//     console.log("   jmp .L.end");
-//     console.log(".L.call:");
-//     console.log("   sub rsp, 8");
-//     console.log("   mov rax, 0");
-//     console.log("   call r15");
-//     console.log("   add rsp, 8");
-//     console.log(".L.end:");
-//     console.log("   mov rsp, rbp");
-//     console.log("   pop rbp");
-//     console.log("   ret")
-// }
-
 function genStmt(stmt: Statement, fnid: number): void {
     //console.error(stmt);
     switch (stmt.type) {
@@ -894,7 +849,6 @@ function genStmt(stmt: Statement, fnid: number): void {
 }
 
 function genGlobalStrings(globs: { value: string }[]): number {
-    console.log(".intel_syntax noprefix");
     console.log(".data");
     var loffset = 0;
     globs.forEach((glob, i) => {
@@ -1015,15 +969,38 @@ function genAnonStrings(anons: { value: Expression }[]) {
     })
 }
 
+
+function genEntry() {
+    console.log(".data");
+    console.log(".align 8");
+    console.log("__argc__: .quad 0");
+    console.log("__argv__: .quad 0");
+    console.log(".text");
+    console.log("")
+    console.log(".global _start");
+    console.log("_start:");
+    console.log("   mov rax, [rsp]");
+    console.log("   mov rcx, [rsp+8]");
+    console.log("   mov [__argc__], rax");
+    console.log("   mov [__argv__], rcx");
+    console.log("   call main");
+    console.log("   mov rdi, rax");
+    console.log("   mov rax, 60");
+    console.log("   syscall");
+
+}
+
 export function genStart(
     globstrings: { value: string }[],
     globals: Variable[],
     anons: { value: Expression }[],
     fns: Function[]
 ) {
+    console.log(".intel_syntax noprefix");
     var offset = genGlobalStrings(globstrings);
     genAnonStrings(anons);
     genGlobals(globals);
+    genEntry();
     genText(fns);
 }
 

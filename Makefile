@@ -11,7 +11,5 @@ main:
 	$(V_AT)node main.js $(FILE)
 
 bin:
-	$(V_AT)gcc -g -static -o tmp tmp.s
-
-# $(V_AT)as -g -o tmp.o tmp.s
-# $(V_AT)ld -g -o tmp tmp.o --no-pie
+	$(V_AT)as -g -o tmp.o tmp.s
+	$(V_AT)ld -g -o tmp tmp.o --no-pie
