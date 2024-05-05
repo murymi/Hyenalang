@@ -108,6 +108,7 @@ export enum tokenType {
     range,
     for,
     pipe,
+    defer,
     eof
 };
 
@@ -290,7 +291,8 @@ export class Lexer {
             impl: tokenType.impl,
             import: tokenType.import,
             switch: tokenType.switch,
-            for: tokenType.for
+            for: tokenType.for,
+            defer: tokenType.defer
         }
     }
 

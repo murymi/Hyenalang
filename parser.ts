@@ -2,7 +2,7 @@ import { Lexer, Token, colors } from "./token";
 import { tokenType } from "./token";
 import { Expression, rangeType } from "./expr";
 import { exprType } from "./expr";
-import { Statement } from "./stmt";
+import { Statement, stmtType } from "./stmt";
 import {
     Function,
     Struct,
@@ -420,7 +420,7 @@ export class Parser {
         switch (expr.datatype.kind) {
             case myType.slice:// likes char*
                 switch (t.type) {
-                    case tokenType.colon:
+                    case tokenType.range:
                         return this.parseSliceSlide(expr, index)
                     case tokenType.rightsquare:
                         return this.parseSliceIndex(expr, index);
@@ -431,7 +431,7 @@ export class Parser {
                 break;
             case myType.array:
                 switch (t.type) {
-                    case tokenType.colon:
+                    case tokenType.range:
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
                         // done
@@ -749,10 +749,19 @@ export class Parser {
     async block(): Promise<Statement> {
         beginScope();
         var stmts: Statement[] = [];
+        var defers: Statement[] = [];
         while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
-            stmts.push(await this.declaration());
+            var stmt = await this.declaration();
+            if(stmt.type === stmtType.defer) {
+                defers.push(stmt.then);
+            }else {
+                stmts.push(stmt);
+            }
         }
         this.expect(tokenType.rightbrace, "}");
+        defers.reverse().forEach((d)=>{
+            stmts.push(d);
+        })
         endScope();
         return new Statement().newBlockStatement(stmts);
     }
@@ -1006,6 +1015,11 @@ export class Parser {
         if (this.match([tokenType.switch])) {
             return this.switchStatement
                 ();
+        }
+
+        if(this.match([tokenType.defer])) {
+            var stmt = await this.statement();
+            return new Statement().newDefer(stmt);
         }
 
         if (this.match([tokenType.asm])) {

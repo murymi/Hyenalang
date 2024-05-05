@@ -785,40 +785,40 @@ function genStmt(stmt: Statement, fnid: number): void {
 
             stmt.metadata.forEach((m)=>{
                 generateCode(m.range.left as Expression);
-                console.log(`mov [rbp-${m.counter.offset}], rax`)
+                console.log(`   mov [rbp-${m.counter.offset}], rax`)
             })
 
             latestBreakLabel = ".L.break." + labeloffset;
             latestContinueLabel = ".L.continue." + labeloffset;
             console.log(".L.continue." + labeloffset + ":");
             stmt.metadata.forEach((m)=>{
-                console.log(`inc qword ptr [rbp-${m.counter.offset}]`);
+                console.log(`   inc qword ptr [rbp-${m.counter.offset}]`);
                 if(m.range_type === rangeType.array) {
-                    console.log(`lea rax, [rbp-${m.index_var?.offset}]`);
+                    console.log(`   lea rax, [rbp-${m.index_var?.offset}]`);
                     push();
                     generateAddress(m.array_id as Expression);
-                    console.log(`mov rdi, qword ptr [rbp-${m.counter.offset}]`);
-                    console.log(`imul rdi, ${m.array_id?.datatype.base.size}`);
-                    console.log(`add rdi, 8`);
-                    console.log(`add rax, rdi`);
+                    console.log(`   mov rdi, qword ptr [rbp-${m.counter.offset}]`);
+                    console.log(`   imul rdi, ${m.array_id?.datatype.base.size}`);
+                    console.log(`   add rdi, 8`);
+                    console.log(`   add rax, rdi`);
                     if(m.ptr) {
                         pop("rdi");
-                        console.log("mov [rdi], rax");
+                        console.log("   mov [rdi], rax");
                     }else{
                         store(m.index_var?.datatype as Type);
                     }
                 } else if(m.range_type === rangeType.slice) {
-                    console.log(`lea rax, [rbp-${m.index_var?.offset}]`);
+                    console.log(`   lea rax, [rbp-${m.index_var?.offset}]`);
                     push();
                     generateAddress(m.array_id as Expression);
-                    console.log("add rax, 8");
-                    console.log("mov rax, [rax]");
-                    console.log(`mov rdi, qword ptr [rbp-${m.counter.offset}]`);
-                    console.log(`imul rdi, ${m.array_id?.datatype.base.size}`);
-                    console.log(`add rax, rdi`);
+                    console.log("   add rax, 8");
+                    console.log("   mov rax, [rax]");
+                    console.log(`   mov rdi, qword ptr [rbp-${m.counter.offset}]`);
+                    console.log(`   imul rdi, ${m.array_id?.datatype.base.size}`);
+                    console.log(`   add rax, rdi`);
                     if(m.ptr) {
                         pop("rdi");
-                        console.log("mov [rdi], rax");
+                        console.log("   mov [rdi], rax");
                     }else{
                         store(m.index_var?.datatype as Type);
                     }
@@ -829,7 +829,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 generateCode(stmt.metadata[0].range.right as Expression);
             } else {
                 generateAddress(stmt.metadata[0].array_id as Expression);
-                console.log("mov rax, [rax]");
+                console.log("   mov rax, [rax]");
             }
             console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
             console.log("   jge .L.break." + labeloffset);

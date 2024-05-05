@@ -20,6 +20,7 @@ export enum stmtType {
     module,
     switch,
     intloop,
+    defer
 }
 
 export class Statement {
@@ -128,6 +129,12 @@ export class Statement {
         this.prongs = prongs;
         this.type = stmtType.switch;
         this.else_ = else_;
+        return this;
+    }
+
+    newDefer(stmt:Statement) {
+        this.type = stmtType.defer;
+        this.then = stmt;
         return this;
     }
 

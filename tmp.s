@@ -2,23 +2,70 @@
 .data
 .align 8
 .L.data.bytes.0:
-   .quad 11
-   .byte 0x68 
-   .byte 0x65 
-   .byte 0x6c 
-   .byte 0x6c 
-   .byte 0x6f 
-   .byte 0x20 
-   .byte 0x77 
-   .byte 0x6f 
-   .byte 0x72 
-   .byte 0x6c 
+   .quad 12
    .byte 0x64 
+   .byte 0x65 
+   .byte 0x66 
+   .byte 0x65 
+   .byte 0x72 
+   .byte 0x20 
+   .byte 0x62 
+   .byte 0x6c 
+   .byte 0x6f 
+   .byte 0x63 
+   .byte 0x6b 
+   .byte 0xa 
    .byte 0
 .align 8
 .L.data.strings.0:
-   .quad 11
+   .quad 12
    .quad offset .L.data.bytes.0 + 8
+.align 8
+.L.data.bytes.1:
+   .quad 18
+   .byte 0x64 
+   .byte 0x65 
+   .byte 0x66 
+   .byte 0x65 
+   .byte 0x72 
+   .byte 0x20 
+   .byte 0x69 
+   .byte 0x6e 
+   .byte 0x6e 
+   .byte 0x65 
+   .byte 0x72 
+   .byte 0x20 
+   .byte 0x62 
+   .byte 0x6c 
+   .byte 0x6f 
+   .byte 0x63 
+   .byte 0x6b 
+   .byte 0xa 
+   .byte 0
+.align 8
+.L.data.strings.1:
+   .quad 18
+   .quad offset .L.data.bytes.1 + 8
+.align 8
+.L.data.bytes.2:
+   .quad 12
+   .byte 0x77 
+   .byte 0x72 
+   .byte 0x69 
+   .byte 0x74 
+   .byte 0x65 
+   .byte 0x20 
+   .byte 0x66 
+   .byte 0x69 
+   .byte 0x72 
+   .byte 0x73 
+   .byte 0x74 
+   .byte 0xa 
+   .byte 0
+.align 8
+.L.data.strings.2:
+   .quad 12
+   .quad offset .L.data.bytes.2 + 8
 .bss
 .text
 .global write
@@ -44,48 +91,24 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 40
-   lea rax, [rbp-16]
-   push rax
-   lea rax, .L.data.strings.0
-   pop rdi
-   movq rcx, [rax+0]
-   movq [rdi+0], rcx
-   movq rcx, [rax+8]
-   movq [rdi+8], rcx
-   mov rax, -1
-mov [rbp-32], rax
-   mov rax, 96
-mov [rbp-40], rax
-.L.continue.2:
-inc qword ptr [rbp-32]
-lea rax, [rbp-24]
-   push rax
-   lea rax, [rbp-16]
-add rax, 8
-mov rax, [rax]
-mov rdi, qword ptr [rbp-32]
-imul rdi, 1
-add rax, rdi
-   pop rdi
-mov [rdi], rax
-inc qword ptr [rbp-40]
-   lea rax, [rbp-24]
-   mov rax, [rax]
-   push rax
-   lea rax, [rbp-40]
-   mov rax, [rax]
-   pop rdi
-   mov [rdi], al
-   lea rax, [rbp-16]
-mov rax, [rax]
-   cmp [rbp-32], rax
-   jge .L.break.2
-   jmp .L.continue.2
-.L.break.2:
+   sub rsp, 0
    lea rax, [write]
    push rax
-   lea rax, [rbp-16]
+   lea rax, .L.data.strings.2
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [write]
+   push rax
+   lea rax, .L.data.strings.1
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [write]
+   push rax
+   lea rax, .L.data.strings.0
    push rax
    pop rdi
    pop rax
