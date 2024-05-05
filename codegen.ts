@@ -392,10 +392,13 @@ function genLvalue(expr: Expression | Statement) {
     generateAddress(expr);
 }
 
-function assignStructLit(offset: number, expr: Expression) {
+function assignLit(offset: number, expr: Expression) {
+    //console.error(expr);
     expr.setters.forEach((s) => {
-        if(s.data_type.kind === myType.struct) {
-            assignStructLit(s.field_offset + offset, s.value);
+        if (s.data_type.kind === myType.struct) {
+            assignLit(s.field_offset + offset, s.value);
+        } else if (s.data_type.kind === myType.array){
+            assignLit(s.field_offset + offset, s.value);
         } else {
             pop("rdi");
             console.log("push rdi");
@@ -411,7 +414,16 @@ function assignStructLit(offset: number, expr: Expression) {
 function genAssignStructLiteral(expr: Expression) {
     generateAddress(expr.left as Expression);
     push();
-    assignStructLit(0, expr.right as Expression);
+    assignLit(0, expr.right as Expression);
+    console.log("add rsp, 8");
+}
+
+
+function assignArrayLiteral(expr:Expression) {
+    generateAddress(expr.left as Expression);
+    console.log("add rax, 8");
+    push();
+    assignLit(0, expr.right as Expression);
     console.log("add rsp, 8");
 }
 
@@ -516,6 +528,8 @@ function assignSlice(expr: Expression) {
     }
 }
 
+
+
 function generateCode(expr: Expression) {
     switch (expr.type/**comment */) {
         case exprType.null:
@@ -600,6 +614,7 @@ function generateCode(expr: Expression) {
                     }
                     break;
                 case myType.array:
+                    assignArrayLiteral(expr);
                     break;
                 default:
                     genAssign(expr);

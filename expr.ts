@@ -38,7 +38,8 @@ export enum exprType {
     case,
     null,
     cast,
-    struct_literal
+    struct_literal,
+    array_literal
 }
 
 export enum identifierType {
@@ -108,7 +109,14 @@ export class Expression {
 
     prong:number;
 
-    setters:{ field_offset:number,data_type:Type, value:Expression }[]
+    setters:{ field_offset:number,data_type:Type, value:Expression }[];
+
+    arrayLiteral(setters:{ field_offset:number,data_type:Type, value:Expression }[], data_type:Type) {
+        this.datatype = data_type;
+        this.setters = setters;
+        this.type = exprType.array_literal;
+        return this;
+    }
 
     newIfExpr(cond:Expression, left:Expression, right:Expression){
         this.cond = cond;

@@ -146,11 +146,27 @@ export class Parser {
             this.expect(tokenType.dot,".");
             var fo = getOffsetOfMember(struc_type, this.expect(tokenType.identifier, "identifier").value as string);
             this.expect(tokenType.equal, "=");
-            setters.push({field_offset:fo.offset,data_type:fo.datatype, value:await this.expression()})
+            setters.push({field_offset:fo.offset,data_type:fo.datatype, value:await this.expression()});
             if(!this.match([tokenType.comma])) break;
         }
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, struc_type);
+    }
+
+    async arrayLiteral(): Promise<Expression> {
+        this.expect(tokenType.rightsquare, "]");
+        var base = this.parseType(false);
+        this.expect(tokenType.leftbrace, "{");
+        var setters:{ field_offset:number,data_type:Type, value:Expression }[] = [];
+        var offset = 0;
+        while(true) {
+            setters.push({field_offset:offset,data_type:base, value:await this.expression()});
+            offset+= base.size;
+            if(!this.match([tokenType.comma])) break;
+        }
+        this.expect(tokenType.rightbrace, "}");
+
+        return new Expression().arrayLiteral(setters, new Type().newArray(base, setters.length));
     }
 
     async primary(): Promise<Expression> {
@@ -174,6 +190,10 @@ export class Parser {
             //console.error(this.peek())
             var expr = new Expression().newExprIdentifier(obj.variable as Variable);
             return expr;
+        }
+
+        if(this.match([tokenType.leftsquare])) {
+            return this.arrayLiteral();
         }
 
         if (this.match([tokenType.string])) {
@@ -1189,7 +1209,7 @@ export class Parser {
         }
 
         // if array make it slice
-        if (initializer.datatype.kind === myType.array) {
+        if (initializer.datatype.kind === myType.array && initializer.type !== exprType.array_literal) {
             type = new Type().newStruct("slice", [
                 { name: "len", datatype: u64, default: undefined },
                 { name: "ptr", datatype: new Type().newPointer(initializer.datatype.base), default: undefined }
@@ -1215,7 +1235,7 @@ export class Parser {
                 new Expression().newExprAssign(
                     new Expression().newExprIdentifier(variable),
                     new Expression().newExprSlideString(initializer))
-        } else if (initializer.datatype.kind === myType.array) {
+        } else if (initializer.datatype.kind === myType.array && initializer.type !== exprType.array_literal) {
             initializer =
                 new Expression().newExprAssign(
                     new Expression().newExprIdentifier(variable),

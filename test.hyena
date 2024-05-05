@@ -18,16 +18,10 @@ struct Bar {
 
 struct Foo {
     x:u8,
-    y:Bar
+    y:u8
 }
 
 fn main() void {
-    var a = Foo { 
-        .y = Bar { 
-            .k = Baz {
-                 .t = 70 
-            }
-        },
-        .x = 8
-    };
+    var a = []Foo{Foo { .x = 1, .y = 4},Foo { .x = 1, .y = 4}};
+    return a[0].x + a[0].y + a[1].x + a[1].y;
 }
