@@ -1,7 +1,7 @@
 import { Variable, addGlobalString, fnType } from "./main";
 import { Statement } from "./stmt";
 import { Token } from "./token";
-import { Type, f32, i32, i64, myType, str, u64, u8, voidtype } from "./type";
+import { Type, f32, i32, i64, myType, nullptr, str, u64, u8, voidtype } from "./type";
 
 export enum exprType {
     unary,
@@ -35,7 +35,9 @@ export enum exprType {
     tmp_identifier,
     if_expr,
     range,
-    case
+    case,
+    null,
+    cast
 }
 
 export enum identifierType {
@@ -112,6 +114,17 @@ export class Expression {
         this.type = exprType.if_expr;
         this.datatype = left.datatype;
         return this
+    }
+
+    // newExprCast(left, type) {
+    //     this.type = exprType.cast;
+    //     this.left = left;
+    //     this.datatype = 
+    // }
+    newExprNull() {
+        this.type = exprType.null;
+        this.datatype = nullptr;
+        return this;
     }
 
     newExprRange(left:Expression, right:Expression) {

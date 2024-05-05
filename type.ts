@@ -314,16 +314,16 @@ export var i8 = new Type().newType(myType.i8, 1, 1);
 export var u64 = new Type().newType(myType.u64, 8, 8);
 export var u32 = new Type().newType(myType.u32, 4, 4);
 export var u16 = new Type().newType(myType.u16, 2, 2);
-export var voidtype = new Type().newType(myType.void, 1, 1);
+export var voidtype = new Type().newType(myType.void, 8, 8);
 export var bool = new Type().newType(myType.bool, 1, 1);
 export var u8 = new Type().newType(myType.u8, 1, 1);
 export var f32 = new Type().newType(myType.f32, 4, 4);
 export var enm = new Type().newType(myType.enum, 4, 4);
+export var nullptr = new Type().newPointer(voidtype);
 export var str = new Type().newStruct("str",[
     { name: "len", datatype: u64, default: undefined },
     { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
 ]);
-
 
 
 function typeError(message: string, tok: Token | undefined) {

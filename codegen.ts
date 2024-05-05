@@ -387,7 +387,6 @@ function genAssign(expr: Expression) {
     generateAddress(expr.left as Expression);
     push();
     generateCode(expr.right as Expression);
-    //console.error("======ooo======");
     store(expr.left?.datatype as Type);
 }
 
@@ -444,11 +443,7 @@ function storeSliceFromSliceWithIndex(
     push();
     generateAddress(from);
     console.log("add rax, 8");
-
     console.log("mov rax, [rax]");
-
-    //console.error(to.datatype);
-
     console.log(`imul rdx, ${to.datatype.base.size}`)
     console.log("add rax, rdx");
     pop("rdi");
@@ -485,6 +480,9 @@ function assignSlice(expr: Expression) {
 
 function generateCode(expr: Expression) {
     switch (expr.type/**comment */) {
+        case exprType.null:
+            console.log("mov rax, 0");
+            break;
         case exprType.address:
             generateAddress(expr.left as Expression);
             break;
@@ -528,8 +526,6 @@ function generateCode(expr: Expression) {
         case exprType.assign_slice_index:
         case exprType.assign_array_index:
         case exprType.assignIndex:
-            //generateAddress(expr.left as Expression);
-            //generateCode(expr.right as Expression);
             console.error(expr.datatype)
             if (expr.datatype.size > 8) {
                 genAssignLarge(expr);
@@ -547,22 +543,15 @@ function generateCode(expr: Expression) {
                 }
                 return;
             }
-
-
             if (expr.right?.type === exprType.call && expr.right.datatype.size > 8) {
-                //console.error(expr.right);
                 generateCode(expr.right as Expression);
                 return;
             }
-
-            //console.error(expr.datatype.kind);
-
             switch (expr.datatype.kind) {
                 case myType.slice:
                     assignSlice(expr);
                     break;
                 case myType.string:
-                    //console.error("===============================");
                     assignSlice(expr);
                     break;
                 case myType.struct:
@@ -576,7 +565,6 @@ function generateCode(expr: Expression) {
                     break;
                 default:
                     genAssign(expr);
-
             }
             break;
         case exprType.identifier:

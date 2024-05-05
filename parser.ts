@@ -180,6 +180,10 @@ export class Parser {
             return new Expression().newExprGrouping(expr);
         }
 
+        if (this.match([tokenType.null])) {
+            return new Expression().newExprNull();
+        }
+
         if (this.match([tokenType.at])) {
             var what = this.expect(tokenType.identifier, "expect option");
 
@@ -515,15 +519,29 @@ export class Parser {
         return await this.call();
     }
 
+    async cast():Promise<Expression> {
+
+        if(this.match([tokenType.leftparen])) {
+            var type = this.parseType(false);
+            this.expect(tokenType.rightparen, ")");
+            var expr = await this.unary();
+            expr.datatype = type;
+            return expr;
+        }
+
+        return await this.unary();
+    }
+
     async factor(): Promise<Expression> {
-        var expr = await this.unary();
+        var expr = await this.cast();
         while (this.match([tokenType.divide, tokenType.multiply, tokenType.mod])) {
             var operator = this.previous();
-            var right = await this.unary();
+            var right = await this.cast();
             expr = new Expression().newExprBinary(operator, expr, right);
         }
         return expr;
     }
+
 
     async term(): Promise<Expression> {
         var expr = await this.factor();
