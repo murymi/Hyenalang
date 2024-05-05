@@ -25,7 +25,7 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
+   sub rsp, 24
    lea rax, [rbp-12]
 add rax, 8
    push rax
@@ -58,6 +58,14 @@ push rdi
    pop rdi
    mov [rdi], al
 add rsp, 8
+   lea rax, [rbp-24]
+   push rax
+   lea rax, [rbp-12]
+   pop rdi
+   movq rcx, [rax+0]
+   movq [rdi+0], rcx
+   movq rcx, [rax+8]
+   movq [rdi+8], rcx
    mov rax, 8
    push rax
    mov rax, 1
@@ -66,7 +74,7 @@ add rsp, 8
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-12]
+   lea rax, [rbp-24]
    pop rdi
    add rax, rdi
    pop rdi
@@ -82,7 +90,7 @@ add rsp, 8
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-12]
+   lea rax, [rbp-24]
    pop rdi
    add rax, rdi
    pop rdi
@@ -98,7 +106,7 @@ add rsp, 8
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-12]
+   lea rax, [rbp-24]
    pop rdi
    add rax, rdi
    pop rdi
@@ -114,7 +122,7 @@ add rsp, 8
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-12]
+   lea rax, [rbp-24]
    pop rdi
    add rax, rdi
    pop rdi

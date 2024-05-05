@@ -1208,15 +1208,7 @@ export class Parser {
             this.tokenError("Type not known", this.previous());
         }
 
-        // if array make it slice
-        if (initializer.datatype.kind === myType.array && initializer.type !== exprType.array_literal) {
-            type = new Type().newStruct("slice", [
-                { name: "len", datatype: u64, default: undefined },
-                { name: "ptr", datatype: new Type().newPointer(initializer.datatype.base), default: undefined }
-            ]);
-            type.kind = myType.slice;
-            type.base = initializer.datatype.base;
-        } else if (initializer.datatype.kind === myType.string) {
+        if (initializer.datatype.kind === myType.string) {
             type = str;
             type.base = u8;
             type.kind = myType.slice
@@ -1235,15 +1227,6 @@ export class Parser {
                 new Expression().newExprAssign(
                     new Expression().newExprIdentifier(variable),
                     new Expression().newExprSlideString(initializer))
-        } else if (initializer.datatype.kind === myType.array && initializer.type !== exprType.array_literal) {
-            initializer =
-                new Expression().newExprAssign(
-                    new Expression().newExprIdentifier(variable),
-                    new Expression().newExprSlideArray(initializer,
-                        new Expression().newExprNumber(0),
-                        // len
-                        initializer.datatype.members[0].default as Expression
-                    ))
         } else {
             initializer = new Expression().newExprAssign(
                 new Expression().newExprIdentifier(variable)

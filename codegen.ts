@@ -397,7 +397,7 @@ function assignLit(offset: number, expr: Expression) {
     expr.setters.forEach((s) => {
         if (s.data_type.kind === myType.struct) {
             assignLit(s.field_offset + offset, s.value);
-        } else if (s.data_type.kind === myType.array){
+        } else if (s.data_type.kind === myType.array) {
             assignLit(s.field_offset + offset, s.value);
         } else {
             pop("rdi");
@@ -419,7 +419,7 @@ function genAssignStructLiteral(expr: Expression) {
 }
 
 
-function assignArrayLiteral(expr:Expression) {
+function assignArrayLiteral(expr: Expression) {
     generateAddress(expr.left as Expression);
     console.log("add rax, 8");
     push();
@@ -430,6 +430,8 @@ function assignArrayLiteral(expr:Expression) {
 function genAssign(expr: Expression) {
     if (expr.right?.type === exprType.struct_literal) {
         return genAssignStructLiteral(expr)
+    } else if (expr.right?.type === exprType.array_literal) {
+        return assignArrayLiteral(expr)
     }
     generateAddress(expr.left as Expression);
     push();
@@ -440,6 +442,8 @@ function genAssign(expr: Expression) {
 function genAssignLarge(expr: Expression) {
     if (expr.right?.type === exprType.struct_literal) {
         return genAssignStructLiteral(expr)
+    } else if (expr.right?.type === exprType.array_literal) {
+        return assignArrayLiteral(expr)
     }
     generateAddress(expr.left as Expression);
     push();
@@ -614,7 +618,11 @@ function generateCode(expr: Expression) {
                     }
                     break;
                 case myType.array:
-                    assignArrayLiteral(expr);
+                    if (expr.datatype.size > 8) {
+                        genAssignLarge(expr);
+                    } else {
+                        genAssign(expr);
+                    }
                     break;
                 default:
                     genAssign(expr);
