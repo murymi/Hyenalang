@@ -1,7 +1,7 @@
 import { Variable, addGlobalString, fnType } from "./main";
 import { Statement } from "./stmt";
 import { Token } from "./token";
-import { Type, f32, i32, i64, myType, nullptr, str, u64, u8, voidtype } from "./type";
+import { Type, f32, i32, i64, myType, nullptr, u64, u8, voidtype } from "./type";
 
 export enum exprType {
     unary,
@@ -333,7 +333,7 @@ export class Expression {
     newExprSlice(defs:Expression[]) {
         this.type = exprType.varslice;
         this.defaults = defs;
-        this.datatype = str;
+        this.datatype = new Type().newSlice(u8);
         this.datatype.kind = myType.slice;
         return this;
     }
@@ -366,7 +366,7 @@ export class Expression {
     newExprAnonString(offset:number) {
         this.type = exprType.anon_string;
         this.offset = offset;
-        this.datatype = str;
+        this.datatype = new Type().newSlice(u8);
         return this;
     }
 
@@ -377,11 +377,6 @@ export class Expression {
         this.type = exprType.decl_anon_for_get;
         return this;
     }
-
-    
-
-    constructor(){
-    }
- 
+    constructor(){}
 }
 

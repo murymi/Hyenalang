@@ -8,6 +8,11 @@ fn write(data:&u8) void {
     }
 }
 
+
+
 fn main() void {
-    []u8{1,2};
+    var a = .{1, cast(u8)7, cast(u64) 10};
+    var b = cast(*u64) &a + @alignof(u64);
+    
+    return b.*;
 }

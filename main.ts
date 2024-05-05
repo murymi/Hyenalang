@@ -400,7 +400,7 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
         return { offset: -4, datatype: i64, variable: undefined };
     }
 
-    //console.error(fn.locals);
+    console.error(functions);
     throw new Error(`undefined variable ${name}`);
 }
 
@@ -417,7 +417,22 @@ export function getFn(name: string): Function {
     process.exit(1);
 }
 
+export function fnExists(name:string):number {
+    var index = 0;
+    for(let fun of functions) {
+        if(fun.name === name) {
+            return index;
+        }
+        index++;
+    }
+    return -1;
+}
+
 export function pushFunction(name: string, params: { name: string, datatype: Type }[], type: fnType, retType: any): number {
+    var f = fnExists(name);
+    if(f >= 0) {
+        return f;
+    }
     functions.push(new Function(name, type, params, [], retType));
     return functions.length - 1;
 }
@@ -491,8 +506,6 @@ export function compile(path: string) {
             if (err) {
                 throw err
             } else {
-
-
                 compiled_files.push(abs_path);
 
                 if (err) {

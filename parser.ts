@@ -1,15 +1,12 @@
-import { Lexer, Token, colors } from "./token";
+import { Token, colors } from "./token";
 import { tokenType } from "./token";
 import { Expression, rangeType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import {
-    Function,
     Struct,
-    Templatefn,
     Variable,
     addAnonString,
-    addGenericFunction,
     beginScope,
     compile,
     endScope,
@@ -24,14 +21,11 @@ import {
     pushEnum,
     pushFunction,
     pushStruct,
-    pushTemplatefn,
     resetCurrentFunction,
     restoreFn,
-    setCurrentFuction,
-    setCurrentTemplate
+    setCurrentFuction
 } from "./main";
-import { Type, bool, f32, getPresentModule, i16, i32, i64, i8, myType, popModule, pushModule, pushStructType, searchStruct, str, u16, u32, u64, u8, voidtype } from "./type";
-import { error } from "console";
+import { Type, alignTo, argv, bool, f32, i16, i32, i64, i8, myType, popModule, pushModule, pushStructType, searchStruct,u16, u32, u64, u8, voidtype } from "./type";
 
 export class Parser {
     tokens: Token[];
@@ -103,20 +97,14 @@ export class Parser {
 
     async createFunction(name: string): Promise<Expression> {
         var template = getTemplate(name);
-        //console.error(template);
-        //console.log(this.peek().type === tokenType.less);
         this.expect(tokenType.less, "Expect type args ");
-        //console.error("=========================");
         var types: Type[] = [];
         while (true) {
-            //var T = this.expect(tokenType.identifier, "Expect type arg").value as string;
             types.push(this.parseType(false));
             if (!this.check(tokenType.comma)) break;
             this.advance();
         }
-
         this.expect(tokenType.greater, "Expect > after type args");
-        //console.error(types);
         if (types.length !== template.place_holders.length) {
             this.tokenError(`${template.name} expects ${template.place_holders.length} types args.`, this.peek())
         }
@@ -124,9 +112,6 @@ export class Parser {
         var tokens: Token[] = this.cloneTokens(template.tokens);
         var fakename = "test_template" + template.getCount();
         tokens.splice(0, 0, new Token(tokenType.identifier, fakename, 0, 0, ""));
-
-        //this.replaceTokens(tokens, template.place_holders);
-
         template.place_holders.forEach((ph, i) => {
             this.replaceTokens(tokens, ph, types[i].toString())
         })
@@ -138,16 +123,16 @@ export class Parser {
         return new Expression().newExprFnIdentifier(obj.name, obj.data_type);
     }
 
-    async structLiteral(name:string):Promise<Expression> {
+    async structLiteral(name: string): Promise<Expression> {
         var struc_type = searchStruct(name) as Type;
-        var setters:{ field_offset:number,data_type:Type, value:Expression }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         this.expect(tokenType.leftbrace, "{");
-        while(true) {
-            this.expect(tokenType.dot,".");
+        while (true) {
+            this.expect(tokenType.dot, ".");
             var fo = getOffsetOfMember(struc_type, this.expect(tokenType.identifier, "identifier").value as string);
             this.expect(tokenType.equal, "=");
-            setters.push({field_offset:fo.offset,data_type:fo.datatype, value:await this.expression()});
-            if(!this.match([tokenType.comma])) break;
+            setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
+            if (!this.match([tokenType.comma])) break;
         }
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, struc_type);
@@ -157,16 +142,42 @@ export class Parser {
         this.expect(tokenType.rightsquare, "]");
         var base = this.parseType(false);
         this.expect(tokenType.leftbrace, "{");
-        var setters:{ field_offset:number,data_type:Type, value:Expression }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         var offset = 0;
-        while(true) {
-            setters.push({field_offset:offset,data_type:base, value:await this.expression()});
-            offset+= base.size;
-            if(!this.match([tokenType.comma])) break;
+        while (true) {
+            setters.push({ field_offset: offset, data_type: base, value: await this.expression() });
+            offset += base.size;
+            if (!this.match([tokenType.comma])) break;
         }
         this.expect(tokenType.rightbrace, "}");
 
         return new Expression().arrayLiteral(setters, new Type().newArray(base, setters.length));
+    }
+
+    async nameLessStruct(): Promise<Expression> {
+        this.expect(tokenType.leftbrace, "{");
+        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
+        var offset = 0;
+        var data_type = new Type();
+        data_type.align = 0;
+        data_type.members = [];
+        while (true) {
+            var expr = await this.expression();
+            offset = alignTo(expr.datatype.align, offset);
+            setters.push({ field_offset: offset, data_type: expr.datatype, value: expr });
+            data_type.members.push({ name: "", offset: offset, type: expr.datatype, default: undefined });
+            offset += expr.datatype.size;
+            if (data_type.align < expr.datatype.align) {
+                data_type.align = expr.datatype.align;
+            }
+            if (!this.match([tokenType.comma])) break;
+        }
+        //setters.splice(0, 0, { field_offset: 0, data_type:u64 , value:new Expression().newExprNumber(data_type.members.length) });
+        //data_type.members.splice(0, 0,{name:"len", offset:0, type:u64, default:undefined})
+        data_type.size = alignTo(data_type.align, offset);
+        data_type.kind = myType.tuple;
+        this.expect(tokenType.rightbrace, "}");
+        return new Expression().newStructLiteral(setters, data_type);
     }
 
     async primary(): Promise<Expression> {
@@ -180,7 +191,7 @@ export class Parser {
                 );
             }
 
-            if(obj.offset === -4) {
+            if (obj.offset === -4) {
                 return await this.structLiteral(id);
             }
 
@@ -192,8 +203,12 @@ export class Parser {
             return expr;
         }
 
-        if(this.match([tokenType.leftsquare])) {
-            return this.arrayLiteral();
+        if (this.match([tokenType.leftsquare])) {
+            return await this.arrayLiteral();
+        }
+
+        if (this.match([tokenType.dot])) {
+            return await this.nameLessStruct();
         }
 
         if (this.match([tokenType.string])) {
@@ -457,6 +472,24 @@ export class Parser {
         return s;
     }
 
+    async parseTupleIndex(expr: Expression, index: Expression): Promise<Expression> {
+        if (index.val > expr.datatype.members.length) {
+            this.tokenError("invalid index", this.previous());
+        }
+        return new Expression().newExprGet(
+            expr.datatype.members[index.val as number].offset,
+            expr, expr.datatype.members[index.val as number].type);
+    }
+
+    async parseTuplePtrIndex(expr: Expression, index: Expression): Promise<Expression> {
+        if (index.val > expr.datatype.base.members.length) {
+            this.tokenError("invalid index", this.previous());
+        }
+        return new Expression().newExprGet(
+            expr.datatype.base.members[index.val as number].offset,
+            new Expression().newExprDeref(expr), expr.datatype.base.members[index.val as number].type);
+    }
+
     async index(expr: Expression): Promise<Expression> {
         var index = await this.expression();
         var t = this.advance();
@@ -484,6 +517,14 @@ export class Parser {
 
                 }
                 break;
+            case myType.tuple:
+                return this.parseTupleIndex(expr, index);
+            case myType.ptr:
+                if(expr.datatype.base.kind !== myType.tuple) {
+                    console.error("indexing non array");
+                    process.exit(1);
+                }
+                return this.parseTuplePtrIndex(expr, index);
             default:
                 console.error("indexing non array");
                 process.exit(1);
@@ -551,9 +592,9 @@ export class Parser {
         return await this.call();
     }
 
-    async cast():Promise<Expression> {
+    async cast(): Promise<Expression> {
 
-        if(this.match([tokenType.cast])) {
+        if (this.match([tokenType.cast])) {
             this.expect(tokenType.leftparen, "(");
             var type = this.parseType(false);
             this.expect(tokenType.rightparen, ")");
@@ -755,20 +796,9 @@ export class Parser {
                 var operator = this.getOperator(equals);
                 val = new Expression().newExprBinary(new Token(operator, "", 0, 0, ""), expr, val)
             }
-
-
             switch (expr.type) {
                 case exprType.identifier:
                 case exprType.deref:
-                    // switch (expr.datatype.kind) {
-                    //     case myType.slice:
-                    //         var off = expr.offset;
-                    //         var expr = new Expression().newExprAssign(expr, val);
-                    //         expr.defaults = Statement.makeSliceCopy(off, val);
-                    //         return expr;
-                    //     default:
-                    // 
-                    // }
                     return new Expression().newExprAssign(expr, val);
                 case exprType.get:
                     return new Expression().newExprSet(expr, val);
@@ -781,7 +811,6 @@ export class Parser {
                     this.tokenError("Unexpected assignment", equals);
             }
         }
-
         return expr;
     }
 
@@ -802,14 +831,14 @@ export class Parser {
         var defers: Statement[] = [];
         while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
             var stmt = await this.declaration();
-            if(stmt.type === stmtType.defer) {
+            if (stmt.type === stmtType.defer) {
                 defers.push(stmt.then);
-            }else {
+            } else {
                 stmts.push(stmt);
             }
         }
         this.expect(tokenType.rightbrace, "}");
-        defers.reverse().forEach((d)=>{
+        defers.reverse().forEach((d) => {
             stmts.push(d);
         })
         endScope();
@@ -822,9 +851,7 @@ export class Parser {
             expr.datatype = i64;
             return new Statement().newReturnStatement(expr);
         }
-
         var expr = await this.expression();
-
         if (expr.type === exprType.call && expr.datatype.size > 8) {
             var variable = incLocalOffset("", expr.datatype)
             expr.params.splice(0, 0, new Expression().newExprAddress(
@@ -832,7 +859,6 @@ export class Parser {
         } else if (expr.type === exprType.string) {
 
         }
-
         this.expect(tokenType.semicolon, ";");
         return new Statement().newReturnStatement(expr);
     }
@@ -846,7 +872,6 @@ export class Parser {
         if (this.match([tokenType.else])) {
             else_ = await this.statement();
         }
-
         return new Statement().newIfStatement(cond, then, else_);
     }
 
@@ -855,13 +880,9 @@ export class Parser {
         var cond = await this.expression();
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.leftbrace, "Expect switch body");
-
         var prongs: Statement[] = [];
         var cases: Expression[] = [];
         var default_prong = new Statement();
-
-        //var items:{prong:Statement, cases:Expression[]}[] = [];
-
         var default_prong_found = false;
         while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
             var can_else = true;
@@ -879,7 +900,6 @@ export class Parser {
                         cases.push(new Expression().newExprCase(prongs.length, expr));
                     }
                 }
-
                 if (!this.check(tokenType.comma)) { can_else = true; break; };
                 this.advance();
                 can_else = false;
@@ -893,18 +913,13 @@ export class Parser {
             } else {
                 prongs.push(pron);
             }
-
-            //items.push({ prong:pron, cases:casez });
-
             if (!this.check(tokenType.rightbrace)) {
                 this.expect(tokenType.comma, "Expect comma after plong");
             }
         }
-
         if (default_prong_found === false) {
             this.tokenError("missing else branch", this.peek());
         }
-
         this.expect(tokenType.rightbrace, "Expect } after switch body");
         return new Statement().newSwitch(cond, cases, prongs, default_prong);
     }
@@ -912,7 +927,7 @@ export class Parser {
     async makeIntRange(bottom: Expression): Promise<Expression> {
         if (this.match([tokenType.range])) {
             bottom.val -= 1;
-            if(this.check(tokenType.comma) || this.check(tokenType.rightparen)) {
+            if (this.check(tokenType.comma) || this.check(tokenType.rightparen)) {
                 return new Expression().newExprRange(bottom, new Expression().newExprNumber(0xfffffffffffff));
             } else {
                 var top = await this.expression();
@@ -921,7 +936,6 @@ export class Parser {
         } else {
             return new Expression().newExprRange(new Expression().newExprNumber(-1), bottom);
         }
-
     }
 
     async integerLoop(): Promise<Statement> {
@@ -1067,7 +1081,7 @@ export class Parser {
                 ();
         }
 
-        if(this.match([tokenType.defer])) {
+        if (this.match([tokenType.defer])) {
             var stmt = await this.statement();
             return new Statement().newDefer(stmt);
         }
@@ -1126,13 +1140,8 @@ export class Parser {
                 return bool;
             case tokenType.f32:
                 return f32;
-            case tokenType.str:
-                var t = new Type().newStruct("str", [
-                    { name: "len", datatype: u64, default: undefined },
-                    { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
-                ]);
-                t.kind = myType.slice;
-                return t;
+            case tokenType.tuple:
+                return argv;
             case tokenType.identifier:
                 var struc = searchStruct(tok.value as string);
                 if (struc) {
@@ -1180,9 +1189,7 @@ export class Parser {
         }
 
         if (initializer.datatype.kind === myType.string) {
-            type = str;
-            type.base = u8;
-            type.kind = myType.slice
+            new Type().newSlice(u8);
         }
         type = type ?? initializer.datatype;
         //console.error(initializer);
@@ -1234,59 +1241,90 @@ export class Parser {
         return new Statement().newExternFnStatement(name.value as string, params);
     }
 
-    copyTokens(start: number, end: number) {
-        var toks: Token[] = [];
-        for (let i = start; i <= end; i++) {
-            toks.push(this.tokens[i]);
-        }
-        //console.error(toks);
-        return toks;
-    }
-
     async nativeFuncDeclaration(name_space?: string): Promise<Statement> {
+        //this.expect(tokenType.fn, "expected fn");
         var name = this.expect(tokenType.identifier, "fn name").value as string;
-
         if (name_space) name = name_space + name;
-
-        var is_template = false;
-        var holders: string[] = [];
-        if (this.match([tokenType.less])) {
-            is_template = true;
-            while (true) {
-                holders.push(this.expect(tokenType.identifier, "Expect type arg").value as string);
-                if (!this.check(tokenType.comma)) break;
-                this.advance();
-            }
-            this.expect(tokenType.greater, "Expect closing >");
-        }
-
         this.expect(tokenType.leftparen, "( after fn name");
-        var first_tok_index = this.previous().index;
-
-        var params: { name: string, datatype: Type }[] = [];
-
+        var params: { name: string, datatype: Type, module_name: string }[] = [];
         if (!this.check(tokenType.rightparen)) {
             while (true) {
                 var paramname = this.expect(tokenType.identifier, "param name");
+
                 this.expect(tokenType.colon, "Expect : after name");
-                var type = this.parseType(is_template, holders);
-                params.push({ name: paramname.value as string, datatype: type });
+                var type = this.parseType(false);
+
+                params.push({ name: paramname.value as string, datatype: type, module_name: "" });
                 if (!this.check(tokenType.comma)) break;
                 this.advance();
             }
         }
         this.expect(tokenType.rightparen, ") after params");
-        var type = this.parseType(is_template, holders);
-        this.expect(tokenType.leftbrace, "function body");
-
-        var currFn = is_template ? pushTemplatefn(name, params, type, holders) : pushFunction(name as string, params, fnType.native, type);
-        is_template ? setCurrentTemplate(currFn) : setCurrentFuction(currFn);
+        var type = this.parseType(false);
+        var curr_fn = pushFunction(name, params, fnType.native, type);
+        if (this.match([tokenType.semicolon])) {
+            return new Statement().newNativeFnStatement(name as string);
+        }
+        setCurrentFuction(curr_fn);
+        this.expect(tokenType.leftbrace, "{");
         var body = await this.block();
-        var last_tok_index = this.previous().index;
-
-        resetCurrentFunction(name, body, this.copyTokens(first_tok_index, last_tok_index));
+        resetCurrentFunction(name, body);
         return new Statement().newNativeFnStatement(name as string);
     }
+
+    // copyTokens(start: number, end: number) {
+    //     var toks: Token[] = [];
+    //     for (let i = start; i <= end; i++) {
+    //         toks.push(this.tokens[i]);
+    //     }
+    //     //console.error(toks);
+    //     return toks;
+    // }
+
+    // async nativeFuncDeclaration(name_space?: string): Promise<Statement> {
+    //     var name = this.expect(tokenType.identifier, "fn name").value as string;
+    // 
+    //     if (name_space) name = name_space + name;
+    // 
+    //     var is_template = false;
+    //     var holders: string[] = [];
+    //     if (this.match([tokenType.less])) {
+    //         is_template = true;
+    //         while (true) {
+    //             holders.push(this.expect(tokenType.identifier, "Expect type arg").value as string);
+    //             if (!this.check(tokenType.comma)) break;
+    //             this.advance();
+    //         }
+    //         this.expect(tokenType.greater, "Expect closing >");
+    //     }
+    // 
+    //     this.expect(tokenType.leftparen, "( after fn name");
+    //     var first_tok_index = this.previous().index;
+    // 
+    //     var params: { name: string, datatype: Type }[] = [];
+    // 
+    //     if (!this.check(tokenType.rightparen)) {
+    //         while (true) {
+    //             var paramname = this.expect(tokenType.identifier, "param name");
+    //             this.expect(tokenType.colon, "Expect : after name");
+    //             var type = this.parseType(is_template, holders);
+    //             params.push({ name: paramname.value as string, datatype: type });
+    //             if (!this.check(tokenType.comma)) break;
+    //             this.advance();
+    //         }
+    //     }
+    //     this.expect(tokenType.rightparen, ") after params");
+    //     var type = this.parseType(is_template, holders);
+    //     this.expect(tokenType.leftbrace, "function body");
+    // 
+    //     var currFn = is_template ? pushTemplatefn(name, params, type, holders) : pushFunction(name as string, params, fnType.native, type);
+    //     is_template ? setCurrentTemplate(currFn) : setCurrentFuction(currFn);
+    //     var body = await this.block();
+    //     var last_tok_index = this.previous().index;
+    // 
+    //     resetCurrentFunction(name, body, this.copyTokens(first_tok_index, last_tok_index));
+    //     return new Statement().newNativeFnStatement(name as string);
+    // }
 
     structDeclaration(isunion: boolean): Statement {
         var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;

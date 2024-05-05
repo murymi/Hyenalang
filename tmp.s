@@ -40,9 +40,8 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
-   lea rax, [rbp-10]
-   add rax, 8
+   sub rsp, 24
+   lea rax, [rbp-16]
    push rax
    pop rdi
    push rdi
@@ -50,15 +49,35 @@ main:
    push rdi
    mov rax, 1
    pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 4
+   push rdi
+   mov rax, 7
+   pop rdi
    mov [rdi], al
    pop rdi
    push rdi
-   add rdi, 1
+   add rdi, 8
    push rdi
-   mov rax, 2
+   mov rax, 10
    pop rdi
-   mov [rdi], al
+   mov [rdi], rax
    add rsp, 8
+   lea rax, [rbp-24]
+   push rax
+   mov rax, 8
+   push rax
+   lea rax, [rbp-16]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-24]
+   mov rax, [rax]
+   mov rax, [rax]
+   jmp .L.endfn.1
 .L.endfn.1:
    mov rsp, rbp
    pop rbp

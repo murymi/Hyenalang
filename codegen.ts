@@ -264,7 +264,7 @@ function genUnary(operator: Token) {
 }
 
 function genNumber(expr: Expression) {
-        console.log("   mov rax, " + expr.val);
+    console.log("   mov rax, " + expr.val);
 }
 
 function load(datatype: Type) {
@@ -383,7 +383,7 @@ function genLvalue(expr: Expression | Statement) {
 
 function assignLit(offset: number, expr: Expression) {
     expr.setters.forEach((s) => {
-        if (s.data_type.kind === myType.struct) {
+        if (s.data_type.kind === myType.struct || s.data_type.kind === myType.tuple) {
             assignLit(s.field_offset + offset, s.value);
         } else if (s.data_type.kind === myType.array) {
             assignLit(s.field_offset + offset, s.value);
@@ -595,13 +595,8 @@ function generateCode(expr: Expression) {
                 case myType.string:
                     assignSlice(expr);
                     break;
+                case myType.tuple:
                 case myType.struct:
-                    if (expr.datatype.size > 8) {
-                        genAssignLarge(expr);
-                    } else {
-                        genAssign(expr);
-                    }
-                    break;
                 case myType.array:
                     if (expr.datatype.size > 8) {
                         genAssignLarge(expr);
@@ -677,7 +672,6 @@ function generateCode(expr: Expression) {
     }
 }
 function genStmt(stmt: Statement, fnid: number): void {
-    //console.error(stmt);
     switch (stmt.type) {
         case stmtType.exprstmt:
             generateCode(stmt.expr);
@@ -878,9 +872,6 @@ function genArgs(
 ) {
     let i = 0;
     for (let p of params) {
-        // if(i < params.length - arity) {
-        //     console.log(`   mov ${getArgRegister(i, p.datatype.size)}, [${getArgRegister(i, p.datatype.size)}]`)
-        // }
         console.log(`   mov [rbp-${p.offset}], ${getArgRegister(i, p.datatype.size)}`);
         i++;
     }
@@ -911,24 +902,9 @@ function genText(fns: Function[]) {
 function genGlobals(globals: Variable[]) {
     globals.forEach((g) => {
         if (g.initializer) {
-
             if (g.initializer.type === exprType.undefnd) return;
-
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
-
-            // if (g.datatype.kind === myType.array && g.value.datatype === undefined) {
-            //     console.log(`   .quad ${g.datatype.members[1].type.size}`);
-            //     console.log(`   .zero ${g.datatype.members[1].type.size}`);
-            //     return;
-            // }
-
-            // if (g.datatype.kind === myType.slice) {
-            //     console.log(`   .quad ${g.value.bytes.length}`);
-            //     console.log("   .quad .L.data." + g.value.label);
-            //     return;
-            // }
-
             if (g.datatype.kind === myType.slice) {
                 console.log(`   .quad ${g.initializer.bytes.length}`)
                 console.log(`   .quad offset .L.data.strings.${g.initializer.label} + 8`)
@@ -944,12 +920,9 @@ function genGlobals(globals: Variable[]) {
     });
 
     console.log(".bss");
-
     globals.forEach((g) => {
-
         console.error(g);
         if (g.initializer === undefined) {
-
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
             console.log("   .zero " + g.datatype.size);
@@ -965,7 +938,6 @@ function genAnonStrings(anons: { value: Expression }[]) {
         console.log(`   .quad offset .L.data.strings.${item.value.label} + 8`)
     })
 }
-
 
 function genEntry() {
     console.log(".data");

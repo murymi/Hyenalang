@@ -111,6 +111,7 @@ export enum tokenType {
     defer,
     null,
     cast,
+    tuple,
     eof
 };
 
@@ -296,7 +297,8 @@ export class Lexer {
             for: tokenType.for,
             defer: tokenType.defer,
             null: tokenType.null,
-            cast: tokenType.cast
+            cast: tokenType.cast,
+            tuple: tokenType.tuple
         }
     }
 

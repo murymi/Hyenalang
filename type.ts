@@ -44,7 +44,8 @@ export enum myType {
     array,
     bool,
     function,
-    template
+    template,
+    tuple
 }
 
 export function alignTo(align: number, n: number): number {
@@ -138,6 +139,7 @@ export class Type {
     newStruct(name:string, mems: { name: string, datatype: Type, default:Expression|undefined }[]) {
         this.name = name;
         //this.module_name = getPresentModule() as string;
+        this.member_fn_names = [];
         this.members = [];
         this.kind = myType.struct;
         var offt = 0;
@@ -276,8 +278,6 @@ export class Type {
                 return bool;
             case "f32":
                 return f32;
-            case "str":
-                return str;
             default:
                 return undefined;
                 //throw new Error("Unhandled type");
@@ -302,7 +302,6 @@ export class Type {
     }
 
     constructor() {
-        this.member_fn_names = [];
     }
 }
 
@@ -320,10 +319,7 @@ export var u8 = new Type().newType(myType.u8, 1, 1);
 export var f32 = new Type().newType(myType.f32, 4, 4);
 export var enm = new Type().newType(myType.enum, 4, 4);
 export var nullptr = new Type().newPointer(voidtype);
-export var str = new Type().newStruct("str",[
-    { name: "len", datatype: u64, default: undefined },
-    { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
-]);
+export var argv = new Type().newPointer(voidtype);
 
 
 function typeError(message: string, tok: Token | undefined) {
