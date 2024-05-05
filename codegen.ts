@@ -392,7 +392,30 @@ function genLvalue(expr: Expression | Statement) {
     generateAddress(expr);
 }
 
+function assignStructLit(offset: number, expr: Expression) {
+    expr.setters.forEach((s) => {
+        if(s.data_type.kind === myType.struct) {
+            assignStructLit(s.field_offset + offset, s.value);
+        } else {
+            console.log(`add rdi, ${s.field_offset + offset}`);
+            console.log("push rdi");
+            generateCode(s.value);
+            store(s.data_type);
+        }
+    }
+    )
+}
+
+function genAssignStructLiteral(expr: Expression) {
+    generateAddress(expr.left as Expression);
+    console.log("mov rdi, rax");
+    assignStructLit(0, expr.right as Expression);
+}
+
 function genAssign(expr: Expression) {
+    if (expr.right?.type === exprType.struct_literal) {
+        return genAssignStructLiteral(expr)
+    }
     generateAddress(expr.left as Expression);
     push();
     generateCode(expr.right as Expression);
@@ -400,6 +423,9 @@ function genAssign(expr: Expression) {
 }
 
 function genAssignLarge(expr: Expression) {
+    if (expr.right?.type === exprType.struct_literal) {
+        return genAssignStructLiteral(expr)
+    }
     generateAddress(expr.left as Expression);
     push();
     generateAddress(expr.right as Expression);
@@ -639,6 +665,8 @@ function generateCode(expr: Expression) {
             generateCode(expr.right as Expression);
             console.log(`.L.endif.${label}:`);
             break;
+        case exprType.struct_literal:
+            break;
         default:
             console.error(expr);
             throw new Error("Unexpected expression");
@@ -780,7 +808,7 @@ function genStmt(stmt: Statement, fnid: number): void {
         case stmtType.intloop:
             var labeloffset = incLabel();
 
-            stmt.metadata.forEach((m)=>{
+            stmt.metadata.forEach((m) => {
                 generateCode(m.range.left as Expression);
                 console.log(`   mov [rbp-${m.counter.offset}], rax`)
             })
@@ -788,9 +816,9 @@ function genStmt(stmt: Statement, fnid: number): void {
             latestBreakLabel = ".L.break." + labeloffset;
             latestContinueLabel = ".L.continue." + labeloffset;
             console.log(".L.continue." + labeloffset + ":");
-            stmt.metadata.forEach((m)=>{
+            stmt.metadata.forEach((m) => {
                 console.log(`   inc qword ptr [rbp-${m.counter.offset}]`);
-                if(m.range_type === rangeType.array) {
+                if (m.range_type === rangeType.array) {
                     console.log(`   lea rax, [rbp-${m.index_var?.offset}]`);
                     push();
                     generateAddress(m.array_id as Expression);
@@ -798,13 +826,13 @@ function genStmt(stmt: Statement, fnid: number): void {
                     console.log(`   imul rdi, ${m.array_id?.datatype.base.size}`);
                     console.log(`   add rdi, 8`);
                     console.log(`   add rax, rdi`);
-                    if(m.ptr) {
+                    if (m.ptr) {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
-                    }else{
+                    } else {
                         store(m.index_var?.datatype as Type);
                     }
-                } else if(m.range_type === rangeType.slice) {
+                } else if (m.range_type === rangeType.slice) {
                     console.log(`   lea rax, [rbp-${m.index_var?.offset}]`);
                     push();
                     generateAddress(m.array_id as Expression);
@@ -813,16 +841,16 @@ function genStmt(stmt: Statement, fnid: number): void {
                     console.log(`   mov rdi, qword ptr [rbp-${m.counter.offset}]`);
                     console.log(`   imul rdi, ${m.array_id?.datatype.base.size}`);
                     console.log(`   add rax, rdi`);
-                    if(m.ptr) {
+                    if (m.ptr) {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
-                    }else{
+                    } else {
                         store(m.index_var?.datatype as Type);
                     }
-                } 
+                }
             })
             genStmt(stmt.body, fnid);
-            if(stmt.metadata[0].range_type !== rangeType.slice) {
+            if (stmt.metadata[0].range_type !== rangeType.slice) {
                 generateCode(stmt.metadata[0].range.right as Expression);
             } else {
                 generateAddress(stmt.metadata[0].array_id as Expression);

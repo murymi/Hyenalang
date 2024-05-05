@@ -37,7 +37,8 @@ export enum exprType {
     range,
     case,
     null,
-    cast
+    cast,
+    struct_literal
 }
 
 export enum identifierType {
@@ -107,6 +108,8 @@ export class Expression {
 
     prong:number;
 
+    setters:{ field_offset:number,data_type:Type, value:Expression }[]
+
     newIfExpr(cond:Expression, left:Expression, right:Expression){
         this.cond = cond;
         this.left = left;
@@ -116,6 +119,12 @@ export class Expression {
         return this
     }
 
+    newStructLiteral(setters:{ field_offset:number,data_type:Type, value:Expression }[], data_type:Type) {
+        this.type = exprType.struct_literal;
+        this.datatype = data_type;
+        this.setters = setters;
+        return this;
+    }
     // newExprCast(left, type) {
     //     this.type = exprType.cast;
     //     this.left = left;

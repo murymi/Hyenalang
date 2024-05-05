@@ -1,19 +1,5 @@
 .intel_syntax noprefix
 .data
-.align 8
-.L.data.bytes.0:
-   .quad 6
-   .byte 0x68 
-   .byte 0x65 
-   .byte 0x6c 
-   .byte 0x6c 
-   .byte 0x6f 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.0:
-   .quad 6
-   .quad offset .L.data.bytes.0 + 8
 .bss
 .text
 .global write
@@ -39,23 +25,31 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 0
-   mov rax, 20
-cmp rax, 0
-sete al
-movzb rax, al
-   cmp rax, 0
-   je .L.else.2
-   lea rax, [write]
-   push rax
-   lea rax, .L.data.strings.0
-   push rax
+   sub rsp, 16
+   lea rax, [rbp-16]
+mov rdi, rax
+add rdi, 0
+push rdi
+   mov rax, 8
    pop rdi
-   pop rax
-   call rax
-   jmp .L.end.2
-.L.else.2:
-.L.end.2:
+   mov [rdi], al
+add rdi, 8
+push rdi
+   mov rax, 70
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-16]
+   add rax, 8
+   add rax, 0
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   lea rax, [rbp-16]
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   jmp .L.endfn.1
    xor rax, rax
 .L.endfn.1:
    mov rsp, rbp

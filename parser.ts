@@ -138,6 +138,21 @@ export class Parser {
         return new Expression().newExprFnIdentifier(obj.name, obj.data_type);
     }
 
+    async structLiteral(name:string):Promise<Expression> {
+        var struc_type = searchStruct(name) as Type;
+        var setters:{ field_offset:number,data_type:Type, value:Expression }[] = [];
+        this.expect(tokenType.leftbrace, "{");
+        while(true) {
+            this.expect(tokenType.dot,".");
+            var fo = getOffsetOfMember(struc_type, this.expect(tokenType.identifier, "identifier").value as string);
+            this.expect(tokenType.equal, "=");
+            setters.push({field_offset:fo.offset,data_type:fo.datatype, value:await this.expression()})
+            if(!this.match([tokenType.comma])) break;
+        }
+        this.expect(tokenType.rightbrace, "}");
+        return new Expression().newStructLiteral(setters, struc_type);
+    }
+
     async primary(): Promise<Expression> {
         if (this.match([tokenType.identifier])) {
             var id = this.previous().value as string;
@@ -147,6 +162,10 @@ export class Parser {
                     id,
                     obj.datatype
                 );
+            }
+
+            if(obj.offset === -4) {
+                return await this.structLiteral(id);
             }
 
             if (obj.offset === -7) {
