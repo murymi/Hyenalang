@@ -397,6 +397,8 @@ function assignStructLit(offset: number, expr: Expression) {
         if(s.data_type.kind === myType.struct) {
             assignStructLit(s.field_offset + offset, s.value);
         } else {
+            pop("rdi");
+            console.log("push rdi");
             console.log(`add rdi, ${s.field_offset + offset}`);
             console.log("push rdi");
             generateCode(s.value);
@@ -408,8 +410,9 @@ function assignStructLit(offset: number, expr: Expression) {
 
 function genAssignStructLiteral(expr: Expression) {
     generateAddress(expr.left as Expression);
-    console.log("mov rdi, rax");
+    push();
     assignStructLit(0, expr.right as Expression);
+    console.log("add rsp, 8");
 }
 
 function genAssign(expr: Expression) {

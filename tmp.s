@@ -27,17 +27,22 @@ main:
    mov rbp, rsp
    sub rsp, 16
    lea rax, [rbp-16]
-mov rdi, rax
-add rdi, 0
-push rdi
-   mov rax, 8
+   push rax
    pop rdi
-   mov [rdi], al
+push rdi
 add rdi, 8
 push rdi
    mov rax, 70
    pop rdi
    mov [rdi], rax
+   pop rdi
+push rdi
+add rdi, 0
+push rdi
+   mov rax, 8
+   pop rdi
+   mov [rdi], al
+add rsp, 8
    lea rax, [rbp-16]
    add rax, 8
    add rax, 0
