@@ -23,13 +23,11 @@ struct Foo {
 
 fn main() void {
     var a = Foo { 
-        .y = Bar{ 
-            .k = Baz{
+        .y = Bar { 
+            .k = Baz {
                  .t = 70 
             }
         },
         .x = 8
     };
-
-    return a.x + a.y.k.t;
 }
