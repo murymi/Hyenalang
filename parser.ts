@@ -192,7 +192,9 @@ export class Parser {
             }
 
             if (obj.offset === -4) {
-                return await this.structLiteral(id);
+                if (!this.check(tokenType.doublecolon)) {
+                    return await this.structLiteral(id);
+                }
             }
 
             if (obj.offset === -7) {
@@ -261,19 +263,14 @@ export class Parser {
         }
 
         if (this.match([tokenType.squote])) {
-
-            if (this.match([tokenType.number, tokenType.identifier])) {
-                var val = this.previous().value.toString();
-                if (val.length !== 1) {
-                    this.tokenError("expected single character", this.previous());
-                }
-                this.expect(tokenType.squote, "Expect closing ' ");
-                var expr = new Expression().newExprNumber(val.charCodeAt(0));
-                expr.datatype = i8;
-                return expr;
-
+            var val = this.advance().value.toString();
+            if (val.length !== 1) {
+                this.tokenError("expected single character", this.previous());
             }
-            this.tokenError("expect character", this.previous());
+            this.expect(tokenType.squote, "Expect closing ' ");
+            var expr = new Expression().newExprNumber(val.charCodeAt(0));
+            expr.datatype = i8;
+            return expr
         }
         //console.log(this.peek());
         this.tokenError("unexpected token", this.peek());
@@ -357,9 +354,9 @@ export class Parser {
     }
 
     isSlicing(left: Expression): boolean {
-        return left.type === exprType.slice_array || left.type === exprType.slice_slice||
-        left.type === exprType.slice_array_anon || 
-        left.type === exprType.slice_slice_anon
+        return left.type === exprType.slice_array || left.type === exprType.slice_slice ||
+            left.type === exprType.slice_array_anon ||
+            left.type === exprType.slice_slice_anon
 
     }
 
@@ -374,7 +371,7 @@ export class Parser {
                 return await this.getFunctionFromStruct(expr, meta);
             }
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
-        } else if (this.isLiteral(expr)||this.isSlicing(expr) && this.isStructure(expr.datatype)) {
+        } else if (this.isLiteral(expr) || this.isSlicing(expr) && this.isStructure(expr.datatype)) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             var variable = incLocalOffset("", expr.datatype);
             var get = new Expression().newExprGet(meta.offset,
@@ -532,7 +529,7 @@ export class Parser {
         return new Expression().newExprSlideSliceAnon(new Expression().newExprAssign(id, expr), await this.parseArraySlide(id, index));
     }
 
-    async makeAnonReturnArrayForIndexing(call: Expression, index:Expression) {
+    async makeAnonReturnArrayForIndexing(call: Expression, index: Expression) {
         var new_var = incLocalOffset("", call.datatype);
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
@@ -541,7 +538,7 @@ export class Parser {
         return this.parseArrayIndex(id, index);
     }
 
-    async makeAnonReturnArrayForSlicing(call: Expression, index:Expression) {
+    async makeAnonReturnArrayForSlicing(call: Expression, index: Expression) {
         var new_var = incLocalOffset("", call.datatype);
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
@@ -550,7 +547,7 @@ export class Parser {
         return await this.parseArraySlide(id, index);
     }
 
-    async makeAnonReturnSliceForIndexing(call: Expression, index:Expression) {
+    async makeAnonReturnSliceForIndexing(call: Expression, index: Expression) {
         var new_var = incLocalOffset("", call.datatype);
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
@@ -559,7 +556,7 @@ export class Parser {
         return this.parseSliceIndex(id, index);
     }
 
-    async makeAnonReturnSliceForSlicing(call: Expression, index:Expression) {
+    async makeAnonReturnSliceForSlicing(call: Expression, index: Expression) {
         var new_var = incLocalOffset("", call.datatype);
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
@@ -579,7 +576,7 @@ export class Parser {
                             return await this.anonLargeVarSliceSlide(expr, index);
                         }
 
-                        if(expr.type === exprType.call) {
+                        if (expr.type === exprType.call) {
                             return this.makeAnonReturnSliceForSlicing(expr, index);
                         }
 
@@ -589,7 +586,7 @@ export class Parser {
                             return this.anonLargeVarSliceIndex(expr, index);
                         }
 
-                        if(expr.type === exprType.call) {
+                        if (expr.type === exprType.call) {
                             return this.makeAnonReturnSliceForIndexing(expr, index);
                         }
 
@@ -606,7 +603,7 @@ export class Parser {
                             return await this.anonLargeVarArraySlide(expr, index);
                         }
 
-                        if(expr.type === exprType.call) {
+                        if (expr.type === exprType.call) {
                             return this.makeAnonReturnArrayForSlicing(expr, index);
                         }
 
@@ -615,7 +612,7 @@ export class Parser {
                         if (this.isLiteral(expr)) {
                             return this.anonLargeVarArrayIndex(expr, index);
                         }
-                        if(expr.type === exprType.call) {
+                        if (expr.type === exprType.call) {
                             return this.makeAnonReturnArrayForIndexing(expr, index);
                         }
                         return this.parseArrayIndex(expr, index);
@@ -843,7 +840,7 @@ export class Parser {
             case tokenType.muleq:
                 return tokenType.multiply;
             case tokenType.diveq:
-                return tokenType.diveq
+                return tokenType.divide
             case tokenType.modeq:
                 return tokenType.mod;
             case tokenType.bitandeq:

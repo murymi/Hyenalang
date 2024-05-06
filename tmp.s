@@ -1,26 +1,5 @@
 .intel_syntax noprefix
 .data
-.align 8
-.L.data.bytes.0:
-   .quad 13
-   .byte 0x68 
-   .byte 0x65 
-   .byte 0x6c 
-   .byte 0x6c 
-   .byte 0x6f 
-   .byte 0x20 
-   .byte 0x6b 
-   .byte 0x61 
-   .byte 0x6e 
-   .byte 0x79 
-   .byte 0x61 
-   .byte 0x75 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.0:
-   .quad 13
-   .quad offset .L.data.bytes.0 + 8
 .bss
 .data
 .align 8
@@ -39,8 +18,8 @@ _start:
    mov rax, 60
    syscall
 .text
-.global write
-write:
+.global fmtwrite
+fmtwrite:
    push rbp
    mov rbp, rsp
    sub rsp, 8
@@ -57,50 +36,114 @@ write:
    pop rbp
    ret
 
-.global makeArray
-makeArray:
+.global fmtwrite_char
+fmtwrite_char:
    push rbp
    mov rbp, rsp
    sub rsp, 8
-   mov [rbp-8], rdi
-   mov rax, [rbp-8]
-   push rax
-   lea rax, .L.data.strings.0
-   pop rdi
-   mov cl, [rax+0]
-   mov [rdi+0], cl
-   mov cl, [rax+1]
-   mov [rdi+1], cl
-   mov cl, [rax+2]
-   mov [rdi+2], cl
-   mov cl, [rax+3]
-   mov [rdi+3], cl
-   mov cl, [rax+4]
-   mov [rdi+4], cl
-   mov cl, [rax+5]
-   mov [rdi+5], cl
-   mov cl, [rax+6]
-   mov [rdi+6], cl
-   mov cl, [rax+7]
-   mov [rdi+7], cl
-   mov cl, [rax+8]
-   mov [rdi+8], cl
-   mov cl, [rax+9]
-   mov [rdi+9], cl
-   mov cl, [rax+10]
-   mov [rdi+10], cl
-   mov cl, [rax+11]
-   mov [rdi+11], cl
-   mov cl, [rax+12]
-   mov [rdi+12], cl
-   mov cl, [rax+13]
-   mov [rdi+13], cl
-   mov cl, [rax+14]
-   mov [rdi+14], cl
-   mov cl, [rax+15]
-   mov [rdi+15], cl
-   jmp .L.endfn.1
+   mov [rbp-1], dil
+# [inline asm]
+   lea rsi, [rbp-1]
+   mov rdx, 1
+   mov rdi, 1
+   mov rax, 1
+   syscall
+# [end]
 .L.endfn.1:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global fmtwrite_integer
+fmtwrite_integer:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 16
+   mov [rbp-8], rdi
+   mov rax, 0
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   pop rdi
+   cmp rax, rdi
+   setl al
+   movzb rax, al
+   cmp rax, 0
+   je .L.else.3
+   lea rax, [rbp-8]
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   neg rax
+   pop rdi
+   mov [rdi], rax
+   lea rax, [fmtwrite_char]
+   push rax
+   mov rax, 45
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   jmp .L.end.3
+.L.else.3:
+.L.end.3:
+   mov rax, 0
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   pop rdi
+   cmp rax, rdi
+   setle al
+   movzb rax, al
+   cmp rax, 0
+   je .L.else.4
+   mov rax, 0
+   jmp .L.endfn.2
+   jmp .L.end.4
+.L.else.4:
+.L.end.4:
+   lea rax, [rbp-16]
+   push rax
+   mov rax, 48
+   push rax
+   mov rax, 10
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   pop rdi
+   cqo
+   idiv rdi
+   mov rax, rdx
+   pop rdi
+   add rax, rdi
+   pop rdi
+   mov [rdi], rax
+   lea rax, [fmtwrite_integer]
+   push rax
+   lea rax, [rbp-8]
+   push rax
+   mov rax, 10
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   pop rdi
+   cqo
+   idiv rdi
+   pop rdi
+   mov [rdi], rax
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [fmtwrite_char]
+   push rax
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   push rax
+   pop rdi
+   pop rax
+   call rax
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret
@@ -109,19 +152,16 @@ makeArray:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
-   lea rax, [makeArray]
+   sub rsp, 0
+   lea rax, [fmtwrite_integer]
    push rax
-   lea rax, [rbp-16]
+   mov rax, 20000
+   neg rax
    push rax
    pop rdi
    pop rax
    call rax
-   lea rax, [rbp-16]
-   add rax, 0
-   mov rax, [rax]
-   jmp .L.endfn.2
-.L.endfn.2:
+.L.endfn.5:
    mov rsp, rbp
    pop rbp
    ret

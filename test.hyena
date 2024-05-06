@@ -1,22 +1,6 @@
-fn write(data:&u8) void {
-    asm {
-        "mov rsi, [rdi+8]"
-        "mov rdx, [rdi +0]"
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    }
-}
+import "./lib/fmt.hyena"
 
-struct Bar {
-    x:u8,
-    y:u8
-}
-
-fn makeArray() &u8 {
-    return "hello kanyau\n";
-}
 
 fn main() void {
-   return makeArray().len;
+   fmt::write_integer(-20000);
 }

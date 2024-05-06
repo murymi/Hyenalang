@@ -1,0 +1,36 @@
+struct fmt{}
+impl fmt {
+    write_string(data:&u8) void {
+        asm {
+            "mov rsi, [rdi+8]"
+            "mov rdx, [rdi +0]"
+            "mov rdi, 1"
+            "mov rax, 1"
+            "syscall"
+        }
+    }
+
+
+    write_char(char:u8) void {
+        asm {
+            "lea rsi, [rbp-1]"
+            "mov rdx, 1"
+            "mov rdi, 1"
+            "mov rax, 1"
+            "syscall"
+        }
+    }
+
+    write_integer(int:i64) void;
+
+    write_integer(int:i64) void {
+        if(int < 0) {
+            int = -int;
+            fmt::write_char('-');
+        } 
+        if(int <= 0) return;
+        var char = int % 10 + '0';
+        fmt::write_integer(int /= 10);
+        fmt::write_char(char);
+    }
+}

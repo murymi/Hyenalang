@@ -239,7 +239,8 @@ function genBinary(operator: tokenType, datatype: Type) {
             genShiftRight();
             break;
         default:
-            throw new error("unhandled operator");
+            console.error(operator)
+            throw new Error("unhandled operator");
     }
 }
 
