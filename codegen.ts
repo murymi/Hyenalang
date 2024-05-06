@@ -316,9 +316,9 @@ function storeStruct(datatype: Type) {
     console.log("   pop rdi");
     // todo: use simd
     while (copied < datatype.size) {
-        console.log(`   movq rcx, [rax+${copied}]`);
-        console.log(`   movq [rdi+${copied}], rcx`);
-        copied += 8;
+        console.log(`   mov cl, [rax+${copied}]`);
+        console.log(`   mov [rdi+${copied}], cl`);
+        copied += 1;
     }
 }
 
@@ -760,6 +760,40 @@ function genStmt(stmt: Statement, fnid: number): void {
                 return;
             }
 
+            if(stmt.expr.type === exprType.array_literal) {
+                //generateAddress(expr.left as Expression);
+                console.log("   mov rax, [rbp-8]");
+                console.log(`   mov qword ptr [rax], ${stmt.expr.datatype.arrayLen}`);
+                console.log("   add rax, 8");
+                push();
+                assignLit(0, stmt.expr);
+                console.log("   add rsp, 8");
+                console.log("   mov rax, [rbp-8]");
+                console.log(`   jmp .L.endfn.${fnid}`);
+                return;
+            }
+
+            if(stmt.expr.type === exprType.struct_literal && stmt.expr.datatype.size > 8) {
+                console.log("   mov rax, [rbp-8]");
+                push();
+                assignLit(0, stmt.expr);
+                console.log("   add rsp, 8");
+                console.log("   mov rax, [rbp-8]");
+                console.log(`   jmp .L.endfn.${fnid}`);
+                return;
+            }
+
+            if(stmt.expr.type === exprType.struct_literal) {
+                console.log("   sub rsp, 8");
+                console.log("   lea rax, [rbp-8]");
+                push();
+                assignLit(0, stmt.expr);
+                console.log("   add rsp, 8");
+                console.log("   mov rax, [rbp-8]");
+                console.log(`   jmp .L.endfn.${fnid}`);
+                return;
+            }
+
             if (stmt.expr.datatype.size > 8) {
                 console.log("   mov rax, [rbp-8]");
                 push();
@@ -943,7 +977,7 @@ function genGlobals(globals: Variable[]) {
             if (g.initializer.datatype.size === 1) {
                 console.log("   .byte " + g.initializer.right?.val);
             } else {
-                console.log("   ." + g.initializer.datatype.size + "byte " + g.initializer.right?.val);
+                console.log("   ." + g.initializer.datatype.size + "byte " + g.initializer.val);
             }
         }
     });

@@ -13,7 +13,10 @@ struct Bar {
     y:u8
 }
 
+fn makeArray() Bar {
+    return Bar { .x = 10, .y = 20 };
+}
+
 fn main() void {
-    var a = []u8{1,2,3,4};
-    var b = a[0..3][0..2][2];
+    return makeArray().x;
 }

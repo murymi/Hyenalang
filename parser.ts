@@ -923,8 +923,6 @@ export class Parser {
             var variable = incLocalOffset("", expr.datatype)
             expr.params.splice(0, 0, new Expression().newExprAddress(
                 new Expression().newExprIdentifier(variable)))
-        } else if (expr.type === exprType.string) {
-
         }
         this.expect(tokenType.semicolon, ";");
         return new Statement().newReturnStatement(expr);

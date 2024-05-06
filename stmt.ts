@@ -71,57 +71,6 @@ export class Statement {
         index_var: Variable | undefined
     }[];
 
-    // makeStructInitializer(off: number, datatype: Type): Expression[] {
-    //     var exprid = new Expression().newExprIdentifier(
-    //         "",
-    //         off,
-    //         datatype,
-    //         identifierType.struct
-    //     );
-    // 
-    //     var initExpr: Expression[] = [];
-    //     for (let mem of datatype.members) {
-    //         if (mem.default) {
-    //             var expr = new Expression().newExprGet(mem.offset, exprid, mem.type);
-    //             var set = new Expression().newExprSet(expr, mem.default);
-    //             initExpr.push(set);
-    //         }
-    //     }
-    //     return initExpr;
-    // }
-
-    // newStructVarStatement(offset: number, defaults: Expression[]) {
-    // 
-    // }
-
-    // static makeSliceCopy(to: number, from: Expression): Expression[] {
-    //     var xpr: Expression[] = [];
-    //     xpr.push(
-    //         new Expression().newExprSet(
-    //             new Expression().newExprGet(
-    //                 0,
-    //                 new Expression().newExprIdentifier(
-    //                     "", to, from.datatype),
-    //                 u64
-    //             ),
-    //             new Expression().newExprGet(0, from, u64)
-    //         )
-    //     );
-    // 
-    //     xpr.push(
-    //         new Expression().newExprSet(
-    //             new Expression().newExprGet(
-    //                 8,
-    //                 new Expression().newExprIdentifier(
-    //                     "", to, from.datatype),
-    //                 new Type().newPointer(u8)
-    //             ),
-    //             new Expression().newExprGet(8, from, new Type().newPointer(u8))
-    //         )
-    //     );
-    // 
-    //     return xpr;
-    // }
 
     newSwitch(cond: Expression, cases: Expression[], prongs: Statement[], else_: Statement) {
         this.cond = cond;
