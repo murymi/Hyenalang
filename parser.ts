@@ -532,6 +532,42 @@ export class Parser {
         return new Expression().newExprSlideSliceAnon(new Expression().newExprAssign(id, expr), await this.parseArraySlide(id, index));
     }
 
+    async makeAnonReturnArrayForIndexing(call: Expression, index:Expression) {
+        var new_var = incLocalOffset("", call.datatype);
+        call.params.splice(0, 0, new Expression().newExprAddress(
+            new Expression().newExprIdentifier(new_var)))
+        var id = new Expression().newExprIdentifier(new_var);
+        //return new Expression().newExprDeclAnonForGet(vardecl, get)
+        return this.parseArrayIndex(id, index);
+    }
+
+    async makeAnonReturnArrayForSlicing(call: Expression, index:Expression) {
+        var new_var = incLocalOffset("", call.datatype);
+        call.params.splice(0, 0, new Expression().newExprAddress(
+            new Expression().newExprIdentifier(new_var)))
+        var id = new Expression().newExprIdentifier(new_var);
+        //return new Expression().newExprDeclAnonForGet(vardecl, get)
+        return await this.parseArraySlide(id, index);
+    }
+
+    async makeAnonReturnSliceForIndexing(call: Expression, index:Expression) {
+        var new_var = incLocalOffset("", call.datatype);
+        call.params.splice(0, 0, new Expression().newExprAddress(
+            new Expression().newExprIdentifier(new_var)))
+        var id = new Expression().newExprIdentifier(new_var);
+        //return new Expression().newExprDeclAnonForGet(vardecl, get)
+        return this.parseSliceIndex(id, index);
+    }
+
+    async makeAnonReturnSliceForSlicing(call: Expression, index:Expression) {
+        var new_var = incLocalOffset("", call.datatype);
+        call.params.splice(0, 0, new Expression().newExprAddress(
+            new Expression().newExprIdentifier(new_var)))
+        var id = new Expression().newExprIdentifier(new_var);
+        //return new Expression().newExprDeclAnonForGet(vardecl, get)
+        return await this.parseSliceSlide(id, index);
+    }
+
     async index(expr: Expression): Promise<Expression> {
         var index = await this.expression();
         var t = this.advance();
@@ -542,11 +578,21 @@ export class Parser {
                         if (this.isSlicing(expr)) {
                             return await this.anonLargeVarSliceSlide(expr, index);
                         }
+
+                        if(expr.type === exprType.call) {
+                            return this.makeAnonReturnSliceForSlicing(expr, index);
+                        }
+
                         return this.parseSliceSlide(expr, index)
                     case tokenType.rightsquare:
                         if (this.isSlicing(expr)) {
                             return this.anonLargeVarSliceIndex(expr, index);
                         }
+
+                        if(expr.type === exprType.call) {
+                            return this.makeAnonReturnSliceForIndexing(expr, index);
+                        }
+
                         return this.parseSliceIndex(expr, index);
                     default:
                         this.tokenError("Expect ]", t);
@@ -556,13 +602,21 @@ export class Parser {
             case myType.array:
                 switch (t.type) {
                     case tokenType.range:
-                        if (this.isLiteral(expr) && expr.datatype.size > 8) {
+                        if (this.isLiteral(expr)) {
                             return await this.anonLargeVarArraySlide(expr, index);
                         }
+
+                        if(expr.type === exprType.call) {
+                            return this.makeAnonReturnArrayForSlicing(expr, index);
+                        }
+
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
-                        if (this.isLiteral(expr) && expr.datatype.size > 8) {
+                        if (this.isLiteral(expr)) {
                             return this.anonLargeVarArrayIndex(expr, index);
+                        }
+                        if(expr.type === exprType.call) {
+                            return this.makeAnonReturnArrayForIndexing(expr, index);
                         }
                         return this.parseArrayIndex(expr, index);
                     default:

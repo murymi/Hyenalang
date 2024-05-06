@@ -13,10 +13,10 @@ struct Bar {
     y:u8
 }
 
-fn makeArray() Bar {
-    return Bar { .x = 10, .y = 20 };
+fn makeArray() &u8 {
+    return "hello kanyau\n";
 }
 
 fn main() void {
-    return makeArray().x;
+   return makeArray().len;
 }
