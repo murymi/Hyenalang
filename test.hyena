@@ -8,11 +8,12 @@ fn write(data:&u8) void {
     }
 }
 
-
+struct Bar {
+    x:u8,
+    y:u8
+}
 
 fn main() void {
-    var a = .{1, cast(u8)7, cast(u64) 10};
-    var b = cast(*u64) &a + @alignof(u64);
-    
-    return b.*;
+    var a = []u8{1,2,3,4};
+    var b = a[0..3][0..2][2];
 }

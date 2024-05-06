@@ -39,6 +39,11 @@ export enum exprType {
     null,
     cast,
     struct_literal,
+    address_anon,
+    index_anon,
+    index_anon_slice,
+    slice_array_anon,
+    slice_slice_anon,
     array_literal
 }
 
@@ -181,6 +186,47 @@ export class Expression {
         this.type = exprType.address;
         this.left = left;
         this.datatype = new Type().newPointer(left.datatype);
+        return this;
+    }
+
+    newExprAddressAnon(left:Expression, right:Expression):Expression {
+        this.type = exprType.address_anon;
+        this.left = left;// assign
+        this.right = right;// addr
+        this.datatype = new Type().newPointer(left.datatype);
+        return this;
+    }
+
+    newExprSlideArrayAnon(left:Expression, right:Expression) {
+        this.type = exprType.slice_array_anon;
+        this.left = left;// assign
+        this.right = right;// slide
+        this.datatype = new Type().newSlice(left.datatype.base);
+        return this;
+    }
+
+    newExprSlideSliceAnon(left:Expression, right:Expression) {
+        this.type = exprType.slice_slice_anon;
+        this.left = left;// assign
+        this.right = right;// slide
+        this.datatype = new Type().newSlice(left.datatype.base);
+        return this;
+    }
+
+    newExprIndexAnonArray(left:Expression, right:Expression):Expression {
+        this.type = exprType.index_anon;
+        this.left = left;// assign
+        this.right = right;// index
+        this.datatype = left.datatype.base;
+        return this;
+    }
+
+
+    newExprIndexAnonSlice(left:Expression, right:Expression):Expression {
+        this.type = exprType.index_anon_slice;
+        this.left = left;// assign
+        this.right = right;// index
+        this.datatype = left.datatype.base;
         return this;
     }
 
@@ -346,6 +392,7 @@ export class Expression {
         this.datatype = new Type().newSlice(expr.datatype.base);
         return this;
     }
+
 
     newExprSlideSlice(expr:Expression, begin:Expression, end:Expression) {
         this.type = exprType.slice_slice;

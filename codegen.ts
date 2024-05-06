@@ -409,6 +409,7 @@ function genAssignStructLiteral(expr: Expression) {
 
 function assignArrayLiteral(expr: Expression) {
     generateAddress(expr.left as Expression);
+    console.log(`   mov qword ptr [rax], ${expr.left?.datatype.arrayLen}`);
     console.log("   add rax, 8");
     push();
     assignLit(0, expr.right as Expression);
@@ -494,21 +495,44 @@ function storeSliceFromSliceWithIndex(
 }
 
 function assignSlice(expr: Expression) {
+
+    if (expr.right && expr.right.type === exprType.slice_array_anon) {
+        generateCode(expr.right.left as Expression); //asign
+        storeSliceFromArrayWithIndex(
+            expr.left as Expression,
+            (expr.right.right as Expression).id,
+            expr.right.right?.left as Expression,
+            expr.right.right?.right as Expression, false
+        )
+        return;
+    }
+
+    if (expr.right && expr.right.type === exprType.slice_slice_anon) {
+        generateCode(expr.right.left as Expression); //asign
+        storeSliceFromSliceWithIndex(
+            expr.left as Expression,
+            (expr.right.right as Expression).id,
+            expr.right.right?.left as Expression,
+            expr.right.right?.right as Expression, false
+        )
+        return;
+    }
+
     switch (expr.right?.type) {
         case exprType.slice_array:
             storeSliceFromArrayWithIndex(
                 expr.left as Expression,
                 (expr.right as Expression).id,
-                (expr.right as Expression).left as Expression,
-                (expr.right as Expression).right as Expression, false
+                expr.right?.left as Expression,
+                expr.right?.right as Expression, false
             )
             break;
         case exprType.slice_slice:
             storeSliceFromSliceWithIndex(
                 expr.left as Expression,
                 (expr.right as Expression).id,
-                (expr.right as Expression).left as Expression,
-                (expr.right as Expression).right as Expression, false
+                expr.right?.left as Expression,
+                expr.right?.right as Expression, false
             )
             break;
         default:
@@ -645,7 +669,11 @@ function generateCode(expr: Expression) {
         case exprType.anon_string:
             console.log(`   lea rax, .L.data.anon.${expr.offset}`);
             break;
+        case exprType.address_anon:
+        case exprType.index_anon:
+        case exprType.index_anon_slice:
         case exprType.decl_anon_for_get:
+        case exprType.slice_array_anon:
             generateCode(expr.left as Expression);
             generateCode(expr.right as Expression);
             break;
@@ -664,7 +692,8 @@ function generateCode(expr: Expression) {
             generateCode(expr.right as Expression);
             console.log(`.L.endif.${label}:`);
             break;
-        case exprType.struct_literal:
+        case exprType.slice_array:
+            assignSlice(expr);
             break;
         default:
             console.error(expr);

@@ -40,8 +40,10 @@ write:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 24
-   lea rax, [rbp-16]
+   sub rsp, 56
+   lea rax, [rbp-12]
+   mov qword ptr [rax], 4
+   add rax, 8
    push rax
    pop rdi
    push rdi
@@ -49,35 +51,80 @@ main:
    push rdi
    mov rax, 1
    pop rdi
-   mov [rdi], eax
+   mov [rdi], al
    pop rdi
    push rdi
-   add rdi, 4
+   add rdi, 1
    push rdi
-   mov rax, 7
+   mov rax, 2
    pop rdi
    mov [rdi], al
    pop rdi
    push rdi
-   add rdi, 8
+   add rdi, 2
    push rdi
-   mov rax, 10
+   mov rax, 3
    pop rdi
-   mov [rdi], rax
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 3
+   push rdi
+   mov rax, 4
+   pop rdi
+   mov [rdi], al
    add rsp, 8
-   lea rax, [rbp-24]
+   lea rax, [rbp-49]
    push rax
-   mov rax, 8
+   mov rax, 0
+mov rdx, rax
    push rax
-   lea rax, [rbp-16]
+   mov rax, 3
+   pop rdi
+   sub rax, rdi
+mov rcx, rax
+   lea rax, [rbp-32]
+mov [rax], rcx
+add rax, 8
+   push rax
+   lea rax, [rbp-12]
+add rax, 8
+imul rdx, 1
+add rax, rdx
+   pop rdi
+mov [rdi], rax
+   mov rax, 0
+mov rdx, rax
+   push rax
+   mov rax, 2
+   pop rdi
+   sub rax, rdi
+mov rcx, rax
+   lea rax, [rbp-48]
+mov [rax], rcx
+add rax, 8
+   push rax
+   lea rax, [rbp-32]
+add rax, 8
+mov rax, [rax]
+imul rdx, 1
+add rax, rdx
+   pop rdi
+mov [rdi], rax
+   mov rax, 2
+   push rax
+   mov rax, 1
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-48]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
+   movsx rax, byte ptr [rax]
    pop rdi
-   mov [rdi], rax
-   lea rax, [rbp-24]
-   mov rax, [rax]
-   mov rax, [rax]
-   jmp .L.endfn.1
+   mov [rdi], al
 .L.endfn.1:
    mov rsp, rbp
    pop rbp
