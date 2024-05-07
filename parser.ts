@@ -381,7 +381,6 @@ export class Parser {
         return await this.finishCall(fakeid, new Expression().newExprAddress(expr));
     }
 
-
     async getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Promise<Expression> {
         var obj = getLocalOffset(meta.name);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
@@ -453,26 +452,9 @@ export class Parser {
         }
     }
 
-    // parseArrayIndex(expr: Expression): Expression {
-    //     var index = this.expression();
-    //     this.expect(tokenType.rightsquare, "Expect ]");
-    //     return new Expression().newExprDeref(
-    //         new Expression().newExprBinary(
-    //             new Token(tokenType.plus, "+", 0, 0), expr,
-    //             new Expression().newExprBinary(
-    //                 new Token(tokenType.multiply, "*", 0, 0),
-    //                 new Expression().newExprNumber(expr.datatype.size),
-    //                 index
-    //             )
-    //         )
-    //     )
-    // }
-
     parseSliceIndex(expr: Expression, index: Expression): Expression {
         var meta = getOffsetOfMember(expr.datatype, "ptr");
         var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
-
-
         var ret = new Expression().newExprDeref(
             new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), ex,
                 new Expression().newExprBinary(
@@ -481,7 +463,6 @@ export class Parser {
                     index
                 ))
         )
-
         ret.type = exprType.deref_slice_index;
         ret.datatype = expr.datatype.base;
         return ret;
@@ -572,7 +553,6 @@ export class Parser {
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
         var id = new Expression().newExprIdentifier(new_var);
-        //return new Expression().newExprDeclAnonForGet(vardecl, get)
         return this.parseArrayIndex(id, index);
     }
 
@@ -581,7 +561,6 @@ export class Parser {
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
         var id = new Expression().newExprIdentifier(new_var);
-        //return new Expression().newExprDeclAnonForGet(vardecl, get)
         return await this.parseArraySlide(id, index);
     }
 
@@ -590,7 +569,6 @@ export class Parser {
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
         var id = new Expression().newExprIdentifier(new_var);
-        //return new Expression().newExprDeclAnonForGet(vardecl, get)
         return this.parseSliceIndex(id, index);
     }
 
@@ -599,7 +577,6 @@ export class Parser {
         call.params.splice(0, 0, new Expression().newExprAddress(
             new Expression().newExprIdentifier(new_var)))
         var id = new Expression().newExprIdentifier(new_var);
-        //return new Expression().newExprDeclAnonForGet(vardecl, get)
         return await this.parseSliceSlide(id, index);
     }
 
@@ -1304,7 +1281,7 @@ export class Parser {
                 return bool;
             case tokenType.f32:
                 return f32;
-            case tokenType.tuple:
+            case tokenType.argv:
                 return argv;
             case tokenType.identifier:
                 var struc = searchStruct(tok.value as string);

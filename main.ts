@@ -153,7 +153,6 @@ function checkVariableInFn(name:string) {
 function addVariableInFn(name:string, type:Type){
     var old = functions[currentFn].locals.length;
     functions[currentFn].locals.push(new Variable().local(name, type));
-    //console.error(functions[currentFn].locals);
     return functions[currentFn].locals[old];
 }
 
@@ -174,14 +173,11 @@ export function incLocalOffset(name: string, type: Type, initializer?: Expressio
     }
 
     if (currentFn === -1 && resolution_pass && !resolvable(type)) {
-        //return -1;
         globals.push(new Variable().global(name, type, initializer));
-        console.error(type);
         return globals[globals.length - 1];
     }
 
     if (currentFn === -1 && !resolution_pass && resolvable(type)) {
-        //return -1;
         globals.push(new Variable().global(name, type, initializer));
         return globals[globals.length - 1];
     }

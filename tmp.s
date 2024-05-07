@@ -23,16 +23,10 @@ useBar:
    push rbp
    mov rbp, rsp
    sub rsp, 8
-   mov [rbp-2], di
-   lea rax, [rbp-2]
-   add rax, 1
-   movsx rax, byte ptr [rax]
-   push rax
-   lea rax, [rbp-2]
-   add rax, 0
-   movsx rax, byte ptr [rax]
-   pop rdi
-   add rax, rdi
+   mov [rbp-8], rdi
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    jmp .L.endfn.0
 .L.endfn.0:
    mov rsp, rbp
@@ -43,28 +37,34 @@ useBar:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
+   sub rsp, 16
    lea rax, [useBar]
    push rax
-   lea rax, [rbp-2]
+   lea rax, [rbp-12]
    push rax
    pop rdi
    push rdi
    add rdi, 0
    push rdi
-   mov rax, 2
+   mov rax, 1
    pop rdi
-   mov [rdi], al
+   mov [rdi], eax
    pop rdi
    push rdi
-   add rdi, 1
+   add rdi, 4
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 8
    push rdi
    mov rax, 3
    pop rdi
-   mov [rdi], al
+   mov [rdi], eax
    add rsp, 8
-   lea rax, [rbp-2]
-   movsx rax, word ptr [rax]
+   lea rax, [rbp-12]
    push rax
    pop rdi
    pop rax

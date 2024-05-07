@@ -1,9 +1,10 @@
 
 struct Bar {x:u8,y:u8}
 
-fn useBar(a:Bar)void {
-    return a.x + a.y;
+fn useBar(a:argv) void {
+    return (cast (*u32) a).*;
 }
+
 fn main() void {
-    useBar(Bar{.x = 2, .y = 3});
+    useBar(.{1,2,3});
 }
