@@ -6,7 +6,7 @@ import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
 import { resolve } from "path"
-import { Type, alignTo, getPresentModule, i64, searchStruct, voidtype } from "./type";
+import { Type, alignTo, getPresentModule, i64, myType, searchStruct, voidtype } from "./type";
 
 export enum fnType {
     extern,
@@ -157,10 +157,12 @@ function addVariableInFn(name:string, type:Type){
     return functions[currentFn].locals[old];
 }
 
-
+function resolvable(type:Type):boolean {
+    return type.kind === myType.enum || type.kind === myType.function || type.kind === myType.struct;
+}
 // size in 8 bytes (for now)
 export function incLocalOffset(name: string, type: Type, initializer?: Expression): Variable {
-    if(!resolution_pass && currentFn === -1) {
+    if(!resolution_pass && currentFn === -1 && !resolvable(type)) {
         return getLocalOffset(name).variable as Variable;
     }
 
@@ -171,7 +173,14 @@ export function incLocalOffset(name: string, type: Type, initializer?: Expressio
         }
     }
 
-    if (currentFn === -1 && resolution_pass) {
+    if (currentFn === -1 && resolution_pass && !resolvable(type)) {
+        //return -1;
+        globals.push(new Variable().global(name, type, initializer));
+        console.error(type);
+        return globals[globals.length - 1];
+    }
+
+    if (currentFn === -1 && !resolution_pass && resolvable(type)) {
         //return -1;
         globals.push(new Variable().global(name, type, initializer));
         return globals[globals.length - 1];

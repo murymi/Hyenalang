@@ -174,15 +174,15 @@ export class Parser {
     }
 
 
-    enumField(id:string, data_type:Type):Expression {
+    enumField(id: string, data_type: Type): Expression {
         this.expect(tokenType.dot, "Enum field");
-        var field = this.expect(tokenType.identifier, "Enum field").value as  string;
+        var field = this.expect(tokenType.identifier, "Enum field").value as string;
         var val = data_type.enumvalues.find((e) => e.name === field);
-            if (val) {
-                return new Expression().newExprNumber(val.value);
-            }
-            console.error(`enum ${id} has no field named ${field}`);
-            process.exit(1);
+        if (val) {
+            return new Expression().newExprNumber(val.value);
+        }
+        console.error(`enum ${id} has no field named ${field}`);
+        process.exit(1);
 
     }
 
@@ -201,7 +201,7 @@ export class Parser {
             }
 
             if (obj.offset === -3) {
-                return this.enumField(id,obj.datatype);
+                return this.enumField(id, obj.datatype);
             }
 
             if (obj.offset === -4) {
@@ -295,11 +295,32 @@ export class Parser {
         var new_var = incLocalOffset("", arg.datatype);
         var vardecl = Statement.anonLargeReturnVar(arg, new_var);
         var get = new Expression().newExprIdentifier(new_var);
-        return new Expression().newExprDeclAnonForGet(vardecl, get)
+        return new Expression().newExprDeclAnonForGet(vardecl, get);
+    }
+
+
+    makeAnonArgFromArrayLiteral(lit: Expression): Expression {
+        var new_var = incLocalOffset("", lit.datatype);
+        var id = new Expression().newExprIdentifier(new_var);
+        var decl = new Expression().newExprAssign(id, lit);
+        return new Expression().newExprDeclAnonForGet(decl, new Expression().newExprAddress(id));
+    }
+
+    makeAnonArgFromSmallStructLiteral(lit: Expression): Expression {
+        var new_var = incLocalOffset("", lit.datatype);
+        var id = new Expression().newExprIdentifier(new_var);
+        var decl = new Expression().newExprAssign(id, lit);
+        return new Expression().newExprDeclAnonForGet(decl, id);
+    }
+
+    makeAnonArgFromBigStructLiteral(lit: Expression): Expression {
+        var new_var = incLocalOffset("", lit.datatype);
+        var id = new Expression().newExprIdentifier(new_var);
+        var decl = new Expression().newExprAssign(id, lit);
+        return new Expression().newExprDeclAnonForGet(decl, new Expression().newExprAddress(id));
     }
 
     async finishCall(callee: Expression, optional?: Expression): Promise<Expression> {
-
         if (callee.datatype.kind !== myType.function && !isResolutionPass()) {
             this.tokenError("Not a function", this.previous());
         }
@@ -308,15 +329,21 @@ export class Parser {
             do {
                 var arg = await this.expression();
                 if (arg.datatype.size > 8) {
-                    if (arg.type === exprType.call && arg.datatype.size > 8) {
+                    if (arg.type === exprType.call) {
                         args.push(this.makeAnonArg(arg));
+                    } else if (arg.type === exprType.array_literal) {
+                        args.push(this.makeAnonArgFromArrayLiteral(arg));
+                    } else if (arg.type === exprType.struct_literal) {
+                        args.push(this.makeAnonArgFromBigStructLiteral(arg));
                     } else {
-                        args.push(new Expression().newExprAddress(arg))
-                        //console.error(arg);
-                        //throw new error("Large arg detected");
+                        args.push(new Expression().newExprAddress(arg));
                     }
                 } else {
-                    args.push(arg);
+                    if (arg.type === exprType.struct_literal) {
+                        args.push(this.makeAnonArgFromSmallStructLiteral(arg));
+                    } else {
+                        args.push(arg);
+                    }
                 }
             } while (this.match([tokenType.comma]));
         }
@@ -577,8 +604,19 @@ export class Parser {
     }
 
     async index(expr: Expression): Promise<Expression> {
+        if (isResolutionPass()) {
+            var index = await this.expression();
+            if (this.match([tokenType.range])) {
+                this.expression();
+            }
+            this.expect(tokenType.rightsquare, "]");
+
+            return expr;
+        }
+
         var index = await this.expression();
         var t = this.advance();
+        if (expr.datatype.kind === myType.ptr) expr = new Expression().newExprDeref(expr);
         switch (expr.datatype.kind) {
             case myType.slice:// likes char*
                 switch (t.type) {
@@ -634,12 +672,6 @@ export class Parser {
                 break;
             case myType.tuple:
                 return this.parseTupleIndex(expr, index);
-            case myType.ptr:
-                if (expr.datatype.base.kind !== myType.tuple) {
-                    console.error("indexing non array", expr.datatype);
-                    process.exit(1);
-                }
-                return this.parseTuplePtrIndex(expr, index);
             default:
                 console.error("indexing non array", expr.datatype);
                 process.exit(1);

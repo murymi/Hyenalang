@@ -449,22 +449,22 @@ function storeSliceFromArrayWithIndex(
     v: boolean
 ) {
     generateCode(begin);
-    console.log("mov rdx, rax");
+    console.log("   mov rdx, rax");
     push();
     generateCode(end);
     pop("rdi");
     genSubtract();
-    console.log("mov rcx, rax");
+    console.log("   mov rcx, rax");
     v ? genAddress(to) : genLvalue(to);
-    console.log("mov [rax], rcx");
-    console.log("add rax, 8");
+    console.log("   mov [rax], rcx");
+    console.log("   add rax, 8");
     push();
     generateAddress(from);
-    console.log("add rax, 8");
-    console.log(`imul rdx, ${to.datatype.members[1].type.base.size}`)
-    console.log("add rax, rdx");
+    console.log("   add rax, 8");
+    console.log(`   imul rdx, ${to.datatype.members[1].type.base.size}`)
+    console.log("   add rax, rdx");
     pop("rdi");
-    console.log("mov [rdi], rax");
+    console.log("   mov [rdi], rax");
 }
 
 function storeSliceFromSliceWithIndex(
@@ -475,28 +475,27 @@ function storeSliceFromSliceWithIndex(
     v: boolean
 ) {
     generateCode(begin);
-    console.log("mov rdx, rax");
+    console.log("   mov rdx, rax");
     push();
     generateCode(end);
     pop("rdi");
     genSubtract();
-    console.log("mov rcx, rax");
+    console.log("   mov rcx, rax");
     v ? genAddress(to) : genLvalue(to);
-    console.log("mov [rax], rcx");
-    console.log("add rax, 8");
+    console.log("   mov [rax], rcx");
+    console.log("   add rax, 8");
     push();
     generateAddress(from);
-    console.log("add rax, 8");
-    console.log("mov rax, [rax]");
-    console.log(`imul rdx, ${to.datatype.base.size}`)
-    console.log("add rax, rdx");
+    console.log("   add rax, 8");
+    console.log("   mov rax, [rax]");
+    console.log(`   imul rdx, ${to.datatype.base.size}`)
+    console.log("   add rax, rdx");
     pop("rdi");
-    console.log("mov [rdi], rax");
+    console.log("   mov [rdi], rax");
 
 }
 
 function assignSlice(expr: Expression) {
-
     if (expr.right && expr.right.type === exprType.slice_array_anon) {
         generateCode(expr.right.left as Expression); //asign
         storeSliceFromArrayWithIndex(
@@ -547,7 +546,7 @@ function assignSlice(expr: Expression) {
 function generateCode(expr: Expression) {
     switch (expr.type/**comment */) {
         case exprType.null:
-            console.log("mov rax, 0");
+            console.log("   mov rax, 0");
             break;
         case exprType.address:
             generateAddress(expr.left as Expression);
@@ -656,13 +655,8 @@ function generateCode(expr: Expression) {
             for (let i = expr.params.length - 1; i >= 0; i--) {
                 pop(argRegisters[i]);
             }
-            if (expr.fntype === fnType.extern) {
-                console.log("   lea r15, " + expr.callee.name);
-                console.log("   call buitin_glibc_caller");
-            } else {
-                pop("rax");
-                console.log("   call rax");
-            }
+            pop("rax");
+            console.log("   call rax");
             break;
         case exprType.string:
             console.log(`   lea rax, .L.data.strings.${expr.label}`);
@@ -761,7 +755,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 return;
             }
 
-            if(stmt.expr.type === exprType.array_literal) {
+            if (stmt.expr.type === exprType.array_literal) {
                 //generateAddress(expr.left as Expression);
                 console.log("   mov rax, [rbp-8]");
                 console.log(`   mov qword ptr [rax], ${stmt.expr.datatype.arrayLen}`);
@@ -774,7 +768,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 return;
             }
 
-            if(stmt.expr.type === exprType.struct_literal && stmt.expr.datatype.size > 8) {
+            if (stmt.expr.type === exprType.struct_literal && stmt.expr.datatype.size > 8) {
                 console.log("   mov rax, [rbp-8]");
                 push();
                 assignLit(0, stmt.expr);
@@ -784,7 +778,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 return;
             }
 
-            if(stmt.expr.type === exprType.struct_literal) {
+            if (stmt.expr.type === exprType.struct_literal) {
                 console.log("   sub rsp, 8");
                 console.log("   lea rax, [rbp-8]");
                 push();
@@ -952,8 +946,9 @@ function genText(fns: Function[]) {
             console.log("   mov rbp, rsp");
             console.log("   sub rsp, " + alignTo(8, fn.localOffset));
             genArgs(fn.locals.slice(0, fn.impilicit_arity));
-            genStmt(fn.body, i);
-            //console.log("   xor rax, rax");
+            if(fn.body) {
+                genStmt(fn.body, i);
+            }
             console.log(`.L.endfn.${i}:`);
             console.log("   mov rsp, rbp");
             console.log("   pop rbp");
@@ -966,6 +961,9 @@ function genText(fns: Function[]) {
 function genGlobals(globals: Variable[]) {
     globals.forEach((g) => {
         if (g.initializer) {
+            if (g.initializer.datatype.kind === myType.void) {
+                return;
+            }
             if (g.initializer.type === exprType.undefnd) return;
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
@@ -975,10 +973,20 @@ function genGlobals(globals: Variable[]) {
                 return;
             }
 
-            if(g.datatype.kind === myType.array) {
+            if (g.datatype.kind === myType.array) {
                 console.log(`   .quad ${g.initializer.datatype.arrayLen}`);
-                g.initializer.setters.forEach((s)=>{
+                g.initializer.setters.forEach((s) => {
                     console.log(`   .${g.initializer?.datatype.base.size}byte ${s.value.val}`)
+                })
+                return;
+            }
+
+            if (g.datatype.kind === myType.struct) {
+                var i = 0;
+                g.initializer.setters.forEach((s) => {
+                    console.log(`   .${g.datatype.members[i].type.size}byte ${s.value.val}`);
+                    if (i < g.datatype.members.length - 1) { console.log(`   .align ${g.datatype.members[i + 1].type.align}`); }
+                    i++;
                 })
                 return;
             }
