@@ -975,6 +975,14 @@ function genGlobals(globals: Variable[]) {
                 return;
             }
 
+            if(g.datatype.kind === myType.array) {
+                console.log(`   .quad ${g.initializer.datatype.arrayLen}`);
+                g.initializer.setters.forEach((s)=>{
+                    console.log(`   .${g.initializer?.datatype.base.size}byte ${s.value.val}`)
+                })
+                return;
+            }
+
             if (g.initializer.datatype.size === 1) {
                 console.log("   .byte " + g.initializer.right?.val);
             } else {
@@ -985,7 +993,6 @@ function genGlobals(globals: Variable[]) {
 
     console.log(".bss");
     globals.forEach((g) => {
-        console.error(g);
         if (g.initializer === undefined) {
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");

@@ -1,9 +1,5 @@
+var a = []u8{1,2,3,4};
 
 fn main() void {
-   fmt::write_integer(200);
-   return day.one;
+
 }
-
-import "./lib/fmt.hyena"
-
-enum day {one,two,three,four,five}

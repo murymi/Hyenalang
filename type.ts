@@ -120,7 +120,7 @@ export class Type {
         this.arrayLen = len;
         this.base = base;
         this.size = base.size * len + 8;
-        this.align = base.align;
+        this.align = 8;
         return this;
     }
 
