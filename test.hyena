@@ -1,6 +1,9 @@
-import "./lib/fmt.hyena"
-
 
 fn main() void {
-   fmt::write_integer(-20000);
+   fmt::write_integer(200);
+   return day.one;
 }
+
+import "./lib/fmt.hyena"
+
+enum day {one,two,three,four,five}

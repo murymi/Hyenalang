@@ -6,7 +6,7 @@ import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
 import { resolve } from "path"
-import { Type, alignTo, getPresentModule, i64, searchModule, searchStruct } from "./type";
+import { Type, alignTo, getPresentModule, i64, searchStruct, voidtype } from "./type";
 
 export enum fnType {
     extern,
@@ -21,43 +21,13 @@ var globalstrings: { value: string }[] = [];
 var globals: Variable[] = [];
 var anon_strings: { value: Expression }[] = [];
 
+var resolution_pass = true;
+
 export function addAnonString(val: Expression) {
+    if(resolution_pass) return;
     anon_strings.push({ value: val });
     return anon_strings.length - 1;
 }
-
-//             // implicit ret ptr 
-//             if (retType.size > 8) {
-//                 this.localOffset = alignTo(8, this.localOffset);
-//                 args.push({
-//                     name: "",
-//                     scope: 0,
-//                     offset: this.localOffset,
-//                     datatype: new Type().newPointer(retType),
-//                     module_name:""
-//                 });
-//                 this.localOffset += 8;
-//                 //arg_types.push({name:"", type:new Type().newPointer(retType)});
-//             }
-// 
-//             params.forEach((p) => {
-//                 this.localOffset = alignTo(p.datatype.align, this.localOffset);
-//                 var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype):p.datatype
-//                 args.push({
-//                     name: p.name,
-//                     scope: 0,
-//                     offset: this.localOffset,
-//                     datatype: arg_data_type,
-//                     module_name:getPresentModule()
-//                 });
-//                 this.localOffset += p.datatype.size;
-//                 arg_types.push({name:p.name, type:arg_data_type});
-//             })
-//             args.concat(locals);
-//             this.locals = args;
-
-
-//class Variable
 
 export class Function {
     name: string;
@@ -80,9 +50,6 @@ export class Function {
         this.name = name;
         this.type = type;
         this.locals = locals;
-        //var arg_types: { name: string, type: Type }[] = [];
-        //console.error(locals);
-        //var args: Variable[] = [];
         if (type === fnType.native) {
             var i = 0;
             params.forEach((p) => {
@@ -91,14 +58,9 @@ export class Function {
                 i++;
             })
         }
-
         if (retType.size > 8) {
             this.locals.splice(0, 0, new Variable().local("", new Type().newPointer(retType)))
         }
-
-        //console.error(this.locals);
-
-
         this.arity = params.length;
         this.impilicit_arity = retType.size > 8 ? params.length + 1 : params.length;
         this.data_type = new Type().newFunction(retType, params);
@@ -121,102 +83,6 @@ export class Struct {
         this.module_name = getPresentModule() as string;
     }
 }
-
-var templatefns: Templatefn[] = [];
-
-export function pushTemplatefn(name: string, params: { name: string, datatype: Type }[], retType: any, p:string[]): number {
-    templatefns.push(new Templatefn(name, params, [],retType, p));
-    return templatefns.length - 1;
-}
-
-var template_on = false;
-export function setCurrentTemplate(n: number) {
-    currentFn = n;
-    template_on = true;
-}
-
-export function getTemplate(name:string): Templatefn {
-    return templatefns.find((f)=> f.name === name ) as Templatefn;
-}
-
-export class Templatefn {
-    name: string;
-    arity: number;
-    type: fnType;
-    locals: Variable[];
-    return_type: Type;
-    place_holders:string[];
-    tokens:Token[];
-    count:number;
-
-    getCount() {
-        return this.count;
-    }
-
-    incCount() {
-        this.count++;
-    }
-
-    constructor(
-        name: string,
-        params: { name: string, datatype: Type }[],
-        locals: Variable[],
-        retType: Type,
-        p:string[]
-    ) {
-        this.locals = locals;
-        this.return_type = retType
-        this.name = name;
-        this.place_holders = p;
-        this.arity = params.length;
-        this.count = 0;
-        var i = 0;
-        params.forEach((p) => {
-            var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype) : p.datatype
-            this.locals.splice(i, 0, new Variable().local(p.name, arg_data_type));
-            i++;
-        })
-    }
-
-}
-
-
-export class Templatestruct {
-    name: string;
-    place_holders:string[];
-    tokens:Token[];
-    count:number;
-
-    getCount() {
-        return this.count;
-    }
-
-    incCount() {
-        this.count++;
-    }
-
-    constructor(
-        name: string,
-        p:string[]
-    ) {
-        this.name = name;
-        this.place_holders = p;
-        this.count = 0;
-    }
-
-}
-
-// export class Enum {
-//     name: string;
-//     values: { name: string, value: number }[];
-//     module_name:string;
-// 
-//     constructor(name: string, values: { name: string, value: number }[]) {
-//         this.name = name;
-//         this.values = values;
-//         this.module_name = getPresentModule() as string
-//     }
-// }
 
 export class Variable {
     name: string;
@@ -283,45 +149,37 @@ function checkVariableInFn(name:string) {
         }
     }
 }
-function checkVariableInTemplate(name:string) {
-    for (let i = templatefns[currentFn].locals.length - 1; i >= 0; i--) {
-        if (templatefns[currentFn].locals[i].name === name && templatefns[currentFn].locals[i].scope === scopeDepth) {
-            throw new Error("Redefination of a variable " + name);
-        }
-    }
-}
+
 function addVariableInFn(name:string, type:Type){
     var old = functions[currentFn].locals.length;
     functions[currentFn].locals.push(new Variable().local(name, type));
     //console.error(functions[currentFn].locals);
     return functions[currentFn].locals[old];
 }
-function addVariableInTemplate(name:string, type:Type){
-    var old = templatefns[currentFn].locals.length;
-    templatefns[currentFn].locals.push(new Variable().local(name, type));
-    //console.error(functions[currentFn].locals);
-    return templatefns[currentFn].locals[old];
-}
+
 
 // size in 8 bytes (for now)
 export function incLocalOffset(name: string, type: Type, initializer?: Expression): Variable {
-
-    if (name === "") {
-        name = "anon" + anon_count.toString(2);
-        anon_count++;
+    if(!resolution_pass && currentFn === -1) {
+        return getLocalOffset(name).variable as Variable;
     }
 
-    if (currentFn === -1) {
+    if (name === "") {
+        if(resolution_pass && currentFn != -1) {} else {
+            name = "anon" + anon_count.toString(2);
+            anon_count++;
+        }
+    }
+
+    if (currentFn === -1 && resolution_pass) {
         //return -1;
         globals.push(new Variable().global(name, type, initializer));
         return globals[globals.length - 1];
     }
 
-    if(template_on) {
-        checkVariableInTemplate(name);
-        return addVariableInTemplate(name, type);
-    }
-
+    var dummy = new Variable();
+    dummy.datatype = type;
+    if(resolution_pass) return dummy;
     checkVariableInFn(name);
     return addVariableInFn(name, type);
 }
@@ -351,32 +209,16 @@ export function getOffsetOfMember(struct: Type, member: string) {
     process.exit(1);
 }
 
-
+export function isResolutionPass() {
+    return resolution_pass;
+}
 
 export function getLocalOffset(name: string): { offset: number, datatype: Type, variable: Variable | undefined } {
-    var locals;
-    
-    if(template_on) {
-        locals = templatefns[currentFn].locals;
-    } else {
-        locals = functions[currentFn].locals;
-    }
 
-    // todo remove offset
-
-    var tmp = templatefns.find((t)=> t.name === name);
-    if(tmp) {
-        return { offset: -7, datatype: tmp.return_type, variable: undefined }
-    }
-
-    for (let i = locals.length - 1; i >= 0; i--) {
-        if (locals[i].name === name && locals[i].scope <= scopeDepth) {
-            //var off = fn.locals[i].offset;
-            var type = locals[i].datatype;
-
-            return { offset: i, datatype: type, variable: locals[i] }
-        }
-    }
+    var dummy = new Variable();
+    dummy.datatype = voidtype;
+    dummy.datatype.return_type = voidtype;
+    if(resolution_pass) return { offset: -10, datatype: voidtype, variable: dummy }
 
     for (let i = 0; i < globals.length; i++) {
         if (globals[i].name === name) {
@@ -390,16 +232,23 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
         }
     }
 
+    if (searchStruct(name)) {
+        return { offset: -4, datatype: i64, variable: undefined };
+    }
+
     for (let i = functions.length - 1; i >= 0; i--) {
         if (functions[i].name === name) {
             return { offset: -1, datatype: functions[i].data_type, variable: undefined }
         }
     }
 
-    if (searchStruct(name)) {
-        return { offset: -4, datatype: i64, variable: undefined };
+    var locals = functions[currentFn].locals;
+    for (let i = locals.length - 1; i >= 0; i--) {
+        if (locals[i].name === name && locals[i].scope <= scopeDepth) {
+            var type = locals[i].datatype;
+            return { offset: i, datatype: type, variable: locals[i] }
+        }
     }
-
     console.error(functions);
     throw new Error(`undefined variable ${name}`);
 }
@@ -453,7 +302,6 @@ export function getStruct(name: string) {
 }
 
 export function setCurrentFuction(n: number) {
-    template_on = false;
     currentFn = n;
 }
 
@@ -463,10 +311,7 @@ export function restoreFn(num:number) {
 }
 
 export function resetCurrentFunction(name:string, body: Statement, tokens?:Token[]) {
-    if (template_on) {
-        templatefns[currentFn].tokens = tokens as Token[];
-    } else {
-        //console.error(functions[currentFn])
+    if(!resolution_pass) {
         functions[currentFn].body = body;
     }
     currentFn = -1;
@@ -490,8 +335,6 @@ function offsetLocalVariables(fn: Function) {
         p.offset = fn.localOffset;
         p.is_global = false;
     })
-
-    //console.error(fn.locals[0].datatype);
 }
 
 export function compile(path: string) {
@@ -515,7 +358,11 @@ export function compile(path: string) {
                 var lexer = new Lexer(data, abs_path);
                 var tokens = lexer.lex();
                 var parser = new Parser(tokens);
-                var stmts = await parser.parse();
+                resolution_pass = true;
+                await parser.parse();
+                parser.reset();
+                resolution_pass = false;
+                await parser.parse();
                 resolv(true);
             }
         })

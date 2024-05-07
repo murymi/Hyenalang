@@ -21,8 +21,6 @@ impl fmt {
         }
     }
 
-    write_integer(int:i64) void;
-
     write_integer(int:i64) void {
         if(int < 0) {
             int = -int;

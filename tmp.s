@@ -18,8 +18,27 @@ _start:
    mov rax, 60
    syscall
 .text
-.global fmtwrite
-fmtwrite:
+.global main
+main:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 0
+   lea rax, [fmtwrite_integer]
+   push rax
+   mov rax, 200
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   mov rax, 0
+   jmp .L.endfn.0
+.L.endfn.0:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global fmtwrite_string
+fmtwrite_string:
    push rbp
    mov rbp, rsp
    sub rsp, 8
@@ -31,7 +50,7 @@ fmtwrite:
    mov rax, 1
    syscall
 # [end]
-.L.endfn.0:
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret
@@ -49,7 +68,7 @@ fmtwrite_char:
    mov rax, 1
    syscall
 # [end]
-.L.endfn.1:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret
@@ -69,7 +88,7 @@ fmtwrite_integer:
    setl al
    movzb rax, al
    cmp rax, 0
-   je .L.else.3
+   je .L.else.4
    lea rax, [rbp-8]
    push rax
    lea rax, [rbp-8]
@@ -84,9 +103,9 @@ fmtwrite_integer:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.3
-.L.else.3:
-.L.end.3:
+   jmp .L.end.4
+.L.else.4:
+.L.end.4:
    mov rax, 0
    push rax
    lea rax, [rbp-8]
@@ -96,12 +115,12 @@ fmtwrite_integer:
    setle al
    movzb rax, al
    cmp rax, 0
-   je .L.else.4
+   je .L.else.5
    mov rax, 0
-   jmp .L.endfn.2
-   jmp .L.end.4
-.L.else.4:
-.L.end.4:
+   jmp .L.endfn.3
+   jmp .L.end.5
+.L.else.5:
+.L.end.5:
    lea rax, [rbp-16]
    push rax
    mov rax, 48
@@ -143,25 +162,7 @@ fmtwrite_integer:
    pop rdi
    pop rax
    call rax
-.L.endfn.2:
-   mov rsp, rbp
-   pop rbp
-   ret
-
-.global main
-main:
-   push rbp
-   mov rbp, rsp
-   sub rsp, 0
-   lea rax, [fmtwrite_integer]
-   push rax
-   mov rax, 20000
-   neg rax
-   push rax
-   pop rdi
-   pop rax
-   call rax
-.L.endfn.5:
+.L.endfn.3:
    mov rsp, rbp
    pop rbp
    ret

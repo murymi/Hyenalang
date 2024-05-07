@@ -15,9 +15,9 @@ import {
     getFn,
     getLocalOffset,
     getOffsetOfMember,
-    getTemplate,
     getcurrFn,
     incLocalOffset,
+    isResolutionPass,
     pushEnum,
     pushFunction,
     pushStruct,
@@ -95,34 +95,6 @@ export class Parser {
         return toks;
     }
 
-    async createFunction(name: string): Promise<Expression> {
-        var template = getTemplate(name);
-        this.expect(tokenType.less, "Expect type args ");
-        var types: Type[] = [];
-        while (true) {
-            types.push(this.parseType(false));
-            if (!this.check(tokenType.comma)) break;
-            this.advance();
-        }
-        this.expect(tokenType.greater, "Expect > after type args");
-        if (types.length !== template.place_holders.length) {
-            this.tokenError(`${template.name} expects ${template.place_holders.length} types args.`, this.peek())
-        }
-
-        var tokens: Token[] = this.cloneTokens(template.tokens);
-        var fakename = "test_template" + template.getCount();
-        tokens.splice(0, 0, new Token(tokenType.identifier, fakename, 0, 0, ""));
-        template.place_holders.forEach((ph, i) => {
-            this.replaceTokens(tokens, ph, types[i].toString())
-        })
-        var curr_fn = getcurrFn();
-        await new Parser(tokens).nativeFuncDeclaration();
-        var obj = getFn(fakename);
-        restoreFn(curr_fn);
-        template.incCount();
-        return new Expression().newExprFnIdentifier(obj.name, obj.data_type);
-    }
-
     async structLiteral(name: string): Promise<Expression> {
         var struc_type = searchStruct(name) as Type;
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
@@ -136,6 +108,19 @@ export class Parser {
         }
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, struc_type);
+    }
+
+    async structLiteralRes(): Promise<Expression> {
+        this.expect(tokenType.leftbrace, "{");
+        while (true) {
+            this.expect(tokenType.dot, ".");
+            this.expect(tokenType.identifier, "identifier")
+            this.expect(tokenType.equal, "=");
+            await this.expression();
+            if (!this.match([tokenType.comma])) break;
+        }
+        this.expect(tokenType.rightbrace, "}");
+        return new Expression().newStructLiteral([], voidtype);
     }
 
     async arrayLiteral(): Promise<Expression> {
@@ -180,10 +165,34 @@ export class Parser {
         return new Expression().newStructLiteral(setters, data_type);
     }
 
+    async idRef(vari: Variable): Promise<Expression> {
+        if (this.check(tokenType.leftbrace)) {
+            return await this.structLiteralRes();
+        }
+
+        return new Expression().newExprIdentifier(vari);
+    }
+
+
+    enumField(id:string, data_type:Type):Expression {
+        this.expect(tokenType.dot, "Enum field");
+        var field = this.expect(tokenType.identifier, "Enum field").value as  string;
+        var val = data_type.enumvalues.find((e) => e.name === field);
+            if (val) {
+                return new Expression().newExprNumber(val.value);
+            }
+            console.error(`enum ${id} has no field named ${field}`);
+            process.exit(1);
+
+    }
+
     async primary(): Promise<Expression> {
         if (this.match([tokenType.identifier])) {
             var id = this.previous().value as string;
             var obj = getLocalOffset(id);
+
+            if (isResolutionPass()) return this.idRef(obj.variable as Variable);
+
             if (obj.offset === -1) {
                 return new Expression().newExprFnIdentifier(
                     id,
@@ -191,16 +200,16 @@ export class Parser {
                 );
             }
 
+            if (obj.offset === -3) {
+                return this.enumField(id,obj.datatype);
+            }
+
             if (obj.offset === -4) {
-                if (!this.check(tokenType.doublecolon)) {
+                if (this.check(tokenType.leftbrace)) {
                     return await this.structLiteral(id);
                 }
             }
 
-            if (obj.offset === -7) {
-                return await this.createFunction(id);
-            }
-            //console.error(this.peek())
             var expr = new Expression().newExprIdentifier(obj.variable as Variable);
             return expr;
         }
@@ -291,7 +300,7 @@ export class Parser {
 
     async finishCall(callee: Expression, optional?: Expression): Promise<Expression> {
 
-        if (callee.datatype.kind !== myType.function) {
+        if (callee.datatype.kind !== myType.function && !isResolutionPass()) {
             this.tokenError("Not a function", this.previous());
         }
         var args: Expression[] = [];
@@ -314,13 +323,16 @@ export class Parser {
         var fntok = this.expect(tokenType.rightparen, ") after params");
         if (optional) { args.splice(0, 0, optional); }
         var expr = new Expression().newExprCall(callee, callee.datatype.return_type, args, fnType.native);
-        if (callee.datatype.arity !== args.length) {
+        if (callee.datatype.arity !== args.length && !isResolutionPass()) {
             this.tokenError(callee.name + " expects " + callee.datatype.arity + " args but " + args.length + " provided.", fntok);
         }
+
         return expr;
     }
 
     isStructure(T: Type): boolean {
+        if (isResolutionPass()) return true;
+        console.error(isResolutionPass(), T);
         if (T.members) {
             return true;
         }
@@ -362,9 +374,15 @@ export class Parser {
 
     async parseGet(expr: Expression): Promise<Expression> {
         var propname = this.advance();
+
+        if (isResolutionPass()) {
+            return new Expression().newExprGet(0, new Expression(), voidtype);
+        }
+
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             this.tokenError("expect property name after dot", this.peek());
         }
+
         if (this.isStructure(expr.datatype) && expr.type !== exprType.call && !this.isLiteral(expr) && !this.isSlicing(expr)) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             if (meta.offset === -1) {
@@ -389,13 +407,6 @@ export class Parser {
             return new Expression().newExprGet(meta.offset,
                 new Expression().newExprDeref(expr)
                 , meta.datatype);
-        } else if (expr.datatype.kind === myType.enum) {
-            var val = expr.datatype.enumvalues.find((e) => e.name === propname.value);
-            if (val) {
-                return new Expression().newExprNumber(val.value);
-            }
-            console.error(`enum ${expr.name} has no field named ${propname.value}`);
-            process.exit(1);
         } else if (expr.type === exprType.call && this.isStructure(expr.datatype)) {
             var meta = getOffsetOfMember(expr.datatype, propname.value as string);
             var variable = incLocalOffset("", expr.datatype);
@@ -638,6 +649,11 @@ export class Parser {
     }
 
     parseMemberFunction(name: Token): Expression {
+        if (isResolutionPass()) {
+            this.expect(tokenType.identifier, "Expect fn name");
+            return new Expression().newExprFnIdentifier("", new Type().newFunction(voidtype, []));
+        }
+
         var struc = searchStruct(name.value as string);
         if (struc === undefined) {
             this.tokenError("No such struct", name);
@@ -1589,8 +1605,11 @@ export class Parser {
         return stmts;
     }
 
+    reset() {
+        this.current = 0;
+    }
+
     constructor(tokens: Token[]) {
-        //console.error(tokens);
         this.tokens = tokens;
         this.current = 0;
     }

@@ -197,7 +197,6 @@ export class Statement {
             this.expr = expr;
             return this;
         }
-
         if (expr.datatype.size > 8 && expr.type === exprType.call) {
             var variable = incLocalOffset("", expr.datatype);
             return new Statement().newVarstatement(Statement.anonLargeReturnVar(expr, variable));
