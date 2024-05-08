@@ -96,6 +96,9 @@ export class Parser {
     assignBeforeUse(val: Expression): { assign: Expression, id: Expression } {
         var variable = incLocalOffset("", val.datatype);
         var id = new Expression().newExprIdentifier(variable);
+        if (val.type === exprType.call && val.datatype.size > 8) {
+            val.params.splice(0, 0, new Expression().newExprAddress(id));
+        }
         var assign = new Expression().newExprAssign(id, val);
         return { assign: assign, id: id }
     }
@@ -104,12 +107,14 @@ export class Parser {
         var struc_type = searchStruct(name) as Type;
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         this.expect(tokenType.leftbrace, "{");
-        while (true) {
-            this.expect(tokenType.dot, ".");
-            var fo = getOffsetOfMember(struc_type, this.expect(tokenType.identifier, "identifier").value as string);
-            this.expect(tokenType.equal, "=");
-            setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
-            if (!this.match([tokenType.comma])) break;
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                this.expect(tokenType.dot, ".");
+                var fo = getOffsetOfMember(struc_type, this.expect(tokenType.identifier, "identifier").value as string);
+                this.expect(tokenType.equal, "=");
+                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
+                if (!this.match([tokenType.comma])) break;
+            }
         }
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, struc_type);
@@ -117,12 +122,14 @@ export class Parser {
 
     async structLiteralRes(): Promise<Expression> {
         this.expect(tokenType.leftbrace, "{");
-        while (true) {
-            this.expect(tokenType.dot, ".");
-            this.expect(tokenType.identifier, "identifier")
-            this.expect(tokenType.equal, "=");
-            await this.expression();
-            if (!this.match([tokenType.comma])) break;
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                this.expect(tokenType.dot, ".");
+                this.expect(tokenType.identifier, "identifier")
+                this.expect(tokenType.equal, "=");
+                await this.expression();
+                if (!this.match([tokenType.comma])) break;
+            }
         }
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral([], voidtype);
@@ -262,7 +269,7 @@ export class Parser {
                 case "alignof":
                     this.expect(tokenType.leftparen, "expect ( ");
                     var size = 0;
-                    if (this.check(tokenType.identifier) || this.check(tokenType.number)) {
+                    if (!this.check(tokenType.identifier)) {
                         size = what.value === "sizeof" ? (await this.expression()).datatype.size : (await this.expression()).datatype.align;
                     } else {
                         size = what.value === "sizeof" ? this.parseType(false).size : this.parseType(false).align
@@ -327,7 +334,7 @@ export class Parser {
 
     isStructure(T: Type): boolean {
         if (isResolutionPass()) return true;
-        if (T.members) {
+        if (T.members || T.kind) {
             return true;
         }
         return false;
@@ -364,9 +371,8 @@ export class Parser {
         if (isResolutionPass()) {
             return new Expression().newExprGet(0, new Expression(), voidtype);
         }
-
         if (!this.isStructure(expr.datatype)) {
-            console.error(`${expr.name} has no members`);
+            console.error(`${expr.name} has no members ${isResolutionPass()}`);
             console.error(expr.datatype);
             process.exit(1);
         }
@@ -377,6 +383,10 @@ export class Parser {
 
         if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
             return new Expression().newExprDeref(expr);
+        }
+
+        if (expr.datatype.kind === myType.ptr) {
+            expr = new Expression().newExprDeref(expr);
         }
 
         var meta = getOffsetOfMember(expr.datatype, propname.value as string);
@@ -818,11 +828,16 @@ export class Parser {
     }
 
     async expression(): Promise<Expression> {
-        return this.assign();
+        return await this.assign();
     }
 
     async ExprStatement(): Promise<Statement> {
         var expr = await this.expression();
+
+        if(expr.type === exprType.assign) {
+            this.expect(tokenType.semicolon, ";");
+            return new Statement().newExprStatement(expr);
+        }
 
         if (expr.datatype.size > 8 || expr.type === exprType.struct_literal) {
             if (expr.type === exprType.assigned_for_use) {
@@ -1204,8 +1219,7 @@ export class Parser {
         var variable = incLocalOffset(name.value as string, type as Type, initializer);
 
         if (initializer.type === exprType.call && type.size > 8) {
-            initializer.params.splice(0, 0, new Expression().newExprAddress(
-                new Expression().newExprIdentifier(variable)));
+            initializer.params.splice(0, 0, new Expression().newExprAddress(new Expression().newExprIdentifier(variable)));
         }
 
         if (initializer.datatype.kind === myType.string) {

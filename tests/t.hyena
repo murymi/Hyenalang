@@ -1,0 +1,96 @@
+struct Bar {x:u8,y:u8}
+struct Baz {bz:Bar}
+
+fn useBar(b:Bar) u8 {
+    return b.x + b.y;
+}
+
+struct BarBig {x:u64, y:u64, z:u64}
+
+fn useBarBig(b:BarBig) u64 {
+    return b.x + b.y + b.z;
+}
+
+fn makeBar() Bar {
+    return Bar{.x = 20, .y = 8};
+}
+
+fn makeBigBar() BarBig {
+    return BarBig { .x = 20, .y = 8 , .z = 13};
+}
+
+fn returnBar() Bar {
+    return makeBar();
+}
+
+fn returnBigBar() BarBig {
+    return makeBigBar();
+}
+
+fn main() void {
+    test_eql(@alignof(BarBig), 8);
+    test_eql(@sizeof(BarBig), 24);
+    test_eql(@alignof(Bar), 1);
+    test_eql(@sizeof(Bar), 2);
+    var a = []u64{1,2,3,4,5}[0..4][0..3][0..2][0..1][0];
+    test_eql(a, 1);
+    test_eql(useBar(Bar{.x = 7, .y = 3}), 10);
+    test_eql(useBar(Bar{.x = 7, .y = 7}), 14);
+    test_eql(useBarBig(BarBig{.x = 1, .y = 2, .z = 3}), 6);
+    test_eql(makeBar().x, 20);
+    test_eql(makeBar().x + makeBar().y, 28);
+    test_eql(makeBigBar().x, 20);
+    test_eql(makeBigBar().y, 8);
+    test_eql(makeBigBar().z, 13);
+    test_eql(returnBar().x, 20);
+    test_eql(returnBar().x + makeBar().y, 28);
+    test_eql(returnBigBar().x, 20);
+    test_eql(returnBigBar().y, 8);
+    test_eql(returnBigBar().z, 13);
+    
+    var bar_array = []Bar{Bar{.x = 7, .y = 3}, Bar{.x = 7, .y = 3}, Bar{.x = 7, .y = 3}, Bar{.x = 7, .y = 3}};
+    test_eql(bar_array.len, 4);
+    test_eql(bar_array[2].x, 7);
+    test_eql(bar_array[3].y, 3);
+    bar_array[2] = Bar {.x = 9, .y = 23 };
+    test_eql(bar_array[2].x, 9);
+    test_eql(bar_array[2].y, 23);
+}
+
+
+ var total = 0;
+ var passed = 0;
+ var failed = 0;
+ 
+ fn write(data:&u8) void {
+     asm {
+         "mov rsi, [rdi+8]"
+         "mov rdx, [rdi +0]"
+         "mov rdi, 1"
+         "mov rax, 1"
+         "syscall"
+     }
+ }
+ 
+ 
+ fn test(a:bool) void {
+     total = total + 1;
+     if(a) {
+         write("test: ok\n");
+         passed = passed + 1;
+     } else {
+         write("test: fail\n");
+         failed = failed + 1;
+     }
+ }
+ 
+ fn test_eql(a:bool, b:bool) void {
+     total = total + 1;
+     if(a eq b) {
+         write("test: ok\n");
+         passed = passed + 1;
+     } else {
+         failed = failed + 1;
+         write("test: fail\n");
+     }
+ }

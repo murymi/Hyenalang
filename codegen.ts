@@ -419,7 +419,7 @@ function genAssign(expr: Expression) {
     }
     generateAddress(expr.left as Expression);
     push();
-    generateAddress(expr.right as Expression);
+    generateCode(expr.right as Expression);
     store(expr.left?.datatype as Type);
 }
 
@@ -429,12 +429,14 @@ function genAssignLarge(expr: Expression) {
     } else if (expr.right?.type === exprType.array_literal) {
         return assignArrayLiteral(expr)
     }
+    
     generateAddress(expr.left as Expression);
     push();
     if (expr.right?.type === exprType.assigned_for_use) {
         generateCode(expr.right.left as Expression);
         generateAddress(expr.right.right as Expression);
     } else {
+        //console.error("====================", expr);
         generateAddress(expr.right as Expression);
     }
     storeStruct(expr.left?.datatype as Type);
@@ -595,6 +597,7 @@ function generateCode(expr: Expression) {
                 }
                 return;
             }
+
             if (expr.right?.type === exprType.call && expr.right.datatype.size > 8) {
                 generateCode(expr.right as Expression);
                 return;
