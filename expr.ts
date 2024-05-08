@@ -5,7 +5,8 @@ import { Type, f32, i32, i64, myType, nullptr, u64, u8, voidtype } from "./type"
 
 export enum exprType {
     unary,
-    binary,
+    binary_op,
+    assigned_for_use,
     primary,
     grouping,
     identifier,
@@ -15,22 +16,17 @@ export enum exprType {
     string,
     number,
     get,
-    //set,
-    //arrayget,
-    //arrayset,
     address,
     slice_array,
     slice_slice,
     undefnd,
     varslice,
     assignIndex,
-    //address_set
     assign_array_index,
     assign_slice_index,
-    deref_array_index,
-    deref_slice_index,
+    //deref_array_index,
+    //deref_slice_index,
     anon_string,
-    decl_anon_for_get,
     fn_identifier,
     tmp_identifier,
     if_expr,
@@ -39,11 +35,6 @@ export enum exprType {
     null,
     cast,
     struct_literal,
-    address_anon,
-    index_anon,
-    index_anon_slice,
-    slice_array_anon,
-    slice_slice_anon,
     array_literal
 }
 
@@ -138,11 +129,7 @@ export class Expression {
         this.setters = setters;
         return this;
     }
-    // newExprCast(left, type) {
-    //     this.type = exprType.cast;
-    //     this.left = left;
-    //     this.datatype = 
-    // }
+
     newExprNull() {
         this.type = exprType.null;
         this.datatype = nullptr;
@@ -157,31 +144,6 @@ export class Expression {
         return this;
     }
 
-    newExprAddressSet(left:Expression, right:Expression) {
-        this.left = left;// a deref
-        this.right = right;
-        this.type = exprType.assignIndex;
-        //console.error("*****************************************");
-        this.datatype = left.datatype;
-        return this;
-    }
-
-    newExprAssignArrayIndex(left:Expression, right:Expression) {
-        this.left = left;
-        this.right = right;
-        this.type = exprType.assign_array_index;
-        this.datatype = left.datatype
-        return this;
-    }
-
-    newExprAssignSliceIndex(left:Expression, right:Expression) {
-        this.left = left;
-        this.right = right;
-        this.type = exprType.assign_slice_index;
-        this.datatype = left.datatype;
-        return this;
-    }
-
     newExprAddress(left:Expression):Expression {
         this.type = exprType.address;
         this.left = left;
@@ -189,44 +151,11 @@ export class Expression {
         return this;
     }
 
-    newExprAddressAnon(left:Expression, right:Expression):Expression {
-        this.type = exprType.address_anon;
-        this.left = left;// assign
-        this.right = right;// addr
-        this.datatype = new Type().newPointer(left.datatype);
-        return this;
-    }
-
-    newExprSlideArrayAnon(left:Expression, right:Expression) {
-        this.type = exprType.slice_array_anon;
-        this.left = left;// assign
-        this.right = right;// slide
-        this.datatype = new Type().newSlice(left.datatype.base);
-        return this;
-    }
-
-    newExprSlideSliceAnon(left:Expression, right:Expression) {
-        this.type = exprType.slice_slice_anon;
-        this.left = left;// assign
-        this.right = right;// slide
-        this.datatype = new Type().newSlice(left.datatype.base);
-        return this;
-    }
-
-    newExprIndexAnonArray(left:Expression, right:Expression):Expression {
-        this.type = exprType.index_anon;
-        this.left = left;// assign
-        this.right = right;// index
-        this.datatype = left.datatype.base;
-        return this;
-    }
-
-
-    newExprIndexAnonSlice(left:Expression, right:Expression):Expression {
-        this.type = exprType.index_anon_slice;
-        this.left = left;// assign
-        this.right = right;// index
-        this.datatype = left.datatype.base;
+    newAssignForUse(left:Expression, right:Expression):Expression {
+        this.type = exprType.assigned_for_use;
+        this.datatype = right.datatype;
+        this.left = left;
+        this.right = right;
         return this;
     }
 
@@ -256,7 +185,7 @@ export class Expression {
     }
 
     newExprBinary(op: Token, left: Expression, right:Expression):Expression{
-        this.type = exprType.binary;
+        this.type = exprType.binary_op;
         this.left = left;
         this.right = right;
         this.datatype = left.datatype;
@@ -367,11 +296,7 @@ export class Expression {
         this.left = new Expression().newExprNumber(0);
         this.right = new Expression().newExprNumber(id.bytes.length);
         this.id = id;
-        //this.datatype = new Type().newPointer(u8);
-        this.datatype = new Type().newStruct("slice",[
-             { name: "len", datatype: u64, default: undefined },
-             { name: "ptr", datatype: new Type().newPointer(u8), default: undefined }
-         ])
+        this.datatype = new Type().newSlice(u8)
         this.datatype.kind = myType.slice;
         return this;
     }
@@ -414,14 +339,6 @@ export class Expression {
         this.type = exprType.anon_string;
         this.offset = offset;
         this.datatype = new Type().newSlice(u8);
-        return this;
-    }
-
-    newExprDeclAnonForGet(left:Expression, right:Expression):Expression {
-        this.left = left;
-        this.right = right;
-        this.datatype = right.datatype;
-        this.type = exprType.decl_anon_for_get;
         return this;
     }
     constructor(){}

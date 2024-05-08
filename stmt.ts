@@ -161,62 +161,11 @@ export class Statement {
         return this;
     }
 
-    //newPrintStatement(expr: Expression): Statement {
-    //    this.expr = expr;
-    //    this.type = stmtType.print;
-    //    return this;
-    //}
-
-    static anonLargeReturnVar(expr: Expression, variable: Variable) {
-        expr.params.splice(0, 0, new Expression().newExprAddress(
-            new Expression().newExprIdentifier(variable)))
-        return new Expression().newExprAssign(
-            new Expression().newExprIdentifier(variable)
-            , expr
-        );
-    }
-
-    static anonSmallReturnVar(expr: Expression, variable: Variable) {
-        return new Expression().newExprAssign(
-            new Expression().newExprIdentifier(variable)
-            , expr
-        );
-    }
-
-    static anonLargeVar(expr: Expression, variable: Variable) {
-        return new Expression().newExprAssign(
-            new Expression().newExprIdentifier(variable)
-            , expr
-        );
-    }
-
     newExprStatement(expr: Expression): Statement {
         this.type = stmtType.exprstmt;
-
-        if (expr.type === exprType.decl_anon_for_get) {
-            this.expr = expr;
-            return this;
-        }
-        if (expr.datatype.size > 8 && expr.type === exprType.call) {
-            var variable = incLocalOffset("", expr.datatype);
-            return new Statement().newVarstatement(Statement.anonLargeReturnVar(expr, variable));
-        }
-
-        if (expr.datatype.size > 8) {
-            var variable = incLocalOffset("", expr.datatype);
-            return new Statement().newVarstatement(Statement.anonLargeVar(expr, variable));
-        }
-
         this.expr = expr;
         return this;
     }
-
-    // newVarAccessStatement(offset: number): Statement {
-    //     this.offset = offset;
-    //     this.type = stmtType.varAccess;
-    //     this.datatype = u64;
-    //     return this;
-    // }
 
     newAsmStatement(lines: string[]) {
         this.type = stmtType.inline_asm;

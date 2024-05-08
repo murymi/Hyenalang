@@ -1,10 +1,10 @@
-
 struct Bar {x:u8,y:u8}
+struct Baz {bz:Bar}
 
-fn useBar(a:argv) void {
-    return (cast (*u32) a).*;
+fn useBar(b:u64) void {
+    return b;
 }
 
 fn main() void {
-    useBar(.{1,2,3});
+    []u64{1,2,3,4,5}[0..4][1];
 }

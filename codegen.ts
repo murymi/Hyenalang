@@ -281,9 +281,6 @@ function load(datatype: Type) {
         }
     } else if (datatype.size === 8) {
         console.log("   mov rax, [rax]");
-    } else if (datatype.kind === myType.slice) {
-        console.error("Invalid load");
-        process.exit(1);
     } else {
         console.error(datatype);
         console.error("Invalidx load");
@@ -345,14 +342,8 @@ function generateAddress(expr: Expression | Statement) {
             generateAddress(expr.left as Expression);
             console.log("   add rax, " + expr.offset);
             break;
-        case exprType.deref_slice_index:
-        case exprType.deref_array_index:
         case exprType.deref:
             generateCode(expr.left as Expression);
-            break;
-        case exprType.decl_anon_for_get:
-            generateCode(expr.left as Expression);
-            generateAddress(expr.right as Expression);
             break;
         case exprType.call:
             // for struct only
@@ -365,6 +356,9 @@ function generateAddress(expr: Expression | Statement) {
             generateCode(expr);
             break;
         case exprType.if_expr:
+            generateCode(expr);
+            break;
+        case exprType.assigned_for_use:
             generateCode(expr);
             break;
         default:
@@ -425,7 +419,7 @@ function genAssign(expr: Expression) {
     }
     generateAddress(expr.left as Expression);
     push();
-    generateCode(expr.right as Expression);
+    generateAddress(expr.right as Expression);
     store(expr.left?.datatype as Type);
 }
 
@@ -437,7 +431,12 @@ function genAssignLarge(expr: Expression) {
     }
     generateAddress(expr.left as Expression);
     push();
-    generateAddress(expr.right as Expression);
+    if (expr.right?.type === exprType.assigned_for_use) {
+        generateCode(expr.right.left as Expression);
+        generateAddress(expr.right.right as Expression);
+    } else {
+        generateAddress(expr.right as Expression);
+    }
     storeStruct(expr.left?.datatype as Type);
 }
 
@@ -496,28 +495,6 @@ function storeSliceFromSliceWithIndex(
 }
 
 function assignSlice(expr: Expression) {
-    if (expr.right && expr.right.type === exprType.slice_array_anon) {
-        generateCode(expr.right.left as Expression); //asign
-        storeSliceFromArrayWithIndex(
-            expr.left as Expression,
-            (expr.right.right as Expression).id,
-            expr.right.right?.left as Expression,
-            expr.right.right?.right as Expression, false
-        )
-        return;
-    }
-
-    if (expr.right && expr.right.type === exprType.slice_slice_anon) {
-        generateCode(expr.right.left as Expression); //asign
-        storeSliceFromSliceWithIndex(
-            expr.left as Expression,
-            (expr.right.right as Expression).id,
-            expr.right.right?.left as Expression,
-            expr.right.right?.right as Expression, false
-        )
-        return;
-    }
-
     switch (expr.right?.type) {
         case exprType.slice_array:
             storeSliceFromArrayWithIndex(
@@ -535,8 +512,30 @@ function assignSlice(expr: Expression) {
                 expr.right?.right as Expression, false
             )
             break;
+        case exprType.assigned_for_use:
+            var afu = expr.right;
+            generateCode(afu.left as Expression);
+            switch (afu.right?.type) {
+                case exprType.slice_array:
+                    storeSliceFromArrayWithIndex(
+                        expr.left as Expression,
+                        (afu.right as Expression).id,
+                        afu.right?.left as Expression,
+                        afu.right?.right as Expression, false
+                    )
+                    break;
+                case exprType.slice_slice:
+                    storeSliceFromSliceWithIndex(
+                        expr.left as Expression,
+                        (afu.right as Expression).id,
+                        afu.right?.left as Expression,
+                        afu.right?.right as Expression, false
+                    )
+                    break;
+            }
+            return;
         default:
-            genAddress(expr.left as Expression);
+            generateAddress(expr.left as Expression);
             push();
             generateAddress(expr.right as Expression);
             storeStruct(expr.left?.datatype as Type);
@@ -558,14 +557,12 @@ function generateCode(expr: Expression) {
                 load(expr.datatype);
             }
             break;
-        case exprType.binary:
+        case exprType.binary_op:
             generateCode(expr.right as Expression);
             push();
             generateCode(expr.left as Expression);
             genBinary(expr.operator?.type as tokenType, expr.datatype);
             break;
-        case exprType.deref_slice_index:
-        case exprType.deref_array_index:
         case exprType.deref:
             // a.*
             generateCode(expr.left as Expression);
@@ -588,16 +585,6 @@ function generateCode(expr: Expression) {
                 generateCode(item);
             }
             break;
-        case exprType.assign_slice_index:
-        case exprType.assign_array_index:
-        case exprType.assignIndex:
-            console.error(expr.datatype)
-            if (expr.datatype.size > 8) {
-                genAssignLarge(expr);
-            } else {
-                genAssign(expr);
-            }
-            break;
         case exprType.assign:
             if (expr.right?.type === exprType.undefnd) {
                 if (expr.datatype.kind === myType.array) {
@@ -612,6 +599,7 @@ function generateCode(expr: Expression) {
                 generateCode(expr.right as Expression);
                 return;
             }
+
             switch (expr.datatype.kind) {
                 case myType.slice:
                     assignSlice(expr);
@@ -619,17 +607,12 @@ function generateCode(expr: Expression) {
                 case myType.string:
                     assignSlice(expr);
                     break;
-                case myType.tuple:
-                case myType.struct:
-                case myType.array:
+                default:
                     if (expr.datatype.size > 8) {
                         genAssignLarge(expr);
                     } else {
                         genAssign(expr);
                     }
-                    break;
-                default:
-                    genAssign(expr);
             }
             break;
         case exprType.identifier:
@@ -655,8 +638,25 @@ function generateCode(expr: Expression) {
             for (let i = expr.params.length - 1; i >= 0; i--) {
                 pop(argRegisters[i]);
             }
-            pop("rax");
-            console.log("   call rax");
+            if (expr.callee.datatype.fn_type === fnType.native) {
+                pop("rax");
+                console.log("   call rax");
+            } else {
+                pop("rdi");
+                var label = incLabel();
+                console.log(`   mov rax, rsp`);
+                console.log(`   and rax, 15`);
+                console.log(`   jnz .L.call.${label}`);
+                console.log(`   mov rax, 0`);
+                console.log(`   call rdi`);
+                console.log(`   jmp .L.end.${label}`);
+                console.log(`.L.call.${label}:`)
+                console.log(`   sub rsp, 8`);
+                console.log(`   mov rax, 0`);
+                console.log(`   call rdi`);
+                console.log(`   add rsp, 8`);
+                console.log(`.L.end.${label}:`);
+            }
             break;
         case exprType.string:
             console.log(`   lea rax, .L.data.strings.${expr.label}`);
@@ -664,13 +664,9 @@ function generateCode(expr: Expression) {
         case exprType.anon_string:
             console.log(`   lea rax, .L.data.anon.${expr.offset}`);
             break;
-        case exprType.address_anon:
-        case exprType.index_anon:
-        case exprType.index_anon_slice:
-        case exprType.decl_anon_for_get:
-        case exprType.slice_array_anon:
-            generateCode(expr.left as Expression);
-            generateCode(expr.right as Expression);
+        case exprType.assigned_for_use:
+            generateCode(expr.left as Expression);//assign 
+            generateCode(expr.right as Expression);// use
             break;
         case exprType.fn_identifier:
             console.log(`   lea rax, [${expr.name}]`);
@@ -924,10 +920,7 @@ function genGlobalStrings(globs: { value: string }[]): number {
     return loffset + 1;
 }
 
-
-function genArgs(
-    params: { name: string, scope: number, datatype: Type, offset: number }[]
-) {
+function genArgs(params: { name: string, scope: number, datatype: Type, offset: number }[]) {
     let i = 0;
     for (let p of params) {
         console.log(`   mov [rbp-${p.offset}], ${getArgRegister(i, p.datatype.size)}`);
@@ -946,7 +939,7 @@ function genText(fns: Function[]) {
             console.log("   mov rbp, rsp");
             console.log("   sub rsp, " + alignTo(8, fn.localOffset));
             genArgs(fn.locals.slice(0, fn.impilicit_arity));
-            if(fn.body) {
+            if (fn.body) {
                 genStmt(fn.body, i);
             }
             console.log(`.L.endfn.${i}:`);

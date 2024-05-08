@@ -1,0 +1,25 @@
+struct mem{}
+
+extern fn malloc(n:u64) *void;
+extern fn free(ptr:*void) void;
+extern fn realloc(ptr:*void, n:u64) *void;
+extern fn calloc(n:u64, m:u64) *void;
+
+impl mem {
+    alloc(n:u64) *void {
+        malloc(n);
+    }
+
+    free(ptr:*void) void {
+        free(ptr);
+    }
+
+    realloc(ptr:*void, n:u64) *void {
+        return realloc(ptr, n);
+    }
+
+    calloc(n:u64, m:u64) *void {
+        return calloc(n, m);
+    }
+}
+

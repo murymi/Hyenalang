@@ -1,0 +1,42 @@
+struct sys {}
+
+struct __OpenFlags {
+    read_only:i32,
+    read_write:i32,
+    write_only:i32,
+    append:i32
+}
+
+var OpenFlags = __OpenFlags {
+    .read_only = 0,
+    .write_only = 1,
+    .read_write = 2,
+    .append = 1024
+};
+
+impl sys {
+    exit(status:u64) void {
+        asm {
+            "mov rax, 60"
+            "syscall"
+        }
+    }
+
+    open(file_name:*u8, flag:i32) i32 {
+        asm {
+            
+        }
+    }
+
+    close() i32 {
+
+    }
+
+    write() i32 {
+
+    }
+
+    read() i32 {
+
+    }
+}

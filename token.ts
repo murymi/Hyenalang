@@ -323,12 +323,8 @@ export class Lexer {
     }
 
     skipComment() {
-        while (this.moreTokens() && this.peek() !== '\n') {
-            this.advance();
-        }
-        if (this.moreTokens()) {
-            this.advance();
-        }
+        while (this.moreTokens() && this.peek() !== '\n') {this.advance();}
+        if (this.moreTokens()) {this.advance();}
     }
 
     push(T: tokenType, val: string | number) {
@@ -348,13 +344,15 @@ export class Lexer {
             } else if (this.isSpace(char)) {
                 if (this.advance() === '\n') {
                     this.col = 1; this.line++;
-                } else this.col++;
+                }
                 continue;
             } else if (this.isAlpha(char)) {
                 this.tokens.push(this.identifier());
                 continue;
-            } else if (char === "#") {
-                this.skipComment();
+            } else if (char === "/") {
+                if(this.peekNext() === "/") {
+                    this.skipComment();
+                }
                 continue;
             }
 

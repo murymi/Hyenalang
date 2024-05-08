@@ -1,4 +1,17 @@
-struct Arg{}
-impl Arg {
-    
+import "./lib/mem.hyena"
+
+struct arg {}
+impl arg {
+    get_args() u64 {
+        var arg_count:u64 = undefined;
+        var arg_vector:**u8 = null; 
+        asm {
+            "mov rax, [__argc__]"
+            "mov [rbp-8], rax"
+            "mov rax, [__argv__]"
+            "mov [rbp-16], rax"
+        }
+
+        var slice:**u8 = mem::alloc(8);
+    }
 }

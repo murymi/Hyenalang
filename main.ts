@@ -24,7 +24,7 @@ var anon_strings: { value: Expression }[] = [];
 var resolution_pass = true;
 
 export function addAnonString(val: Expression) {
-    if(resolution_pass) return;
+    if (resolution_pass) return;
     anon_strings.push({ value: val });
     return anon_strings.length - 1;
 }
@@ -63,7 +63,7 @@ export class Function {
         }
         this.arity = params.length;
         this.impilicit_arity = retType.size > 8 ? params.length + 1 : params.length;
-        this.data_type = new Type().newFunction(retType, params);
+        this.data_type = new Type().newFunction(retType, params, type);
     }
 }
 
@@ -115,7 +115,7 @@ var structs: Struct[] = [];
 
 var functions: Function[] = [];
 
-export function addGenericFunction(fn:Function) {
+export function addGenericFunction(fn: Function) {
     functions.push(fn);
 }
 
@@ -142,7 +142,7 @@ export function checkStruct(name: string) {
 }
 
 
-function checkVariableInFn(name:string) {
+function checkVariableInFn(name: string) {
     for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
         if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
             throw new Error("Redefination of a variable " + name);
@@ -150,23 +150,23 @@ function checkVariableInFn(name:string) {
     }
 }
 
-function addVariableInFn(name:string, type:Type){
+function addVariableInFn(name: string, type: Type) {
     var old = functions[currentFn].locals.length;
     functions[currentFn].locals.push(new Variable().local(name, type));
     return functions[currentFn].locals[old];
 }
 
-function resolvable(type:Type):boolean {
+function resolvable(type: Type): boolean {
     return type.kind === myType.enum || type.kind === myType.function || type.kind === myType.struct;
 }
 // size in 8 bytes (for now)
 export function incLocalOffset(name: string, type: Type, initializer?: Expression): Variable {
-    if(!resolution_pass && currentFn === -1 && !resolvable(type)) {
+    if (!resolution_pass && currentFn === -1 && !resolvable(type)) {
         return getLocalOffset(name).variable as Variable;
     }
 
     if (name === "") {
-        if(resolution_pass && currentFn != -1) {} else {
+        if (resolution_pass && currentFn != -1) { } else {
             name = "anon" + anon_count.toString(2);
             anon_count++;
         }
@@ -184,7 +184,7 @@ export function incLocalOffset(name: string, type: Type, initializer?: Expressio
 
     var dummy = new Variable();
     dummy.datatype = type;
-    if(resolution_pass) return dummy;
+    if (resolution_pass) return dummy;
     checkVariableInFn(name);
     return addVariableInFn(name, type);
 }
@@ -223,7 +223,7 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
     var dummy = new Variable();
     dummy.datatype = voidtype;
     dummy.datatype.return_type = voidtype;
-    if(resolution_pass) return { offset: -10, datatype: voidtype, variable: dummy }
+    if (resolution_pass) return { offset: -10, datatype: voidtype, variable: dummy }
 
     for (let i = 0; i < globals.length; i++) {
         if (globals[i].name === name) {
@@ -271,10 +271,10 @@ export function getFn(name: string): Function {
     process.exit(1);
 }
 
-export function fnExists(name:string):number {
+export function fnExists(name: string): number {
     var index = 0;
-    for(let fun of functions) {
-        if(fun.name === name) {
+    for (let fun of functions) {
+        if (fun.name === name) {
             return index;
         }
         index++;
@@ -284,7 +284,7 @@ export function fnExists(name:string):number {
 
 export function pushFunction(name: string, params: { name: string, datatype: Type }[], type: fnType, retType: any): number {
     var f = fnExists(name);
-    if(f >= 0) {
+    if (f >= 0) {
         return f;
     }
     functions.push(new Function(name, type, params, [], retType));
@@ -311,12 +311,12 @@ export function setCurrentFuction(n: number) {
 }
 
 export function getcurrFn() { return currentFn; }
-export function restoreFn(num:number) {
+export function restoreFn(num: number) {
     currentFn = num;
 }
 
-export function resetCurrentFunction(name:string, body: Statement, tokens?:Token[]) {
-    if(!resolution_pass) {
+export function resetCurrentFunction(name: string, body: Statement, tokens?: Token[]) {
+    if (!resolution_pass) {
         functions[currentFn].body = body;
     }
     currentFn = -1;
@@ -342,6 +342,8 @@ function offsetLocalVariables(fn: Function) {
     })
 }
 
+var parsers:Parser[] = [];
+
 export function compile(path: string) {
     return new Promise((resolv, reject) => {
         var abs_path = resolve(path);
@@ -355,7 +357,6 @@ export function compile(path: string) {
                 throw err
             } else {
                 compiled_files.push(abs_path);
-
                 if (err) {
                     console.error("failed to open file");
                     process.exit(1);
@@ -363,10 +364,7 @@ export function compile(path: string) {
                 var lexer = new Lexer(data, abs_path);
                 var tokens = lexer.lex();
                 var parser = new Parser(tokens);
-                resolution_pass = true;
-                await parser.parse();
-                parser.reset();
-                resolution_pass = false;
+                parsers.push(parser);
                 await parser.parse();
                 resolv(true);
             }
@@ -382,20 +380,24 @@ if (process.argv.length < 3) {
         process.exit();
     }
     truncate("./tmp.s", async () => {
-        compile(process.argv[2])
-            .then(() => {
-                var bitstream = createWriteStream("./tmp.s", { flags: "a" });
-                var orig = console.log;
-                console.log = (data) => { bitstream.write(`${data}\n`); }
-                functions.forEach((fn) => {
-                    offsetLocalVariables(fn);
-                })
-                genStart(globalstrings, globals, anon_strings, functions);
-                bitstream.end();
-                console.log = orig;
-                spawn("make", ["bin"]);
-            })
-            .catch((err) => { throw err; });
+        resolution_pass = true;
+        await compile(process.argv[2]);
+        resolution_pass = false;
+        for(let p of parsers) {
+            p.reset();
+            await p.parse();
+        }
+
+        var bitstream = createWriteStream("./tmp.s", { flags: "a" });
+        var orig = console.log;
+        console.log = (data) => { bitstream.write(`${data}\n`); }
+        functions.forEach((fn) => {
+            offsetLocalVariables(fn);
+        })
+        genStart(globalstrings, globals, anon_strings, functions);
+        bitstream.end();
+        console.log = orig;
+        spawn("make", ["bin"]);
     })
 
 }
