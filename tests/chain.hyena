@@ -2,38 +2,7 @@ var total = 0;
 var passed = 0;
 var failed = 0;
 
-fn write(data:&u8) void {
-    asm {
-        "mov rsi, [rdi+8]"
-        "mov rdx, [rdi +0]"
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    }
-}
 
-
-fn test(a:bool) void {
-    total = total + 1;
-    if(a) {
-        write("test: ok\n");
-        passed = passed + 1;
-    } else {
-        write("test: fail\n");
-        failed = failed + 1;
-    }
-}
-
-fn test_eql(a:bool, b:bool) void {
-    total = total + 1;
-    if(a eq b) {
-        write("test: ok\n");
-        passed = passed + 1;
-    } else {
-        failed = failed + 1;
-        write("test: fail\n");
-    }
-}
 
 struct Baz {
 
@@ -56,4 +25,58 @@ fn main() void {
     test_eql(made_array[10], 100);
 
     
+}
+
+import "./lib/mem.hyena"
+
+struct arg {}
+impl arg {
+    get_arg_count() u64 {asm {"mov rax, [__argc__]"}}
+    get_args() **u8 {
+        var arg_vector:**u8 = null; 
+        asm {"mov rax, [__argv__]"}
+    }
+}
+
+fn makeSlice(ptr:*u8) &u8 {
+    var slice:&u8 = undefined;
+    slice.ptr = ptr;
+    slice.len = 0;
+    for(0..10)|i| {
+        if(ptr.* == null) break;
+        ptr += 1;
+        slice.len += 1;
+    }
+    return slice;
+}
+
+fn main() void {
+    var arg_count = arg::get_arg_count();
+    var args = arg::get_args();
+    var block = cast(*&u8)mem::alloc(16 * arg_count + 8);
+    
+    if(args == null) {
+        write("null args\n");
+    }
+
+    var tmp_block = cast(*&u8) block;
+    tmp_block.* = arg_count;
+    tmp_block += 8;
+
+    for(0..arg_count)|index| {
+        write(makeSlice(args.*));
+        args += 8;
+    }
+
+    return arg_count;
+}
+
+fn write(data:&u8) void {
+    asm {
+        "mov rsi, [rdi+8]"
+        "mov rdx, [rdi +0]"
+        "mov rdi, 1"
+        "mov rax, 1"
+        "syscall"
+    }
 }

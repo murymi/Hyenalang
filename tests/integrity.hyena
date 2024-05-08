@@ -77,6 +77,43 @@ fn main() void {
     test_eql(big_bar_array[2].x, 20);
     test_eql(big_bar_array[2].y, 8);
     test_eql(big_bar_array[2].z, 13);
+
+    var i = 0;
+    for(0..20) |j| {i = j;}
+    test_eql(i, 19);
+
+    var arr = []u8{'g','g','g','g','g'};
+    for(arr)|*c| {test_eql(c.*, 'g');}
+    for(arr)|cc| {test_eql(cc, 'g');}
+
+
+    var a = "llllllllllllllll";
+    test_eql(a[0], 'l');
+    test_eql(a[5], 'l');
+
+
+    for(0..10, 0..)|char, index| {
+        test_eql(char, index);
+        test(char < 10);
+    }
+
+    for(arr)|*l| {
+        l.* = 'v';
+        test_eql(l.*, 'v');
+    }
+
+    for(a)|cha| {
+        test_eql(cha, 'l');
+    }
+
+    for(a)|*h| {
+        test_eql(h.*, 'l');
+    }
+
+    for(a)|*k| {
+        k.* = 'p';
+        test_eql(k.*, 'p');
+    }
 }
 
 

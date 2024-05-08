@@ -862,6 +862,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
                     } else {
+                        console.log("   mov rax, [rax]");
                         store(m.index_var?.datatype as Type);
                     }
                 } else if (m.range_type === rangeType.slice) {
@@ -877,6 +878,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
                     } else {
+                        console.log("   mov rax, [rax]");
                         store(m.index_var?.datatype as Type);
                     }
                 }
@@ -888,6 +890,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                 generateAddress(stmt.metadata[0].array_id as Expression);
                 console.log("   mov rax, [rax]");
             }
+            console.log("   dec rax");
             console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
             console.log("   jge .L.break." + labeloffset);
             console.log("   jmp .L.continue." + labeloffset);
@@ -1024,7 +1027,7 @@ function genEntry() {
     console.log(".global _start");
     console.log("_start:");
     console.log("   mov rax, [rsp]");
-    console.log("   mov rcx, [rsp+8]");
+    console.log("   lea rcx, [rsp+8]");
     console.log("   mov [__argc__], rax");
     console.log("   mov [__argv__], rcx");
     console.log("   call main");

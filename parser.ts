@@ -371,7 +371,8 @@ export class Parser {
         if (isResolutionPass()) {
             return new Expression().newExprGet(0, new Expression(), voidtype);
         }
-        if (!this.isStructure(expr.datatype)) {
+
+        if (expr.datatype === undefined || !this.isStructure(expr.datatype)) {
             console.error(`${expr.name} has no members ${isResolutionPass()}`);
             console.error(expr.datatype);
             process.exit(1);
@@ -383,6 +384,12 @@ export class Parser {
 
         if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
             return new Expression().newExprDeref(expr);
+        }
+        
+        if (expr.datatype === undefined || !this.isStructure(expr.datatype)) {
+            console.error(`${expr.name} has no members ${isResolutionPass()}`);
+            console.error(expr.datatype);
+            process.exit(1);
         }
 
         if (expr.datatype.kind === myType.ptr) {
@@ -961,7 +968,39 @@ export class Parser {
         }
     }
 
+    async loopRes():Promise<Statement> {
+        while (true) {
+            var bottom = await this.expression();
+            await this.makeIntRange(bottom);
+            if (!this.check(tokenType.comma)) break;
+            this.advance();
+        }
+
+        this.expect(tokenType.rightparen, ") after condition");
+        this.expect(tokenType.pipe, "loop payload");
+        while(true) {
+            if (this.match([tokenType.multiply])) {
+                this.expect(tokenType.identifier, "identifier");
+            } else {
+                this.expect(tokenType.identifier, "identifier");
+            }
+            if (!this.check(tokenType.comma)) break;
+            this.advance();
+        }
+
+        this.expect(tokenType.pipe, "|");
+        this.expect(tokenType.leftbrace, "{");
+        beginScope();
+        endScope();
+        await this.block();
+        return new Statement();
+    }
+
     async integerLoop(): Promise<Statement> {
+        if(isResolutionPass()) {
+            return await this.loopRes();
+        }
+
         var ranges: { range: Expression, range_type: rangeType, id: Expression | undefined }[] = []
         while (true) {
             var bottom = await this.expression();
@@ -990,6 +1029,7 @@ export class Parser {
                         )
                         break;
                     default:
+                        console.error(bottom.datatype);
                         this.tokenError("attemp to loop unsupported type", this.previous());
                 }
             }
