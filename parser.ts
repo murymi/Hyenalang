@@ -1198,9 +1198,9 @@ export class Parser {
                 });
             }
         }
-        endScope();
-
+        
         var body = await this.block();
+        endScope();
         return new Statement().newIntLoop(body, metadata);
     }
 
@@ -1447,7 +1447,8 @@ export class Parser {
     }
 
     structDeclaration(isunion: boolean): Statement {
-        var name = this.expect(tokenType.identifier, "expect struct or union name").value as string;
+        var name_tok = this.expect(tokenType.identifier, "expect struct or union name")
+        var name = name_tok.value as string;
         this.expect(tokenType.leftbrace, "Expect struct body");
         var strucmembers: { name: string, datatype: Type, default: Expression | undefined }[] = [];
 
@@ -1467,12 +1468,13 @@ export class Parser {
         }
 
         this.expect(tokenType.rightbrace, "Expect } after struct body");
-        pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers))
+        pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers), name_tok)
         return new Statement().newStructDeclStatement();
     }
 
     async enumDeclaration(): Promise<Statement> {
-        var name = this.expect(tokenType.identifier, "expect enum name").value as string;
+        var name_tok = this.expect(tokenType.identifier, "expect enum name");
+        var name = name_tok.value as string;
         this.expect(tokenType.leftbrace, "Expect enum body");
         var enumvalues: { name: string, value: Expression }[] = [];
 
@@ -1504,7 +1506,7 @@ export class Parser {
             this.advance();
         }
         this.expect(tokenType.rightbrace, "Expect } after enum fields");
-        pushEnum(new Type().newEnum(name, enumvalues));
+        pushEnum(new Type().newEnum(name, enumvalues), name_tok);
         return new Statement().newEnum();
     }
 

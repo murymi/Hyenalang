@@ -86,10 +86,19 @@ export function endTagScope() {
     tags_copes.splice(0,1);
 }
 
+function tokenError(message:string, tok:Token) {
+    console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + message} ${colors.reset + "."} `);
+    process.exit();
+}
 
 var struct_types: Type[] = [];
 
-export function pushStructType(struc:Type) {
+export function pushStructType(struc:Type,tok:Token) {
+    for(let s of tags_copes[0].structs) {
+        if(s.name === struc.name) {
+            tokenError(`struct ${struc.name} exists in scope`, tok);
+        }
+    }
     tags_copes[0].structs.push(struc);
     struct_types.push(struc);
 }
@@ -111,7 +120,13 @@ export function logStructs() {
 
 var enums: Type[] = [];
 
-export function pushEnum(en: Type) {
+
+export function pushEnum(en: Type, tok:Token) {
+    for(let e of tags_copes[0].enums) {
+        if(e.name === en.name) {
+            tokenError(`enum ${e.name} exists in scope`, tok);
+        }
+    }
     tags_copes[0].enums.push(en);
     enums.push(en);
 }

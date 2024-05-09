@@ -1,5 +1,7 @@
+enum Foo{one, two}
+enum Foo{one, two}
+
 fn main () void {
 
-    var a = !true;
 
 }
