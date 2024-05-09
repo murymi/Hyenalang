@@ -14,6 +14,8 @@ fn main () void {
 
     enum letters {one, two}
 
-    var a = letters.one;
+    var a = '\h';
+
+    return a;
 
 }

@@ -39,18 +39,13 @@ export enum tokenType {
     string,
     return,
     struct,
-
     leftsquare,
     rightsquare,
-
-    //andsand,
     mod,
-
     u8,
     u16,
     u32,
     u64,
-
     i8,
     i16,
     i32,
@@ -61,27 +56,21 @@ export enum tokenType {
     true,
     false,
     bool,
-
     eq,
     neq,
-
     lte,
     gte,
-
     union,
     enum,
-
     at,
     and,
     or,
-
     bitxor,
     bitand,
     bitor,
     bitnot,
     squote,
     asm,
-
     str,
     undefined,
     hash,
@@ -89,7 +78,6 @@ export enum tokenType {
     impl,
     doublecolon,
     import,
-
     addeq,
     muleq,
     diveq,
@@ -112,6 +100,7 @@ export enum tokenType {
     null,
     cast,
     argv,
+    bslash,
     eof
 };
 
@@ -278,10 +267,6 @@ export class Lexer {
             true: tokenType.true,
             false: tokenType.false,
             bool: tokenType.bool,
-            eq: tokenType.eq,
-            lte: tokenType.lte,
-            gte: tokenType.gte,
-            neq: tokenType.neq,
             f32: tokenType.f32,
             union: tokenType.union,
             enum: tokenType.enum,
@@ -323,8 +308,8 @@ export class Lexer {
     }
 
     skipComment() {
-        while (this.moreTokens() && this.peek() !== '\n') {this.advance();}
-        if (this.moreTokens()) {this.advance();}
+        while (this.moreTokens() && this.peek() !== '\n') { this.advance(); }
+        if (this.moreTokens()) { this.advance(); }
     }
 
     push(T: tokenType, val: string | number) {
@@ -350,7 +335,7 @@ export class Lexer {
                 this.tokens.push(this.identifier());
                 continue;
             } else if (char === "/") {
-                if(this.peekNext() === "/") {
+                if (this.peekNext() === "/") {
                     this.skipComment();
                 }
                 continue;
@@ -542,6 +527,9 @@ export class Lexer {
                     break;
                 case "'":
                     this.push(tokenType.squote, char);
+                    break;
+                case "\\":
+                    this.push(tokenType.bslash, char);
                     break;
                 default:
                     //console.error(char);

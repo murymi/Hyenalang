@@ -195,6 +195,18 @@ export class Parser {
         return new Expression();
     }
 
+    getEscape(char:Token) {
+        switch (char.value.toString()) {
+            case "n": return '\n';
+            case "t": return '\t';
+            case "r": return '\r';
+            case "0": return '\0';
+            case "b": return '\b';
+        }
+        this.tokenError(`unsupported escape sequence \\${char.value}`, char);
+        process.exit(1);
+    }
+
     async primary(): Promise<Expression> {
         if (this.match([tokenType.identifier])) {
             var id = this.previous().value as string;
@@ -281,7 +293,13 @@ export class Parser {
         }
 
         if (this.match([tokenType.squote])) {
-            var val = this.advance().value.toString();
+            var tok = this.advance()
+            var val = tok.value.toString();
+
+            if(tok.type === tokenType.bslash) {
+                val = this.getEscape(this.advance());
+            }
+
             if (val.length !== 1) {
                 this.tokenError("expected single character", this.previous());
             }
