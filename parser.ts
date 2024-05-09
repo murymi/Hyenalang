@@ -88,6 +88,89 @@ export class Parser {
         return toks;
     }
 
+    isConstExpr(expr: Expression): boolean {
+        switch (expr.type) {
+            case exprType.unary:
+                return this.isConstExpr(expr.right as Expression);
+            case exprType.binary_op:
+                return this.isConstExpr(expr.left as Expression) && this.isConstExpr(expr.right as Expression)
+            case exprType.grouping:
+                return this.isConstExpr(expr.left as Expression)
+            case exprType.number:
+            case exprType.null:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    evalConstExpr(expr: Expression): number {
+        switch (expr.type) {
+            case exprType.unary:
+                return this.evalConstExpr(expr.right as Expression);
+            case exprType.binary_op:
+                var left = this.evalConstExpr(expr.left as Expression);
+                var right = this.evalConstExpr(expr.right as Expression);
+                switch (expr.operator?.type) {
+                    case tokenType.divide:
+                        return left / right;
+                    case tokenType.multiply:
+                        return left * right;
+                    case tokenType.plus:
+                        return left + right;
+                    case tokenType.minus:
+                        return left - right;
+                    case tokenType.greater:
+                        return left > right ? 1 : 0;
+                    case tokenType.less:
+                        return left < right ? 1 : 0;
+                    case tokenType.eq:
+                        return left === right ? 1 : 0;
+                    case tokenType.lte:
+                        return left <= right ? 1 : 0;
+                    case tokenType.gte:
+                        return left >= right ? 1 : 0;
+                    case tokenType.neq:
+                        return left != right ? 1 : 0;
+                    case tokenType.bitand:
+                        return left & right;
+                    case tokenType.bitxor:
+                        return left ^ right;
+                    case tokenType.bitor:
+                        return left | right;
+                    case tokenType.and:
+                        return left && right;
+                    case tokenType.or:
+                        return left || right;
+                    case tokenType.mod:
+                        return left % right;
+                    case tokenType.shl:
+                        return left << right;
+                    case tokenType.shr:
+                        return left >> right;
+                    default:
+                        throw new Error("unhandled operator");
+                }
+            case exprType.grouping:
+                return this.evalConstExpr(expr.left as Expression)
+            case exprType.number:
+                return expr.val as number;
+            case exprType.null:
+                return 0;
+        }
+        throw new Error("unreachable");
+    }
+
+    evalConst(expr:Expression) {
+        if(this.isConstExpr(expr)) {
+            var val = new Expression().newExprNumber(this.evalConstExpr(expr));
+            val.datatype = expr.datatype;
+            return val;
+        }
+
+        return expr;
+    }
+
     assignBeforeUse(val: Expression): { assign: Expression, id: Expression } {
         var variable = incLocalOffset("", val.datatype);
         var id = new Expression().newExprIdentifier(variable);
@@ -106,7 +189,7 @@ export class Parser {
             while (true) {
                 this.expect(tokenType.dot, ".");
                 var member_tok = this.expect(tokenType.identifier, "identifier");
-                var fo = getOffsetOfMember(struc_type,member_tok);
+                var fo = getOffsetOfMember(struc_type, member_tok);
                 this.expect(tokenType.equal, "=");
                 setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
                 if (!this.match([tokenType.comma])) break;
@@ -195,7 +278,7 @@ export class Parser {
         return new Expression();
     }
 
-    getEscape(char:Token) {
+    getEscape(char: Token) {
         switch (char.value.toString()) {
             case "n": return '\n';
             case "t": return '\t';
@@ -296,7 +379,7 @@ export class Parser {
             var tok = this.advance()
             var val = tok.value.toString();
 
-            if(tok.type === tokenType.bslash) {
+            if (tok.type === tokenType.bslash) {
                 val = this.getEscape(this.advance());
             }
 
@@ -359,8 +442,8 @@ export class Parser {
         return a.module_name === b.module_name && a.name === b.name;
     }
 
-    async getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }, tok:Token): Promise<Expression> {
-        var obj = getLocalOffset(meta.name,tok);
+    async getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }, tok: Token): Promise<Expression> {
+        var obj = getLocalOffset(meta.name, tok);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype)) {
             this.tokenError(`${expr.datatype.name} has no such member function`, this.previous());
@@ -370,8 +453,8 @@ export class Parser {
         return await this.finishCall(fakeid, new Expression().newExprAddress(expr));
     }
 
-    async getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }, tok:Token): Promise<Expression> {
-        var obj = getLocalOffset(meta.name,tok);
+    async getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }, tok: Token): Promise<Expression> {
+        var obj = getLocalOffset(meta.name, tok);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         this.expect(tokenType.leftparen, "Expect ( ");
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype.base)) {
@@ -400,7 +483,7 @@ export class Parser {
         if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
             return new Expression().newExprDeref(expr);
         }
-        
+
         if (expr.datatype === undefined || !this.isStructure(expr.datatype)) {
             console.error(`${expr.name} has no members ${isResolutionPass()}`);
             console.error(expr.datatype);
@@ -576,7 +659,7 @@ export class Parser {
             this.tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
         }
 
-        var obj = getLocalOffset(struc?.name + fnname,tok);
+        var obj = getLocalOffset(struc?.name + fnname, tok);
         // todo
         return new Expression().newExprFnIdentifier(
             struc?.name + fnname,
@@ -856,7 +939,7 @@ export class Parser {
     async ExprStatement(): Promise<Statement> {
         var expr = await this.expression();
 
-        if(expr.type === exprType.assign) {
+        if (expr.type === exprType.assign) {
             this.expect(tokenType.semicolon, ";");
             return new Statement().newExprStatement(expr);
         }
@@ -983,7 +1066,7 @@ export class Parser {
         }
     }
 
-    async loopRes():Promise<Statement> {
+    async loopRes(): Promise<Statement> {
         while (true) {
             var bottom = await this.expression();
             await this.makeIntRange(bottom);
@@ -993,7 +1076,7 @@ export class Parser {
 
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.pipe, "loop payload");
-        while(true) {
+        while (true) {
             if (this.match([tokenType.multiply])) {
                 this.expect(tokenType.identifier, "identifier");
             } else {
@@ -1012,7 +1095,7 @@ export class Parser {
     }
 
     async integerLoop(): Promise<Statement> {
-        if(isResolutionPass()) {
+        if (isResolutionPass()) {
             return await this.loopRes();
         }
 
@@ -1389,11 +1472,14 @@ export class Parser {
             var tok = this.expect(tokenType.identifier, "expect enum field");
 
             if (this.match([tokenType.equal])) {
+                var equal = this.previous();
                 var expr = await this.expression();
+                if(!this.isConstExpr(expr)) {
+                    this.tokenError("Expect constant expression", equal);
+                }
+                expr = this.evalConst(expr);
                 enumvalues.push({ name: tok.value as string, value: expr });
-
-                //Todo -> const expr
-                currval++;
+                currval += expr.val + 1;
             } else {
                 enumvalues.push({ name: tok.value as string, value: new Expression().newExprNumber(currval) });
                 currval++;

@@ -24,8 +24,6 @@ export enum exprType {
     assignIndex,
     assign_array_index,
     assign_slice_index,
-    //deref_array_index,
-    //deref_slice_index,
     anon_string,
     fn_identifier,
     tmp_identifier,
