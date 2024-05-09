@@ -201,7 +201,7 @@ export class Parser {
     async primary(): Promise<Expression> {
         if (this.match([tokenType.identifier])) {
             var id = this.previous().value as string;
-            var obj = getLocalOffset(id);
+            var obj = getLocalOffset(id, this.previous());
 
             if (isResolutionPass()) return this.idRef(obj.variable as Variable);
 
@@ -344,8 +344,8 @@ export class Parser {
         return a.module_name === b.module_name && a.name === b.name;
     }
 
-    async getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Promise<Expression> {
-        var obj = getLocalOffset(meta.name);
+    async getFunctionFromStruct(expr: Expression, meta: { offset: number, datatype: Type, name: string }, tok:Token): Promise<Expression> {
+        var obj = getLocalOffset(meta.name,tok);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype)) {
             this.tokenError(`${expr.datatype.name} has no such member function`, this.previous());
@@ -355,8 +355,8 @@ export class Parser {
         return await this.finishCall(fakeid, new Expression().newExprAddress(expr));
     }
 
-    async getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }): Promise<Expression> {
-        var obj = getLocalOffset(meta.name);
+    async getFunctionFromStructPtr(expr: Expression, meta: { offset: number, datatype: Type, name: string }, tok:Token): Promise<Expression> {
+        var obj = getLocalOffset(meta.name,tok);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         this.expect(tokenType.leftparen, "Expect ( ");
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype.base)) {
@@ -398,7 +398,7 @@ export class Parser {
 
         var meta = getOffsetOfMember(expr.datatype, propname.value as string);
         if (meta.offset === -1) {
-            return await this.getFunctionFromStruct(expr, meta);
+            return await this.getFunctionFromStruct(expr, meta, propname);
         }
 
         if (expr.type !== exprType.identifier) {
@@ -555,13 +555,14 @@ export class Parser {
         if (struc === undefined) {
             this.tokenError("No such struct", name);
         }
-        var fnname = this.expect(tokenType.identifier, "Expect fn name").value as string;
+        var tok = this.expect(tokenType.identifier, "Expect fn name")
+        var fnname = tok.value as string;
 
         if (struc?.member_fn_names.find((f) => f === fnname) === undefined) {
             this.tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
         }
 
-        var obj = getLocalOffset(struc?.name + fnname);
+        var obj = getLocalOffset(struc?.name + fnname,tok);
         // todo
         return new Expression().newExprFnIdentifier(
             struc?.name + fnname,

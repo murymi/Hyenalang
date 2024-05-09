@@ -1,4 +1,4 @@
-import { Lexer, Token } from "./token";
+import { Lexer, Token, colors } from "./token";
 import { Parser } from "./parser";
 import { genStart } from "./codegen";
 import { Statement } from "./stmt";
@@ -227,17 +227,11 @@ export function isResolutionPass() {
     return resolution_pass;
 }
 
-export function getLocalOffset(name: string): { offset: number, datatype: Type, variable: Variable | undefined } {
+export function getLocalOffset(name: string, tok:Token): { offset: number, datatype: Type, variable: Variable | undefined } {
     var dummy = new Variable();
     dummy.datatype = voidtype;
     dummy.datatype.return_type = voidtype;
     if (resolution_pass) return { offset: -10, datatype: voidtype, variable: dummy }
-
-    for (let i = 0; i < globals.length; i++) {
-        if (globals[i].name === name) {
-            return { offset: -2, datatype: globals[i].datatype, variable: globals[i] }
-        }
-    }
 
     for (let e of enums) {
         if (e.name === name) {
@@ -270,7 +264,14 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
         }
     }
 
-    throw new Error(`undefined variable ${name}`);
+    for (let i = 0; i < globals.length; i++) {
+        if (globals[i].name === name) {
+            return { offset: -2, datatype: globals[i].datatype, variable: globals[i] }
+        }
+    }
+    
+    console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + `undefined variable ${name}`} ${colors.reset + "."} `);
+    process.exit();
 }
 
 

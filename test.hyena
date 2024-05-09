@@ -8,6 +8,6 @@ fn main (k:u8) void {
         var a = 90;
     }
 
-    a = k;
+    var a = maint;
 
 }
