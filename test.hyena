@@ -1,5 +1,5 @@
 fn main () void {
 
-    var a = 50 + 60 + 45;
+    var a = !true;
 
 }

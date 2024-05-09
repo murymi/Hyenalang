@@ -107,7 +107,17 @@ export class Parser {
     evalConstExpr(expr: Expression): number {
         switch (expr.type) {
             case exprType.unary:
-                return this.evalConstExpr(expr.right as Expression);
+                var right = this.evalConstExpr(expr.right as Expression);
+                switch (expr.operator?.type) {
+                    case tokenType.bang:
+                        return !right ? 1 : 0;
+                    case tokenType.minus:
+                        return -right;
+                    case tokenType.bitnot:
+                        return ~right;
+                    default:
+                        this.tokenError("unsupported unary operator", expr.operator as Token);
+                }
             case exprType.binary_op:
                 var left = this.evalConstExpr(expr.left as Expression);
                 var right = this.evalConstExpr(expr.right as Expression);
@@ -149,7 +159,7 @@ export class Parser {
                     case tokenType.shr:
                         return left >> right;
                     default:
-                        throw new Error("unhandled operator");
+                        this.tokenError("unsupported binary operator", expr.operator as Token);
                 }
             case exprType.grouping:
                 return this.evalConstExpr(expr.left as Expression)
@@ -161,8 +171,8 @@ export class Parser {
         throw new Error("unreachable");
     }
 
-    evalConst(expr:Expression) {
-        if(this.isConstExpr(expr)) {
+    evalConst(expr: Expression) {
+        if (this.isConstExpr(expr)) {
             var val = new Expression().newExprNumber(this.evalConstExpr(expr));
             val.datatype = expr.datatype;
             return val;
@@ -511,12 +521,14 @@ export class Parser {
     parseSliceIndex(expr: Expression, index: Expression): Expression {
         var ex = new Expression().newExprGet(8/*ptr*/, expr, new Type().newPointer(expr.datatype.base));
         var ret = new Expression().newExprDeref(
-            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), ex,
-                new Expression().newExprBinary(
-                    new Token(tokenType.multiply, "*", 0, 0, ""),
-                    new Expression().newExprNumber(expr.datatype.base.size),
-                    index
-                ))
+            this.evalConst(
+                new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), ex,
+                    new Expression().newExprBinary(
+                        new Token(tokenType.multiply, "*", 0, 0, ""),
+                        new Expression().newExprNumber(expr.datatype.base.size),
+                        index
+                    ))
+            )
         )
         ret.type = exprType.deref;
         ret.datatype = expr.datatype.base;
@@ -525,14 +537,16 @@ export class Parser {
 
     parseArrayIndex(expr: Expression, index: Expression): Expression {
         var ret = new Expression().newExprDeref(
-            new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""),
-                new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), expr,
-                    new Expression().newExprBinary(
-                        new Token(tokenType.multiply, "*", 0, 0, ""),
-                        new Expression().newExprNumber(expr.datatype.base.size),
-                        index
-                    )),
-                new Expression().newExprNumber(8)
+            this.evalConst(
+                new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""),
+                    new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), expr,
+                        new Expression().newExprBinary(
+                            new Token(tokenType.multiply, "*", 0, 0, ""),
+                            new Expression().newExprNumber(expr.datatype.base.size),
+                            index
+                        )),
+                    new Expression().newExprNumber(8)
+                )
             )
         )
 
@@ -1474,7 +1488,7 @@ export class Parser {
             if (this.match([tokenType.equal])) {
                 var equal = this.previous();
                 var expr = await this.expression();
-                if(!this.isConstExpr(expr)) {
+                if (!this.isConstExpr(expr)) {
                     this.tokenError("Expect constant expression", equal);
                 }
                 expr = this.evalConst(expr);

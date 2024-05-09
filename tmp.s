@@ -23,11 +23,11 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 8
-   lea rax, [rbp-4]
+   lea rax, [rbp-1]
    push rax
-   mov rax, 155
+   mov rax, 0
    pop rdi
-   mov [rdi], eax
+   mov [rdi], al
 .L.endfn.0:
    mov rsp, rbp
    pop rbp
