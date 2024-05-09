@@ -6,7 +6,7 @@ import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
 import { resolve } from "path"
-import { Type, alignTo, beginTagScope, endTagScope, getEnum, getPresentModule, i32, i64, myType, searchStruct, voidtype } from "./type";
+import { Type, alignTo, beginTagScope, endTagScope, getEnum, getPresentModule, i32, i64, myType, searchStruct, tag_scope_states, voidtype } from "./type";
 
 export enum fnType {
     extern,
@@ -343,11 +343,16 @@ if (process.argv.length < 3) {
     }
     truncate("./tmp.s", async () => {
         resolution_pass = true;
+        beginTagScope();
         await compile(process.argv[2]);
+        endTagScope();
+        console.error(tag_scope_states);
         resolution_pass = false;
         for (let p of parsers) {
             p.reset();
+            beginTagScope();
             await p.parse();
+            //endTagScope();
         }
 
         var bitstream = createWriteStream("./tmp.s", { flags: "a" });

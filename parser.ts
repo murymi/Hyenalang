@@ -59,6 +59,7 @@ export class Parser {
 
     tokenError(message: string, token: Token): void {
         console.error(`${colors.yellow + token.file_name + colors.green} line: ${token.line} col: ${token.col} ${colors.red + message} '${token.value}'${colors.reset + "."} `);
+        console.table(isResolutionPass());
         process.exit();
     }
 
@@ -300,6 +301,14 @@ export class Parser {
         process.exit(1);
     }
 
+
+    isTypeId(name: string): boolean {
+        if (searchStruct(name) || getEnum(name)) {
+            return true;
+        }
+        return false;
+    }
+
     async primary(): Promise<Expression> {
         if (this.match([tokenType.identifier])) {
             var id = this.previous().value as string;
@@ -365,20 +374,47 @@ export class Parser {
 
         if (this.match([tokenType.at])) {
             var what = this.expect(tokenType.identifier, "expect option");
-
+            this.expect(tokenType.leftparen, "(");
+            var ex: Expression | undefined = undefined;
             switch (what.value) {
                 case "sizeof":
-                case "alignof":
-                    this.expect(tokenType.leftparen, "expect ( ");
-                    var size = 0;
-                    if (!this.check(tokenType.identifier)) {
-                        size = what.value === "sizeof" ? (await this.expression()).datatype.size : (await this.expression()).datatype.align;
+                    if (this.check(tokenType.identifier)) {
+                        if (this.isTypeId(this.peek().value as string)) {
+                            ex = new Expression().newExprNumber(this.parseType(false).size);
+                        } else {
+                            var size = (await this.expression()).datatype.size;
+                            ex = new Expression().newExprNumber(size);
+                        }
+                    } else if (this.check(tokenType.number)) {
+                        var size = (await this.expression()).datatype.size;
+                        ex = new Expression().newExprNumber(size);
+                        console.error(ex, isResolutionPass());
                     } else {
-                        size = what.value === "sizeof" ? this.parseType(false).size : this.parseType(false).align
+                        ex = new Expression().newExprNumber(this.parseType(false).size);
                     }
-                    this.expect(tokenType.rightparen, "expect ) ");
-                    return new Expression().newExprNumber(size, false);
+                    break;
+                case "alignof":
+                    if (this.check(tokenType.identifier)) {
+                        if (this.isTypeId(this.peek().value as string)) {
+                            ex = new Expression().newExprNumber(this.parseType(false).align);
+                            console.error(ex, isResolutionPass());
+                        } else {
+                            var size = (await this.expression()).datatype.align;
+                            ex = new Expression().newExprNumber(size);
+                        }
+                    } else if (this.check(tokenType.number)) {
+                        var size = (await this.expression()).datatype.align;
+                        ex = new Expression().newExprNumber(size);
+                    } else {
+                        ex = new Expression().newExprNumber(this.parseType(false).align);
+                    }
+                    break;
+                    break;
+                default:
+                    this.tokenError("unknown expression", what);
             }
+            this.expect(tokenType.rightparen, ")");
+            return ex as Expression;
         }
 
         if (this.match([tokenType.undefined])) {
@@ -1198,7 +1234,7 @@ export class Parser {
                 });
             }
         }
-        
+
         var body = await this.block();
         endScope();
         return new Statement().newIntLoop(body, metadata);
@@ -1339,7 +1375,7 @@ export class Parser {
                 break;
         }
 
-        this.tokenError("Expected type", this.peek());
+        this.tokenError("[..]Expect type", tok);
         return i64;
     }
 
@@ -1468,7 +1504,7 @@ export class Parser {
         }
 
         this.expect(tokenType.rightbrace, "Expect } after struct body");
-        pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers), name_tok)
+        if (isResolutionPass()) pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers), name_tok)
         return new Statement().newStructDeclStatement();
     }
 
@@ -1479,7 +1515,7 @@ export class Parser {
         var enumvalues: { name: string, value: Expression }[] = [];
 
         if (this.check(tokenType.rightbrace)) {
-            this.expect(tokenType.leftbrace, "Expect enum field")
+            this.expect(tokenType.leftbrace, "enum field")
         }
 
         var currval = 0;
@@ -1505,7 +1541,7 @@ export class Parser {
             this.advance();
         }
         this.expect(tokenType.rightbrace, "Expect } after enum fields");
-        pushEnum(new Type().newEnum(name, enumvalues), name_tok);
+        if (isResolutionPass()) pushEnum(new Type().newEnum(name, enumvalues), name_tok);
         return new Statement().newEnum();
     }
 

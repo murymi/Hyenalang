@@ -1,5 +1,5 @@
 import { Expression, exprType } from "./expr";
-import { Function, fnType } from "./main";
+import { Function, fnType, isResolutionPass } from "./main";
 import { Statement, stmtType } from "./stmt";
 import { Token, colors } from "./token";
 
@@ -76,14 +76,38 @@ class TagScope {
     }
 }
 
-var tags_copes:TagScope[] = [new TagScope()];
+var tag_scopes:TagScope[] = [];
+
+export var tag_scope_states:TagScope[][] = [];
+
+function saveTscopeState() {
+    var t_copy:TagScope[] = [];
+    tag_scopes.forEach((t)=>{
+        var tg = new TagScope();
+        tg.enums.push(...t.enums);
+        tg.structs.push(...t.structs);
+        t_copy.push(tg);
+    })
+    tag_scope_states.splice(0,0,t_copy);
+}
 
 export function beginTagScope() {
-    tags_copes.splice(0,0, new TagScope());
+    if(isResolutionPass()){
+        var tg = new TagScope();
+        tag_scopes.splice(0,0,tg);
+    } else {
+        tag_scopes = tag_scope_states.splice(0,1)[0];
+    }
 }
 
 export function endTagScope() {
-    tags_copes.splice(0,1);
+    if(isResolutionPass()) {
+        saveTscopeState();
+        tag_scopes.splice(0,1);
+    } else {
+        tag_scopes.splice(0,1);
+    }
+
 }
 
 function tokenError(message:string, tok:Token) {
@@ -94,19 +118,21 @@ function tokenError(message:string, tok:Token) {
 var struct_types: Type[] = [];
 
 export function pushStructType(struc:Type,tok:Token) {
-    for(let s of tags_copes[0].structs) {
+    for(let s of tag_scopes[0].structs) {
         if(s.name === struc.name) {
             tokenError(`struct ${struc.name} exists in scope`, tok);
         }
     }
-    tags_copes[0].structs.push(struc);
+
+    tag_scopes[0].structs.push(struc);
     struct_types.push(struc);
 }
 
 export function searchStruct(name:string):Type|undefined {
-    for (let scope of tags_copes) {
+    for (let scope of tag_scopes) {
         for (let v of scope.structs) {
             if (v.name === name) {
+                console.error(v, isResolutionPass())
                 return v;
             }
         }
@@ -122,17 +148,17 @@ var enums: Type[] = [];
 
 
 export function pushEnum(en: Type, tok:Token) {
-    for(let e of tags_copes[0].enums) {
+    for(let e of tag_scopes[0].enums) {
         if(e.name === en.name) {
             tokenError(`enum ${e.name} exists in scope`, tok);
         }
     }
-    tags_copes[0].enums.push(en);
+    tag_scopes[0].enums.push(en);
     enums.push(en);
 }
 
 export function getEnum(name: string) {
-    for (let scope of tags_copes) {
+    for (let scope of tag_scopes) {
         for (let v of scope.enums) {
             if (v.name === name) {
                 return v;

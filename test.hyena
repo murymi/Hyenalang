@@ -1,7 +1,15 @@
-enum Foo{}
-enum Foo{}
+struct Foo{x:u8, y:u8}
 
 fn main () void {
+    struct Foo{x:u64, y:u64}
+    {
+        struct Foo{x:u8, y:u8}
+        struct Bar{x:u8, y:u8}
+    }
 
+    var b:Foo = undefined;
+    
+    return @sizeof(Foo);
 
 }
+
