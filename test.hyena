@@ -12,10 +12,8 @@ fn main () void {
         a:u8
     }
 
-    enum letters {one, two}
+    enum letters {one = 1+1, two = 1+2}
 
-    var a = '\h';
-
-    return a;
+    return letters.one + letters.two;
 
 }

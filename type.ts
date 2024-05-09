@@ -152,7 +152,7 @@ export class Type {
     members: { name: string, offset: number, type: Type, default:Expression|undefined }[];
     returnType: myType;
 
-    enumvalues:{name:string, value:number}[];
+    enumvalues:{name:string, value:Expression}[];
     name:string;
     module_name:string;
     member_fn_names:string[];
@@ -249,7 +249,7 @@ export class Type {
         return this;
     }
 
-    newEnum(name:string, mems:{name:string, value:number}[]) {
+    newEnum(name:string, mems:{name:string, value:Expression}[]) {
         this.module_name = getPresentModule() as string;
         this.kind = myType.enum;
         this.size = 4;

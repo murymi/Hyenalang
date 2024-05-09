@@ -188,7 +188,7 @@ export class Parser {
         var field = tok.value as string;
         var val = data_type.enumvalues.find((e) => e.name === field);
         if (val) {
-            return new Expression().newExprNumber(val.value);
+            return val.value;
         }
 
         this.tokenError(`enum ${id} has no field`, tok);
@@ -1374,10 +1374,10 @@ export class Parser {
         return new Statement().newStructDeclStatement();
     }
 
-    enumDeclaration(): Statement {
+    async enumDeclaration(): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "expect enum name").value as string;
         this.expect(tokenType.leftbrace, "Expect enum body");
-        var enumvalues: { name: string, value: number }[] = [];
+        var enumvalues: { name: string, value: Expression }[] = [];
 
         if (this.check(tokenType.rightbrace)) {
             this.advance();
@@ -1389,11 +1389,13 @@ export class Parser {
             var tok = this.expect(tokenType.identifier, "expect enum field");
 
             if (this.match([tokenType.equal])) {
-                var custom = this.expect(tokenType.number, "expect field value");
-                enumvalues.push({ name: tok.value as string, value: custom.value as number });
-                currval = custom.value as number + 1;
+                var expr = await this.expression();
+                enumvalues.push({ name: tok.value as string, value: expr });
+
+                //Todo -> const expr
+                currval++;
             } else {
-                enumvalues.push({ name: tok.value as string, value: currval });
+                enumvalues.push({ name: tok.value as string, value: new Expression().newExprNumber(currval) });
                 currval++;
             }
             if (!this.check(tokenType.comma)) {
@@ -1470,8 +1472,7 @@ export class Parser {
         }
 
         if (this.match([tokenType.enum])) {
-
-            return this.enumDeclaration();
+            return await this.enumDeclaration();
         }
 
         if (getcurrFn() >= 0) {
