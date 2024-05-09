@@ -1479,8 +1479,7 @@ export class Parser {
         var enumvalues: { name: string, value: Expression }[] = [];
 
         if (this.check(tokenType.rightbrace)) {
-            this.advance();
-            return new Statement();
+            this.expect(tokenType.leftbrace, "Expect enum field")
         }
 
         var currval = 0;
