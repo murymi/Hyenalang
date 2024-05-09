@@ -22,28 +22,12 @@ _start:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
+   sub rsp, 8
    lea rax, [rbp-4]
    push rax
-   mov rax, 0
+   mov rax, 155
    pop rdi
    mov [rdi], eax
-   lea rax, [rbp-8]
-   push rax
-   mov rax, 90
-   pop rdi
-   mov [rdi], eax
-   lea rax, [rbp-12]
-   push rax
-   mov rax, 90
-   pop rdi
-   mov [rdi], eax
-   mov rax, 3
-   push rax
-   mov rax, 0
-   pop rdi
-   add rax, rdi
-   jmp .L.endfn.0
 .L.endfn.0:
    mov rsp, rbp
    pop rbp

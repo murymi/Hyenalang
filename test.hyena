@@ -1,19 +1,5 @@
 fn main () void {
 
-    {
-        var a = 0;
-    }
-
-    {
-        var a = 90;
-    }
-
-    struct Foo {
-        a:u8
-    }
-    var j = 90;
-    enum letters {one = 0, two = 1+2}
-
-    return letters.one + letters.two;
+    var a = 50 + 60 + 45;
 
 }

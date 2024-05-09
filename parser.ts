@@ -933,7 +933,7 @@ export class Parser {
     }
 
     async expression(): Promise<Expression> {
-        return await this.assign();
+        return this.evalConst(await this.assign());
     }
 
     async ExprStatement(): Promise<Statement> {
