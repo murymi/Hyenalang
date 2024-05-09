@@ -1,13 +1,19 @@
-fn main (k:u8) void {
+fn main () void {
 
     {
-        var a = k;
+        var a = 0;
     }
 
     {
         var a = 90;
     }
 
-    var a = maint;
+    struct Foo {
+        a:u8
+    }
+
+    enum letters {one, two}
+
+    var a = letters.one;
 
 }

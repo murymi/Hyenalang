@@ -6,7 +6,7 @@ import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
 import { resolve } from "path"
-import { Type, alignTo, getPresentModule, i64, myType, searchStruct, voidtype } from "./type";
+import { Type, alignTo, beginTagScope, endTagScope, getEnum, getPresentModule, i32, i64, myType, searchStruct, voidtype } from "./type";
 
 export enum fnType {
     extern,
@@ -79,21 +79,21 @@ export class Function {
 }
 
 
-export class Struct {
-    name: string;
-    size: number;
-    members: { name: string, datatype: Type, default: Expression | undefined }[];
-    is_union: boolean;
-    module_name: string;
-
-    constructor(name: string, isunion: boolean, members: { name: string, datatype: Type, default: Expression | undefined }[]) {
-        this.name = name;
-        this.size = 0;
-        this.members = members;
-        this.is_union = isunion;
-        this.module_name = getPresentModule() as string;
-    }
-}
+// export class Struct {
+//     name: string;
+//     size: number;
+//     members: { name: string, datatype: Type, default: Expression | undefined }[];
+//     is_union: boolean;
+//     module_name: string;
+// 
+//     constructor(name: string, isunion: boolean, members: { name: string, datatype: Type, default: Expression | undefined }[]) {
+//         this.name = name;
+//         this.size = 0;
+//         this.members = members;
+//         this.is_union = isunion;
+//         this.module_name = getPresentModule() as string;
+//     }
+// }
 
 export class Variable {
     name: string;
@@ -125,36 +125,8 @@ export class Variable {
     }
 }
 
-var structs: Struct[] = [];
 
 var functions: Function[] = [];
-
-export function addGenericFunction(fn: Function) {
-    functions.push(fn);
-}
-
-var enums: Type[] = [];
-
-export function pushEnum(en: Type) {
-    enums.push(en);
-}
-
-export function getEnum(name: string) {
-    for (let e of enums) {
-        if (e.name === name) {
-            return e;
-        }
-    }
-    return null;
-}
-
-export function checkStruct(name: string) {
-    for (let s of structs) {
-        if (s.name === name) return s;
-    }
-    return null;
-}
-
 
 function checkVariableInCurrScope(name: string) {
     // for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
@@ -208,21 +180,6 @@ export function addGlobalString(value: string): number {
 // }
 
 
-export function getOffsetOfMember(struct: Type, member: string) {
-    for (let m of struct.members) {
-        if (m.name === member) {
-            return { offset: m.offset, datatype: m.type, name: "" };
-        }
-    }
-
-    if (struct.member_fn_names.find((n) => n === member)) {
-        return { offset: -1, datatype: i64, name: struct.name + member }
-    }
-
-    console.error("struct or union has no member named " + member);
-    process.exit(1);
-}
-
 export function isResolutionPass() {
     return resolution_pass;
 }
@@ -233,10 +190,8 @@ export function getLocalOffset(name: string, tok:Token): { offset: number, datat
     dummy.datatype.return_type = voidtype;
     if (resolution_pass) return { offset: -10, datatype: voidtype, variable: dummy }
 
-    for (let e of enums) {
-        if (e.name === name) {
-            return { offset: -3, datatype: e, variable: undefined }
-        }
+    if(getEnum(name)) {
+        return { offset: -3, datatype: getEnum(name) as Type, variable: undefined }
     }
 
     if (searchStruct(name)) {
@@ -269,7 +224,7 @@ export function getLocalOffset(name: string, tok:Token): { offset: number, datat
             return { offset: -2, datatype: globals[i].datatype, variable: globals[i] }
         }
     }
-    
+
     console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + `undefined variable ${name}`} ${colors.reset + "."} `);
     process.exit();
 }
@@ -307,20 +262,7 @@ export function pushFunction(name: string, params: { name: string, datatype: Typ
     return functions.length - 1;
 }
 
-export function pushStruct(struc: Struct) {
-    structs.push(struc);
-}
-
 var currentFn: number = -1;
-
-export function getStruct(name: string) {
-    for (let s of structs) {
-        if (s.name === name) {
-            return s;
-        }
-    }
-    return null;
-}
 
 export function setCurrentFuction(n: number) {
     currentFn = n;
@@ -340,11 +282,13 @@ export function resetCurrentFunction(name: string, body: Statement, tokens?: Tok
 
 export function beginScope() {
     variable_scopes.splice(0, 0, new VariableScope());
+    beginTagScope();
     scopeDepth++;
 }
 
 export function endScope() {
     variable_scopes.splice(0, 1);
+    endTagScope();
     scopeDepth--;
 }
 

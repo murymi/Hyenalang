@@ -896,6 +896,9 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
             break;
+        case stmtType.enumdecl:
+        case stmtType.structdecl:
+            break;
         default:
             throw new Error("unhandled statement");
     }

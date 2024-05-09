@@ -1,7 +1,7 @@
 import { Expression, exprType } from "./expr";
 import { Function, fnType } from "./main";
 import { Statement, stmtType } from "./stmt";
-import { Token } from "./token";
+import { Token, colors } from "./token";
 
 
 var modules:string[] = ["mod_main"];
@@ -67,19 +67,79 @@ export function isNumber(T: Type): boolean {
     }
 }
 
+class TagScope {
+    enums:Type[] = [];
+    structs:Type[] = [];
+    constructor(){
+        this.enums = [];
+        this.structs = [];
+    }
+}
+
+var tags_copes:TagScope[] = [new TagScope()];
+
+export function beginTagScope() {
+    tags_copes.splice(0,0, new TagScope());
+}
+
+export function endTagScope() {
+    tags_copes.splice(0,1);
+}
+
 
 var struct_types: Type[] = [];
 
 export function pushStructType(struc:Type) {
+    tags_copes[0].structs.push(struc);
     struct_types.push(struc);
 }
 
 export function searchStruct(name:string):Type|undefined {
-    return struct_types.find((s)=> s.name === name );
+    for (let scope of tags_copes) {
+        for (let v of scope.structs) {
+            if (v.name === name) {
+                return v;
+            }
+        }
+    }
 }
 
 export function logStructs() {
     console.error(struct_types);
+}
+
+
+var enums: Type[] = [];
+
+export function pushEnum(en: Type) {
+    tags_copes[0].enums.push(en);
+    enums.push(en);
+}
+
+export function getEnum(name: string) {
+    for (let scope of tags_copes) {
+        for (let v of scope.enums) {
+            if (v.name === name) {
+                return v;
+            }
+        }
+    }
+    return null;
+}
+
+export function getOffsetOfMember(struct: Type, tok:Token) {
+    var member = tok.value as string;
+    for (let m of struct.members) {
+        if (m.name === member) {
+            return { offset: m.offset, datatype: m.type, name: "" };
+        }
+    }
+
+    if (struct.member_fn_names.find((n) => n === member)) {
+        return { offset: -1, datatype: i64, name: struct.name + member }
+    }
+    console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + member +" is not member of "+struct.name }${colors.reset + "."} `);
+    process.exit();
 }
 
 export class Type {

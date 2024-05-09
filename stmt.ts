@@ -15,6 +15,7 @@ export enum stmtType {
     externfn,
     nativefn,
     structdecl,
+    enumdecl,
     ret,
     inline_asm,
     module,
@@ -71,7 +72,11 @@ export class Statement {
         index_var: Variable | undefined
     }[];
 
-
+    newEnum(){
+        this.type = stmtType.enumdecl;
+        return this;
+    }
+    
     newSwitch(cond: Expression, cases: Expression[], prongs: Statement[], else_: Statement) {
         this.cond = cond;
         this.cases = cases;

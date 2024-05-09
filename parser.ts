@@ -4,25 +4,20 @@ import { Expression, rangeType } from "./expr";
 import { exprType } from "./expr";
 import { Statement, stmtType } from "./stmt";
 import {
-    Struct,
     Variable,
     beginScope,
     compile,
     endScope,
     fnType,
-    getEnum,
     getLocalOffset,
-    getOffsetOfMember,
     getcurrFn,
     incLocalOffset,
     isResolutionPass,
-    pushEnum,
     pushFunction,
-    pushStruct,
     resetCurrentFunction,
     setCurrentFuction
 } from "./main";
-import { Type, alignTo, argv, bool, f32, i16, i32, i64, i8, myType, popModule, pushModule, pushStructType, searchStruct, u16, u32, u64, u8, voidtype } from "./type";
+import { Type, alignTo, argv, bool, f32, getEnum, getOffsetOfMember, i16, i32, i64, i8, myType, popModule, pushEnum, pushModule, pushStructType, searchStruct, u16, u32, u64, u8, voidtype } from "./type";
 
 export class Parser {
     tokens: Token[];
@@ -110,7 +105,8 @@ export class Parser {
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 this.expect(tokenType.dot, ".");
-                var fo = getOffsetOfMember(struc_type, this.expect(tokenType.identifier, "identifier").value as string);
+                var member_tok = this.expect(tokenType.identifier, "identifier");
+                var fo = getOffsetOfMember(struc_type,member_tok);
                 this.expect(tokenType.equal, "=");
                 setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
                 if (!this.match([tokenType.comma])) break;
@@ -188,14 +184,15 @@ export class Parser {
 
     enumField(id: string, data_type: Type): Expression {
         this.expect(tokenType.dot, "Enum field");
-        var field = this.expect(tokenType.identifier, "Enum field").value as string;
+        var tok = this.expect(tokenType.identifier, "Enum field");
+        var field = tok.value as string;
         var val = data_type.enumvalues.find((e) => e.name === field);
         if (val) {
             return new Expression().newExprNumber(val.value);
         }
-        console.error(`enum ${id} has no field named ${field}`);
-        process.exit(1);
 
+        this.tokenError(`enum ${id} has no field`, tok);
+        return new Expression();
     }
 
     async primary(): Promise<Expression> {
@@ -396,7 +393,7 @@ export class Parser {
             expr = new Expression().newExprDeref(expr);
         }
 
-        var meta = getOffsetOfMember(expr.datatype, propname.value as string);
+        var meta = getOffsetOfMember(expr.datatype, propname);
         if (meta.offset === -1) {
             return await this.getFunctionFromStruct(expr, meta, propname);
         }
@@ -411,8 +408,7 @@ export class Parser {
     }
 
     parseSliceIndex(expr: Expression, index: Expression): Expression {
-        var meta = getOffsetOfMember(expr.datatype, "ptr");
-        var ex = new Expression().newExprGet(meta.offset, expr, meta.datatype);
+        var ex = new Expression().newExprGet(8/*ptr*/, expr, new Type().newPointer(expr.datatype.base));
         var ret = new Expression().newExprDeref(
             new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), ex,
                 new Expression().newExprBinary(
@@ -1356,8 +1352,6 @@ export class Parser {
         }
 
         this.expect(tokenType.rightbrace, "Expect } after struct body");
-        var struc = new Struct(name, isunion, strucmembers);
-        pushStruct(struc);
         pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers))
         return new Statement().newStructDeclStatement();
     }
@@ -1390,14 +1384,11 @@ export class Parser {
             this.advance();
         }
         this.expect(tokenType.rightbrace, "Expect } after enum fields");
-
         pushEnum(new Type().newEnum(name, enumvalues));
-
-        return new Statement();
+        return new Statement().newEnum();
     }
 
     async moduleDeclaration(): Promise<Statement> {
-
         var statements: Statement[] = [];
         var name = this.expect(tokenType.identifier, "Expect module name").value;
         pushModule(name as string);
