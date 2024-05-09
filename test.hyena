@@ -1,37 +1,13 @@
-fn main () void {
+fn main (k:u8) void {
 
     {
-        var a = 0;
+        var a = k;
     }
 
     {
         var a = 90;
     }
 
-}
+    a = k;
 
-fn write(data:&u8) void {
-    asm {
-        "mov rsi, [rdi+8]"
-        "mov rdx, [rdi +0]"
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    }
-}
-
-fn test(a:bool) void {
-    if(a) {
-        write("test: ok\n");
-    } else {
-        write("test: fail\n");
-    }
-}
-
-fn test_eql(a:bool, b:bool) void {
-    if(a eq b) {
-        write("test: ok\n");
-    } else {
-        write("test: fail\n");
-    }
 }

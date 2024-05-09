@@ -17,6 +17,17 @@ var anon_count = 0;
 //var localSize = 0;
 var scopeDepth = 0;
 //var locals: { name:string, offset:number, scope: number }[] = [];
+
+
+class VariableScope {
+    variables: Variable[] = [];
+    constructor() {
+        this.variables = [];
+    }
+}
+
+var variable_scopes: VariableScope[] = [];
+
 var globalstrings: { value: string }[] = [];
 var globals: Variable[] = [];
 var anon_strings: { value: Expression }[] = [];
@@ -102,6 +113,9 @@ export class Variable {
     local(name: string, datatype: Type) {
         this.name = name;
         this.datatype = datatype;
+        if (scopeDepth !== 0) {
+            variable_scopes[0].variables.push(this);
+        }
         return this;
     }
 
@@ -142,9 +156,15 @@ export function checkStruct(name: string) {
 }
 
 
-function checkVariableInFn(name: string) {
-    for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
-        if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
+function checkVariableInCurrScope(name: string) {
+    // for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
+    //     if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
+    //         throw new Error("Redefination of a variable " + name);
+    //     }
+    // }
+
+    for (let v of variable_scopes[0].variables) {
+        if (v.name == name) {
             throw new Error("Redefination of a variable " + name);
         }
     }
@@ -156,14 +176,11 @@ function addVariableInFn(name: string, type: Type) {
     return functions[currentFn].locals[old];
 }
 
-function resolvable(type: Type): boolean {
-    return type.kind === myType.enum || type.kind === myType.function || type.kind === myType.struct;
-}
-// size in 8 bytes (for now)
 export function incLocalOffset(name: string, type: Type, initializer?: Expression): Variable {
-    if (!resolution_pass && currentFn === -1 && !resolvable(type)) {
-        return getLocalOffset(name).variable as Variable;
-    }
+    var dummy = new Variable();
+    dummy.datatype = type;
+    if (resolution_pass) return dummy;
+
 
     if (name === "") {
         if (resolution_pass && currentFn != -1) { } else {
@@ -172,20 +189,12 @@ export function incLocalOffset(name: string, type: Type, initializer?: Expressio
         }
     }
 
-    if (currentFn === -1 && resolution_pass && !resolvable(type)) {
+    if (scopeDepth === 0) {
         globals.push(new Variable().global(name, type, initializer));
         return globals[globals.length - 1];
     }
 
-    if (currentFn === -1 && !resolution_pass && resolvable(type)) {
-        globals.push(new Variable().global(name, type, initializer));
-        return globals[globals.length - 1];
-    }
-
-    var dummy = new Variable();
-    dummy.datatype = type;
-    if (resolution_pass) return dummy;
-    checkVariableInFn(name);
+    checkVariableInCurrScope(name);
     return addVariableInFn(name, type);
 }
 
@@ -219,7 +228,6 @@ export function isResolutionPass() {
 }
 
 export function getLocalOffset(name: string): { offset: number, datatype: Type, variable: Variable | undefined } {
-
     var dummy = new Variable();
     dummy.datatype = voidtype;
     dummy.datatype.return_type = voidtype;
@@ -247,14 +255,21 @@ export function getLocalOffset(name: string): { offset: number, datatype: Type, 
         }
     }
 
-    var locals = functions[currentFn].locals;
-    for (let i = locals.length - 1; i >= 0; i--) {
-        if (locals[i].name === name && locals[i].scope <= scopeDepth) {
-            var type = locals[i].datatype;
-            return { offset: i, datatype: type, variable: locals[i] }
+
+    for (let scope of variable_scopes) {
+        for (let v of scope.variables) {
+            if (v.name === name) {
+                return { offset: 0, datatype: v.datatype, variable: v };
+            }
         }
     }
-    console.error(functions);
+
+    for (let v of functions[currentFn].locals.slice(0, functions[currentFn].impilicit_arity)) {
+        if (v.name === name) {
+            return { offset: 0, datatype: v.datatype, variable: v };
+        }
+    }
+
     throw new Error(`undefined variable ${name}`);
 }
 
@@ -323,10 +338,12 @@ export function resetCurrentFunction(name: string, body: Statement, tokens?: Tok
 }
 
 export function beginScope() {
+    variable_scopes.splice(0, 0, new VariableScope());
     scopeDepth++;
 }
 
 export function endScope() {
+    variable_scopes.splice(0, 1);
     scopeDepth--;
 }
 
@@ -342,7 +359,7 @@ function offsetLocalVariables(fn: Function) {
     })
 }
 
-var parsers:Parser[] = [];
+var parsers: Parser[] = [];
 
 export function compile(path: string) {
     return new Promise((resolv, reject) => {
@@ -383,7 +400,7 @@ if (process.argv.length < 3) {
         resolution_pass = true;
         await compile(process.argv[2]);
         resolution_pass = false;
-        for(let p of parsers) {
+        for (let p of parsers) {
             p.reset();
             await p.parse();
         }
