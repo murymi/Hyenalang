@@ -1,11 +1,25 @@
+var string1 = "reeeaaaalll bad man!\n";
+var string2 = "oh oh Ohh\n";
+var string3 = "send nudes\n";
+fn main() void {
+    write(string1);
+    write(string3);
+    write(string2);
+
+    string3[6-1] = 't';
+    string3[7-1] = 'i';
+    string3[8-1] = 't';
+    string3[9-1] = 't';
+
+    write(string3);
+}
 
 
 
-
-var total = 0;
-var passed = 0;
-var failed = 0;
-
+// var total = 0;
+// var passed = 0;
+// var failed = 0;
+// 
 fn write(data:&u8) void {
     asm {
         "mov rsi, [rdi+8]"
@@ -17,24 +31,24 @@ fn write(data:&u8) void {
 }
 
 
-fn test(a:bool) void {
-    total = total + 1;
-    if(a) {
-        write("test: ok\n");
-        passed += 1;
-    } else {
-        write("test: fail\n");
-        failed += 1;
-    }
-}
-
-fn test_eql(a:bool, b:bool) void {
-    total += 1;
-    if(a == b) {
-        write("test: ok\n");
-        passed += 1;
-    } else {
-        failed += 1;
-        write("test: fail\n");
-    }
-}
+// fn test(a:bool) void {
+//     total = total + 1;
+//     if(a) {
+//         write("test: ok\n");
+//         passed += 1;
+//     } else {
+//         write("test: fail\n");
+//         failed += 1;
+//     }
+// }
+// 
+// fn test_eql(a:bool, b:bool) void {
+//     total += 1;
+//     if(a == b) {
+//         write("test: ok\n");
+//         passed += 1;
+//     } else {
+//         failed += 1;
+//         write("test: fail\n");
+//     }
+// }

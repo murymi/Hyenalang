@@ -1,0 +1,14 @@
+var a = 20 + 89;
+var string = "hello kalulu\n";
+fn main() void {
+
+    switch(a) {
+        0, 109 => {
+            defer write("hello\n");
+            test(true);
+        },
+        else => {
+            test(false);
+        }
+    }
+}

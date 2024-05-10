@@ -5,7 +5,7 @@ import { Statement, stmtType } from "./stmt";
 import { Variable, fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
-import { Type, alignTo, f32, myType, u64 } from "./type";
+import { Type, alignTo, f32, myType, u64, u8 } from "./type";
 
 
 var latestContinueLabel = "";
@@ -811,7 +811,6 @@ function genStmt(stmt: Statement, fnid: number): void {
         case stmtType.switch:
             var label = incLabel();
             generateCode(stmt.cond);
-            console.error(stmt.cases);
             stmt.cases.forEach((cas) => {
                 switch (cas.left?.type) {
                     case exprType.number:
@@ -969,9 +968,9 @@ function genGlobals(globals: Variable[]) {
             if (g.initializer.type === exprType.undefnd) return;
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
-            if (g.datatype.kind === myType.slice) {
+            if (g.datatype.kind === myType.slice && g.datatype.base === u8) {
                 console.log(`   .quad ${g.initializer.bytes.length}`)
-                console.log(`   .quad offset .L.data.strings.${g.initializer.label} + 8`)
+                console.log(`   .quad offset .L.data.bytes.${g.initializer.label} + 8`)
                 return;
             }
 
