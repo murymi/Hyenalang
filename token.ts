@@ -1,5 +1,8 @@
 //import process from "process";
 
+import { relative } from "node:path";
+import { cwd } from "node:process";
+
 export var colors = {
     reset: "\x1b[0m",
     red: "\x1b[31m",
@@ -303,13 +306,13 @@ export class Lexer {
     }
 
     tokenError(message: string): void {
-        console.error(`${colors.yellow + this.file_name + ":" + colors.green} line: ${this.line} col: ${this.col} ${colors.red + message} '${this.peek()}'${colors.reset + "."} `);
+        console.error(`${colors.yellow + relative(cwd(),this.file_name) + ":" + colors.green}${this.line}:${this.col} ${colors.red + message} '${this.peek()}'${colors.reset}`);
         process.exit();
     }
 
     skipComment() {
         while (this.moreTokens() && this.peek() !== '\n') { this.advance(); }
-        if (this.moreTokens()) { this.advance(); }
+        if (this.moreTokens()) { this.advance(); this.line++; this.col = 0; }
     }
 
     push(T: tokenType, val: string | number) {

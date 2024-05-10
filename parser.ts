@@ -18,6 +18,8 @@ import {
     setCurrentFuction
 } from "./main";
 import { Type, alignTo, argv, bool, f32, getEnum, getOffsetOfMember, i16, i32, i64, i8, myType, popModule, pushEnum, pushModule, pushStructType, searchStruct, u16, u32, u64, u8, voidtype } from "./type";
+import { relative } from "node:path";
+import { cwd } from "node:process";
 
 export class Parser {
     tokens: Token[];
@@ -58,7 +60,7 @@ export class Parser {
     }
 
     tokenError(message: string, token: Token): void {
-        console.error(`${colors.yellow + token.file_name + colors.green} line: ${token.line} col: ${token.col} ${colors.red + message} '${token.value}'${colors.reset + "."} `);
+        console.error(`${colors.yellow + relative(cwd(),token.file_name) + colors.green}:${token.line}:${token.col} ${colors.red + message} '${token.value}'${colors.reset} `);
         console.table(isResolutionPass());
         process.exit();
     }
@@ -381,6 +383,7 @@ export class Parser {
                     if (this.check(tokenType.identifier)) {
                         if (this.isTypeId(this.peek().value as string)) {
                             ex = new Expression().newExprNumber(this.parseType(false).size);
+                            console.error(ex, isResolutionPass());
                         } else {
                             var size = (await this.expression()).datatype.size;
                             ex = new Expression().newExprNumber(size);
@@ -388,7 +391,6 @@ export class Parser {
                     } else if (this.check(tokenType.number)) {
                         var size = (await this.expression()).datatype.size;
                         ex = new Expression().newExprNumber(size);
-                        console.error(ex, isResolutionPass());
                     } else {
                         ex = new Expression().newExprNumber(this.parseType(false).size);
                     }
@@ -397,7 +399,6 @@ export class Parser {
                     if (this.check(tokenType.identifier)) {
                         if (this.isTypeId(this.peek().value as string)) {
                             ex = new Expression().newExprNumber(this.parseType(false).align);
-                            console.error(ex, isResolutionPass());
                         } else {
                             var size = (await this.expression()).datatype.align;
                             ex = new Expression().newExprNumber(size);

@@ -1,7 +1,9 @@
+import {relative, resolve} from "node:path";
 import { Expression, exprType } from "./expr";
 import { Function, fnType, isResolutionPass } from "./main";
 import { Statement, stmtType } from "./stmt";
 import { Token, colors } from "./token";
+import { cwd } from "node:process";
 
 
 var modules:string[] = ["mod_main"];
@@ -78,52 +80,55 @@ class TagScope {
 
 var tag_scopes:TagScope[] = [];
 
-export var tag_scope_states:TagScope[][] = [];
-
-function saveTscopeState() {
-    var t_copy:TagScope[] = [];
-    tag_scopes.forEach((t)=>{
-        var tg = new TagScope();
-        tg.enums.push(...t.enums);
-        tg.structs.push(...t.structs);
-        t_copy.push(tg);
-    })
-    tag_scope_states.splice(0,0,t_copy);
-}
+// export var tag_scope_states:TagScope[][] = [];
+// 
+// function saveTscopeState() {
+//     var t_copy:TagScope[] = [];
+//     tag_scopes.forEach((t)=>{
+//         var tg = new TagScope();
+//         t.enums.forEach((e)=>{
+//             tg.enums.push(e);
+//         })
+//         t.structs.forEach((s)=>{
+//             tg.structs.push(s);
+//         })
+//         t_copy.push(tg);
+//     })
+//     tag_scope_states.push(t_copy);
+// }
 
 export function beginTagScope() {
     if(isResolutionPass()){
         var tg = new TagScope();
         tag_scopes.splice(0,0,tg);
-    } else {
-        tag_scopes = tag_scope_states.splice(0,1)[0];
     }
 }
 
-export function endTagScope() {
-    if(isResolutionPass()) {
-        saveTscopeState();
-        tag_scopes.splice(0,1);
-    } else {
-        tag_scopes.splice(0,1);
-    }
-
-}
+// export function endTagScope() {
+//     if(isResolutionPass()) {
+//         tag_scopes.splice(0,1);
+//     } else {
+//         tag_scopes.splice(0,1);
+//     }
+// 
+// }
 
 function tokenError(message:string, tok:Token) {
-    console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + message} ${colors.reset + "."} `);
+    console.error(`${colors.yellow + relative(cwd(),tok.file_name) + colors.green}:${tok.line}:${tok.col} ${colors.red + message}${colors.reset} `);
     process.exit();
 }
 
 var struct_types: Type[] = [];
 
 export function pushStructType(struc:Type,tok:Token) {
+    //console.error(isResolutionPass(), "===============");
     for(let s of tag_scopes[0].structs) {
         if(s.name === struc.name) {
-            tokenError(`struct ${struc.name} exists in scope`, tok);
+            tokenError(`struct ${struc.name} already exists at ${relative(cwd(), s.token.file_name)}:${s.token.line}:${s.token.col}`, tok);
+
         }
     }
-
+    struc.token = tok;
     tag_scopes[0].structs.push(struc);
     struct_types.push(struc);
 }
@@ -132,11 +137,12 @@ export function searchStruct(name:string):Type|undefined {
     for (let scope of tag_scopes) {
         for (let v of scope.structs) {
             if (v.name === name) {
-                console.error(v, isResolutionPass())
+                //console.error(v, isResolutionPass())
                 return v;
             }
         }
     }
+    console.error(tag_scopes[0].structs, isResolutionPass());
 }
 
 export function logStructs() {
@@ -150,9 +156,10 @@ var enums: Type[] = [];
 export function pushEnum(en: Type, tok:Token) {
     for(let e of tag_scopes[0].enums) {
         if(e.name === en.name) {
-            tokenError(`enum ${e.name} exists in scope`, tok);
+            tokenError(`enum ${e.name} already exists at ${relative(cwd(),e.token.file_name)}:${e.token.line}:${e.token.col}`, tok);
         }
     }
+    en.token = tok;
     tag_scopes[0].enums.push(en);
     enums.push(en);
 }
@@ -187,6 +194,8 @@ export class Type {
     kind: myType;
     size: number;
     align: number;
+
+    token:Token;
 
     base: Type;
     arrayLen: number;
