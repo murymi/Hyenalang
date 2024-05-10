@@ -1,25 +1,6 @@
-struct Bar {x:u8, x:u8}
+struct Bar {x:u8, y:u8}
 
 fn main() void {
-    var c = [][3]u64{
-        []u64{99,99,99},
-        []u64{99,99,99},
-        []u64{99,99,99}
-    };
-
-    test_eq(c[0][0],99);
-    test_eq(c[0][1],99);
-    test_eq(c[0][2],99);
-    test_eq(c[1][0],99);
-    test_eq(c[1][1],99);
-    test_eq(c[1][2],99);
-    test_eq(c[2][0],99);
-    test_eq(c[2][1],99);
-    test_eq(c[2][2],99);
-
-    test_eq(c[0].len, 3);
-    test_eq(c[1].len, 3);
-    test_eq(c[2].len, 3);
 
 }
 

@@ -70,8 +70,8 @@ _start:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 104
-   lea rax, [rbp-104]
+   sub rsp, 128
+   lea rax, [rbp-68]
    mov qword ptr [rax], 3
    add rax, 8
    push rax
@@ -84,69 +84,69 @@ main:
    push rdi
    mov rax, 99
    pop rdi
-   mov [rdi], rax
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 12
+   push rdi
+   mov rax, 99
+   pop rdi
+   mov [rdi], eax
    pop rdi
    push rdi
    add rdi, 16
    push rdi
    mov rax, 99
    pop rdi
-   mov [rdi], rax
+   mov [rdi], eax
    pop rdi
    push rdi
-   add rdi, 24
-   push rdi
-   mov rax, 99
-   pop rdi
-   mov [rdi], rax
+   mov qword ptr [rdi + 20],3
    pop rdi
    push rdi
-   mov qword ptr [rdi + 32],3
-   pop rdi
-   push rdi
-   add rdi, 40
+   add rdi, 28
    push rdi
    mov rax, 99
    pop rdi
-   mov [rdi], rax
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 32
+   push rdi
+   mov rax, 99
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 36
+   push rdi
+   mov rax, 99
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   mov qword ptr [rdi + 40],3
    pop rdi
    push rdi
    add rdi, 48
    push rdi
    mov rax, 99
    pop rdi
-   mov [rdi], rax
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 52
+   push rdi
+   mov rax, 99
+   pop rdi
+   mov [rdi], eax
    pop rdi
    push rdi
    add rdi, 56
    push rdi
    mov rax, 99
    pop rdi
-   mov [rdi], rax
-   pop rdi
-   push rdi
-   mov qword ptr [rdi + 64],3
-   pop rdi
-   push rdi
-   add rdi, 72
-   push rdi
-   mov rax, 99
-   pop rdi
-   mov [rdi], rax
-   pop rdi
-   push rdi
-   add rdi, 80
-   push rdi
-   mov rax, 99
-   pop rdi
-   mov [rdi], rax
-   pop rdi
-   push rdi
-   add rdi, 88
-   push rdi
-   mov rax, 99
-   pop rdi
-   mov [rdi], rax
+   mov [rdi], eax
    add rsp, 8
    lea rax, [test_eq]
    push rax
@@ -154,7 +154,7 @@ main:
    push rax
    mov rax, 0
    push rax
-   mov rax, 8
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
@@ -162,11 +162,11 @@ main:
    push rax
    mov rax, 0
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -175,7 +175,7 @@ main:
    add rax, rdi
    pop rdi
    add rax, rdi
-   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    push rax
    mov rax, 99
    push rax
@@ -189,7 +189,7 @@ main:
    push rax
    mov rax, 1
    push rax
-   mov rax, 8
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
@@ -197,11 +197,11 @@ main:
    push rax
    mov rax, 0
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -210,7 +210,7 @@ main:
    add rax, rdi
    pop rdi
    add rax, rdi
-   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    push rax
    mov rax, 99
    push rax
@@ -224,7 +224,7 @@ main:
    push rax
    mov rax, 2
    push rax
-   mov rax, 8
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
@@ -232,11 +232,11 @@ main:
    push rax
    mov rax, 0
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -245,112 +245,7 @@ main:
    add rax, rdi
    pop rdi
    add rax, rdi
-   mov rax, [rax]
-   push rax
-   mov rax, 99
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eq]
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 0
-   push rax
-   mov rax, 8
-   pop rdi
-   imul rax, rdi
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 1
-   push rax
-   mov rax, 32
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-104]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   mov rax, [rax]
-   push rax
-   mov rax, 99
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eq]
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 1
-   push rax
-   mov rax, 8
-   pop rdi
-   imul rax, rdi
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 1
-   push rax
-   mov rax, 32
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-104]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   mov rax, [rax]
-   push rax
-   mov rax, 99
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eq]
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 2
-   push rax
-   mov rax, 8
-   pop rdi
-   imul rax, rdi
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 1
-   push rax
-   mov rax, 32
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-104]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    push rax
    mov rax, 99
    push rax
@@ -364,19 +259,19 @@ main:
    push rax
    mov rax, 0
    push rax
-   mov rax, 8
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
    mov rax, 8
    push rax
-   mov rax, 2
+   mov rax, 1
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -385,7 +280,7 @@ main:
    add rax, rdi
    pop rdi
    add rax, rdi
-   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    push rax
    mov rax, 99
    push rax
@@ -399,19 +294,19 @@ main:
    push rax
    mov rax, 1
    push rax
-   mov rax, 8
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
    mov rax, 8
    push rax
-   mov rax, 2
+   mov rax, 1
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -420,7 +315,7 @@ main:
    add rax, rdi
    pop rdi
    add rax, rdi
-   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    push rax
    mov rax, 99
    push rax
@@ -434,19 +329,19 @@ main:
    push rax
    mov rax, 2
    push rax
-   mov rax, 8
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
    mov rax, 8
    push rax
-   mov rax, 2
+   mov rax, 1
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -455,7 +350,7 @@ main:
    add rax, rdi
    pop rdi
    add rax, rdi
-   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
    push rax
    mov rax, 99
    push rax
@@ -469,11 +364,116 @@ main:
    push rax
    mov rax, 0
    push rax
-   mov rax, 32
+   mov rax, 4
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 20
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-68]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   movsxd rax, dword ptr [rax]
+   push rax
+   mov rax, 99
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 4
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 20
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-68]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   movsxd rax, dword ptr [rax]
+   push rax
+   mov rax, 99
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 4
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 20
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-68]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   movsxd rax, dword ptr [rax]
+   push rax
+   mov rax, 99
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 20
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -493,11 +493,11 @@ main:
    push rax
    mov rax, 1
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -517,11 +517,11 @@ main:
    push rax
    mov rax, 2
    push rax
-   mov rax, 32
+   mov rax, 20
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-104]
+   lea rax, [rbp-68]
    pop rdi
    add rax, rdi
    pop rdi
@@ -530,6 +530,1130 @@ main:
    mov rax, [rax]
    push rax
    mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [rbp-122]
+   mov qword ptr [rax], 3
+   add rax, 8
+   push rax
+   pop rdi
+   push rdi
+   mov qword ptr [rdi + 0],3
+   pop rdi
+   push rdi
+   add rdi, 8
+   push rdi
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 9
+   push rdi
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 10
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 11
+   push rdi
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 12
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 13
+   push rdi
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   mov qword ptr [rdi + 14],3
+   pop rdi
+   push rdi
+   add rdi, 22
+   push rdi
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 23
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 24
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 25
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 26
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 27
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   mov qword ptr [rdi + 28],3
+   pop rdi
+   push rdi
+   add rdi, 36
+   push rdi
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 37
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 38
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 39
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 40
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 41
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   add rsp, 8
+   lea rax, [test_eq]
+   push rax
+   lea rax, [rbp-122]
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 1
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   push rax
+   mov rax, 5
+   pop rdi
+   mov [rdi], al
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   push rax
+   mov rax, 5
+   pop rdi
+   mov [rdi], al
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 10
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   push rax
+   mov rax, 6
+   pop rdi
+   mov [rdi], al
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   push rax
+   mov rax, 9
+   pop rdi
+   mov [rdi], al
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 15
    push rax
    pop rsi
    pop rdi
