@@ -142,7 +142,6 @@ export function searchStruct(name:string):Type|undefined {
             }
         }
     }
-    console.error(tag_scopes[0].structs, isResolutionPass());
 }
 
 export function logStructs() {
@@ -176,7 +175,9 @@ export function getEnum(name: string) {
 }
 
 export function getOffsetOfMember(struct: Type, tok:Token) {
+    if(isResolutionPass()) return { offset: -11, datatype: voidtype, name: "" };
     var member = tok.value as string;
+    console.error(member);
     for (let m of struct.members) {
         if (m.name === member) {
             return { offset: m.offset, datatype: m.type, name: "" };
@@ -186,8 +187,9 @@ export function getOffsetOfMember(struct: Type, tok:Token) {
     if (struct.member_fn_names.find((n) => n === member)) {
         return { offset: -1, datatype: i64, name: struct.name + member }
     }
-    console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + member +" is not member of "+struct.name }${colors.reset + "."} `);
-    process.exit();
+
+    tokenError(member +" is not member of "+struct.name,tok);
+    process.exit()
 }
 
 export class Type {
@@ -412,6 +414,14 @@ export class Type {
             return true;
         }
         return false;
+    }
+
+    isPtr() {
+        return this.kind === myType.ptr;
+    }
+
+    hasMembers() {
+        return this.kind === myType.slice || this.kind === myType.struct
     }
 
     constructor() {

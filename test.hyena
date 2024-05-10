@@ -1,64 +1,40 @@
-fn main () void {
-    struct Foo{a:u8, b:u32}
-    {
-        `
+
+
+
+
+var total = 0;
+var passed = 0;
+var failed = 0;
+
+fn write(data:&u8) void {
+    asm {
+        "mov rsi, [rdi+8]"
+        "mov rdx, [rdi +0]"
+        "mov rdi, 1"
+        "mov rax, 1"
+        "syscall"
     }
-    var c:Foo = undefined;
 }
 
-// fn baz() void {
-//     
-// }
-//    struct Foo{c:u64, d:u64}
-//    {
-//        struct Foo{e:u8, f:u32}
-//        {
-//            struct Foo{g:u8, h:u64, j:u16}
-//            {
-//                struct Foo{i:u8, j:u8, k:u8}
-//                @sizeof(Foo);
-//            }
-//
-//            {
-//
-//            }
-//
-//        }
-//    }
 
-// var total = 0;
-// var passed = 0;
-// var failed = 0;
-// 
-// fn write(data:&u8) void {
-//     asm {
-//         "mov rsi, [rdi+8]"
-//         "mov rdx, [rdi +0]"
-//         "mov rdi, 1"
-//         "mov rax, 1"
-//         "syscall"
-//     }
-// }
-// 
-// 
-// fn test(a:bool) void {
-//     total = total + 1;
-//     if(a) {
-//         write("test: ok\n");
-//         passed += 1;
-//     } else {
-//         write("test: fail\n");
-//         failed += 1;
-//     }
-// }
+fn test(a:bool) void {
+    total = total + 1;
+    if(a) {
+        write("test: ok\n");
+        passed += 1;
+    } else {
+        write("test: fail\n");
+        failed += 1;
+    }
+}
 
-// fn test_eql(a:bool, b:bool) void {
-//     total += 1;
-//     if(a == b) {
-//         write("test: ok\n");
-//         passed += 1;
-//     } else {
-//         failed += 1;
-//         write("test: fail\n");
-//     }
-// }
+fn test_eql(a:bool, b:bool) void {
+    total += 1;
+    if(a == b) {
+        write("test: ok\n");
+        passed += 1;
+    } else {
+        failed += 1;
+        write("test: fail\n");
+    }
+}

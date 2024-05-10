@@ -1,0 +1,31 @@
+struct Foo{a:u8, b:u32}
+fn main () void {
+    test_eql(@alignof(Foo), 4);
+    test_eql(@sizeof(Foo), 8);
+
+    var a = 1; 
+    {
+        var a = 2;
+
+        {
+            var a = 3;
+
+            {
+                var a = 4;
+                test_eql(a, 4);
+            }
+            test_eql(a,3);
+        }
+        test_eql(a,2);
+    }
+    test_eql(a, 1);
+
+    var c = &a + 2;
+    test_eql(@sizeof(c), 8);
+    test_eql(c - &a, 2);
+    test_eql(cast(i32)c - cast(i32)&a, 8);
+    test_eql((&a).*, 1);
+    (&a).* = 70;
+    test_eql(a, 70);
+    
+}

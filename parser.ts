@@ -383,7 +383,6 @@ export class Parser {
                     if (this.check(tokenType.identifier)) {
                         if (this.isTypeId(this.peek().value as string)) {
                             ex = new Expression().newExprNumber(this.parseType(false).size);
-                            console.error(ex, isResolutionPass());
                         } else {
                             var size = (await this.expression()).datatype.size;
                             ex = new Expression().newExprNumber(size);
@@ -511,36 +510,28 @@ export class Parser {
     }
 
     async parseGet(expr: Expression): Promise<Expression> {
+        var dot = this.previous();
         var propname = this.advance();
 
         if (isResolutionPass()) {
             return new Expression().newExprGet(0, new Expression(), voidtype);
         }
 
-        if (expr.datatype === undefined || !this.isStructure(expr.datatype)) {
-            console.error(`${expr.name} has no members ${isResolutionPass()}`);
-            console.error(expr.datatype);
-            process.exit(1);
-        }
-
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             this.tokenError("expect property name after dot", this.peek());
         }
-
+        
         if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
             return new Expression().newExprDeref(expr);
         }
 
-        if (expr.datatype === undefined || !this.isStructure(expr.datatype)) {
-            console.error(`${expr.name} has no members ${isResolutionPass()}`);
-            console.error(expr.datatype);
-            process.exit(1);
+        if (expr.datatype === undefined || !expr.datatype.hasMembers()) {
+            this.tokenError(`type ${expr.datatype.toString()} has no members`,dot);
         }
 
         if (expr.datatype.kind === myType.ptr) {
             expr = new Expression().newExprDeref(expr);
         }
-
         var meta = getOffsetOfMember(expr.datatype, propname);
         if (meta.offset === -1) {
             return await this.getFunctionFromStruct(expr, meta, propname);
@@ -796,7 +787,16 @@ export class Parser {
         while (this.match([tokenType.plus, tokenType.minus])) {
             var operator = this.previous();
             var right = await this.factor();
+            if(expr.datatype.isPtr() && !right.datatype.isPtr()) {
+                right = new Expression().newExprBinary(
+                    new Token(tokenType.multiply,"",0,0,""),right,new Expression().newExprNumber(expr.datatype.base.size)
+                )
+            } 
             expr = new Expression().newExprBinary(operator, expr, right);
+
+            if(expr.datatype.isPtr() && right.datatype.isPtr() && operator.type === tokenType.minus){
+                expr = new Expression().newExprBinary(new Token(tokenType.divide,"",0,0,""),expr, new Expression().newExprNumber(expr.datatype.base.size))
+            } 
         }
 
         return expr;
@@ -976,8 +976,9 @@ export class Parser {
                 case exprType.get:
                     return new Expression().newExprSet(expr, val);
                 default:
+                    if(isResolutionPass()) return expr;
                     console.error(expr);
-                    this.tokenError("Unexpected assignment", equals);
+                    this.tokenError(`Unexpected assignment target ${expr.datatype.toString()}`, equals);
             }
         }
         return expr;
