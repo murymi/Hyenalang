@@ -1,18 +1,38 @@
-var a = []u8{1,2,3,4};
-var b = &a;
-
-struct Bar {
-    x:u8, y:u8
-}
-
 fn main() void {
-    var c:[3][3]Bar = [][3]Bar{
-        []Bar{},
-        []Bar{},
-        []Bar{}
+    var c = [][3]u8{
+        []u8{99,99},
+        []u8{99,99},
+        []u8{99,99}
     };
 
-    var d = c[0..2];
-    d[0][0].x = 1;
+    test_eq(c[0].len, 3);
+    test_eq(c[1].len, 3);
+    test_eq(c[2].len, 3);
 }
 
+fn write(data:&u8) void {
+    asm {
+        "mov rsi, [rdi+8]"
+        "mov rdx, [rdi +0]"
+        "mov rdi, 1"
+        "mov rax, 1"
+        "syscall"
+    }
+}
+
+
+fn test_eq(a:u64, b:u64) void {
+    if(a == b) {
+        write("ok\n");
+        return;
+    }
+
+    write("fail\n");
+}
+
+
+// [][3]Bar{
+//         []Bar{Bar{.x = 0, .y = 0}, Bar{.x = 1, .y = 0}, Bar{.x = 2, .y = 0}},
+//         []Bar{Bar{.x = 0, .y = 1}, Bar{.x = 1, .y = 1}, Bar{.x = 2, .y = 1}},
+//         []Bar{Bar{.x = 0, .y = 2}, Bar{.x = 1, .y = 2}, Bar{.x = 2, .y = 2}}
+//     };

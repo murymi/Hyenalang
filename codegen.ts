@@ -381,7 +381,10 @@ function assignLit(offset: number, expr: Expression) {
         if (s.data_type.kind === myType.struct || s.data_type.kind === myType.tuple) {
             assignLit(s.field_offset + offset, s.value);
         } else if (s.data_type.kind === myType.array) {
-            assignLit(s.field_offset + offset, s.value);
+            pop("rdi");
+            console.log("   push rdi");
+            console.log(`   mov qword ptr [rdi + ${s.field_offset + offset}],${s.value.datatype.arrayLen}`);
+            assignLit(s.field_offset + offset + 8, s.value);
         } else {
             pop("rdi");
             console.log("   push rdi");
