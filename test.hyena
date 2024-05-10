@@ -1,66 +1,18 @@
 var a = []u8{1,2,3,4};
 var b = &a;
 
-enum Tag {
-    char,
-    int
-}
-
-union Bar {
-    char:u8,
-    int:u32
-}
-
-struct TaggedUnion {
-    tag:Tag,
-    number:Bar
+struct Bar {
+    x:u8, y:u8
 }
 
 fn main() void {
-    
-    var tagged_union:TaggedUnion = undefined;
-    tagged_union.tag = Tag.char;
-    tagged_union.number.char = 70;
+    var c:[3][3]Bar = [][3]Bar{
+        []Bar{},
+        []Bar{},
+        []Bar{}
+    };
 
-    test_eql(tagged_union.tag, Tag.char);
-    test_eql(tagged_union.number.char, 70);
+    var d = c[0..2];
+    d[0][0].x = 1;
 }
 
-
-
-var total = 0;
-var passed = 0;
-var failed = 0;
-
-fn write(data:&u8) void {
-    asm {
-        "mov rsi, [rdi+8]"
-        "mov rdx, [rdi +0]"
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    }
-}
-
-
-fn test(a:bool) void {
-    total = total + 1;
-    if(a) {
-        write("test: ok\n");
-        passed += 1;
-    } else {
-        write("test: fail\n");
-        failed += 1;
-    }
-}
-
-fn test_eql(a:bool, b:bool) void {
-    total += 1;
-    if(a == b) {
-        write("test: ok\n");
-        passed += 1;
-    } else {
-        failed += 1;
-        write("test: fail\n");
-    }
-}

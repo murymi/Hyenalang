@@ -60,7 +60,7 @@ export class Parser {
     }
 
     tokenError(message: string, token: Token): void {
-        console.error(`${colors.yellow + relative(cwd(),token.file_name) + colors.green}:${token.line}:${token.col} ${colors.red + message} '${token.value}'${colors.reset} `);
+        console.error(`${colors.yellow + relative(cwd(), token.file_name) + colors.green}:${token.line}:${token.col} ${colors.red + message} '${token.value}'${colors.reset} `);
         console.table(isResolutionPass());
         process.exit();
     }
@@ -227,16 +227,34 @@ export class Parser {
         return new Expression().newStructLiteral([], voidtype);
     }
 
+    async arrayLiteralRes(): Promise<Expression> {
+        this.expect(tokenType.rightsquare, "]");
+        this.parseType(false);
+        this.expect(tokenType.leftbrace, "{");
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                await this.expression();
+                if (!this.match([tokenType.comma])) break;
+            }
+        }
+        this.expect(tokenType.rightbrace, "}");
+
+        return new Expression().arrayLiteral([], voidtype);
+    }
+
     async arrayLiteral(): Promise<Expression> {
+        if(isResolutionPass())return this.arrayLiteralRes();
         this.expect(tokenType.rightsquare, "]");
         var base = this.parseType(false);
         this.expect(tokenType.leftbrace, "{");
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         var offset = 0;
-        while (true) {
-            setters.push({ field_offset: offset, data_type: base, value: await this.expression() });
-            offset += base.size;
-            if (!this.match([tokenType.comma])) break;
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                setters.push({ field_offset: offset, data_type: base, value: await this.expression() });
+                offset += base.size;
+                if (!this.match([tokenType.comma])) break;
+            }
         }
         this.expect(tokenType.rightbrace, "}");
 
@@ -244,6 +262,7 @@ export class Parser {
     }
 
     async nameLessStruct(): Promise<Expression> {
+        if(isResolutionPass())return this.structLiteralRes();
         this.expect(tokenType.leftbrace, "{");
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         var offset = 0;
@@ -520,13 +539,16 @@ export class Parser {
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             this.tokenError("expect property name after dot", this.peek());
         }
-        
-        if (expr.datatype.kind === myType.ptr && propname.type === tokenType.multiply) {
+
+        if (propname.type === tokenType.multiply) {
+            if (!expr.datatype.isPtr()) {
+                this.tokenError(`attempt to dereference non ptr type ${expr.datatype.toString()}`, propname);
+            }
             return new Expression().newExprDeref(expr);
         }
 
         if (expr.datatype === undefined || !expr.datatype.hasMembers()) {
-            this.tokenError(`type ${expr.datatype.toString()} has no members`,dot);
+            this.tokenError(`type ${expr.datatype.toString()} has no members`, dot);
         }
 
         if (expr.datatype.kind === myType.ptr) {
@@ -537,7 +559,7 @@ export class Parser {
             return await this.getFunctionFromStruct(expr, meta, propname);
         }
 
-        if(expr.type === exprType.get) {
+        if (expr.type === exprType.get || expr.type === exprType.deref) {
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
         }
 
@@ -646,6 +668,9 @@ export class Parser {
                         }
                         return this.parseSliceSlide(expr, index)
                     case tokenType.rightsquare:
+                        if (expr.type === exprType.deref) {
+                            return this.parseArrayIndex(expr, index);
+                        }
                         if (expr.type !== exprType.identifier) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = await this.parseSliceIndex(ab.id, index);
@@ -667,7 +692,10 @@ export class Parser {
                         }
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
-                        if (expr.type === exprType.call || this.isLiteral(expr)) {
+                        if (expr.type === exprType.deref) {
+                            return this.parseArrayIndex(expr, index);
+                        }
+                        if (expr.type !== exprType.identifier) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = this.parseArrayIndex(ab.id, index);
                             return new Expression().newAssignForUse(ab.assign, slicer);
@@ -791,16 +819,16 @@ export class Parser {
         while (this.match([tokenType.plus, tokenType.minus])) {
             var operator = this.previous();
             var right = await this.factor();
-            if(expr.datatype.isPtr() && !right.datatype.isPtr()) {
+            if (expr.datatype.isPtr() && !right.datatype.isPtr()) {
                 right = new Expression().newExprBinary(
-                    new Token(tokenType.multiply,"",0,0,""),right,new Expression().newExprNumber(expr.datatype.base.size)
+                    new Token(tokenType.multiply, "", 0, 0, ""), right, new Expression().newExprNumber(expr.datatype.base.size)
                 )
-            } 
+            }
             expr = new Expression().newExprBinary(operator, expr, right);
 
-            if(expr.datatype.isPtr() && right.datatype.isPtr() && operator.type === tokenType.minus){
-                expr = new Expression().newExprBinary(new Token(tokenType.divide,"",0,0,""),expr, new Expression().newExprNumber(expr.datatype.base.size))
-            } 
+            if (expr.datatype.isPtr() && right.datatype.isPtr() && operator.type === tokenType.minus) {
+                expr = new Expression().newExprBinary(new Token(tokenType.divide, "", 0, 0, ""), expr, new Expression().newExprNumber(expr.datatype.base.size))
+            }
         }
 
         return expr;
@@ -980,7 +1008,7 @@ export class Parser {
                 case exprType.get:
                     return new Expression().newExprSet(expr, val);
                 default:
-                    if(isResolutionPass()) return expr;
+                    if (isResolutionPass()) return expr;
                     console.error(expr);
                     this.tokenError(`Unexpected assignment target ${expr.datatype.toString()}`, equals);
             }
@@ -1390,15 +1418,15 @@ export class Parser {
         return initializer;
     }
 
-    validGlobalInitializer(expr:Expression):boolean{
-        if(expr.type === exprType.identifier) return false;
-        if(this.isLiteral(expr)) return true;
-        if(this.isConstExpr(expr)) return true;
-        if(expr.datatype.kind === myType.slice && expr.datatype.base === u8) {
+    validGlobalInitializer(expr: Expression): boolean {
+        if (expr.type === exprType.identifier) return false;
+        if (this.isLiteral(expr)) return true;
+        if (this.isConstExpr(expr)) return true;
+        if (expr.datatype.kind === myType.slice && expr.datatype.base === u8) {
             return true;
         }
 
-        if(expr.type === exprType.address && expr.left?.type === exprType.identifier) {
+        if (expr.type === exprType.address && expr.left?.type === exprType.identifier) {
             return true;
         }
         return false;
@@ -1423,7 +1451,7 @@ export class Parser {
         //console.error(initializer);
         var variable = incLocalOffset(name.value as string, type as Type, initializer);
 
-        if(variable.is_global && !this.validGlobalInitializer(initializer)) {
+        if (variable.is_global && !this.validGlobalInitializer(initializer)) {
             this.tokenError("Global initializer should be const expression", eq)
         }
 
