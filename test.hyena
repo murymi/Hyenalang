@@ -17,11 +17,14 @@ struct TaggedUnion {
 }
 
 fn main() void {
+    
     var tagged_union:TaggedUnion = undefined;
+    tagged_union.tag = Tag.char;
     tagged_union.number.char = 70;
+
+    test_eql(tagged_union.tag, Tag.char);
     test_eql(tagged_union.number.char, 70);
 }
-
 
 
 

@@ -187,12 +187,30 @@ main:
    mov rbp, rsp
    sub rsp, 8
    lea rax, [rbp-8]
+   add rax, 0
+   push rax
+   mov rax, 0
+   pop rdi
+   mov [rdi], eax
+   lea rax, [rbp-8]
    add rax, 4
    add rax, 0
    push rax
    mov rax, 70
    pop rdi
    mov [rdi], al
+   lea rax, [test_eql]
+   push rax
+   lea rax, [rbp-8]
+   add rax, 0
+   movsxd rax, dword ptr [rax]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
    lea rax, [test_eql]
    push rax
    lea rax, [rbp-8]

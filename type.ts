@@ -177,7 +177,6 @@ export function getEnum(name: string) {
 export function getOffsetOfMember(struct: Type, tok:Token) {
     if(isResolutionPass()) return { offset: -11, datatype: voidtype, name: "" };
     var member = tok.value as string;
-    console.error(member);
     for (let m of struct.members) {
         if (m.name === member) {
             return { offset: m.offset, datatype: m.type, name: "" };
