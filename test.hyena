@@ -1,17 +1,7 @@
-var string1 = "reeeaaaalll bad man!\n";
-var string2 = "oh oh Ohh\n";
-var string3 = "send nudes\n";
+var a = 0;
+var b = &a;
 fn main() void {
-    write(string1);
-    write(string3);
-    write(string2);
 
-    string3[6-1] = 't';
-    string3[7-1] = 'i';
-    string3[8-1] = 't';
-    string3[9-1] = 't';
-
-    write(string3);
 }
 
 

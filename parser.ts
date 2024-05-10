@@ -1386,6 +1386,16 @@ export class Parser {
         return initializer;
     }
 
+    validGlobalInitializer(expr:Expression):boolean{
+        if(expr.type === exprType.identifier) return false;
+        if(this.isLiteral(expr)) return true;
+        if(this.isConstExpr(expr)) return true;
+        if(expr.datatype.kind === myType.slice && expr.datatype.base === u8) {
+            return true;
+        }
+        return true;
+    }
+
     async varDeclaration(is_template: boolean, holders?: string[]): Promise<Statement> {
         var name = this.expect(tokenType.identifier, "var name");
         var initializer: Expression;
@@ -1393,7 +1403,7 @@ export class Parser {
         if (this.match([tokenType.colon])) {
             type = this.parseType(is_template, holders)
         }
-        this.expect(tokenType.equal, "var initializer");
+        var eq = this.expect(tokenType.equal, "var initializer");
         initializer = await this.rvalue();
 
 
@@ -1401,12 +1411,13 @@ export class Parser {
             this.tokenError("Type not known", this.previous());
         }
 
-        if (initializer.datatype.kind === myType.string) {
-            new Type().newSlice(u8);
-        }
         type = type ?? initializer.datatype;
         //console.error(initializer);
         var variable = incLocalOffset(name.value as string, type as Type, initializer);
+
+        if(variable.is_global && !this.validGlobalInitializer(initializer)) {
+            this.tokenError("Global initializer should be const expression", eq)
+        }
 
         if (initializer.type === exprType.call && type.size > 8) {
             initializer.params.splice(0, 0, new Expression().newExprAddress(new Expression().newExprIdentifier(variable)));

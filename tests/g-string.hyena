@@ -1,6 +1,7 @@
 var string1 = "reeeaaaalll bad man!\n";
 var string2 = "oh oh Ohh\n";
 var string3 = "send nudes\n";
+
 fn main() void {
     write(string1);
     write(string3);

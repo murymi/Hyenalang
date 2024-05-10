@@ -6,7 +6,7 @@ import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
 import { resolve } from "path"
-import { Type, alignTo, beginTagScope,  getEnum, getPresentModule, i32, i64, myType, searchStruct,voidtype } from "./type";
+import { Type, alignTo, beginTagScope, getEnum, getPresentModule, i32, i64, myType, searchStruct, voidtype } from "./type";
 
 export enum fnType {
     extern,
@@ -184,13 +184,13 @@ export function isResolutionPass() {
     return resolution_pass;
 }
 
-export function getLocalOffset(name: string, tok:Token): { offset: number, datatype: Type, variable: Variable | undefined } {
+export function getLocalOffset(name: string, tok: Token): { offset: number, datatype: Type, variable: Variable | undefined } {
     var dummy = new Variable();
     dummy.datatype = voidtype;
     dummy.datatype.return_type = voidtype;
     if (resolution_pass) return { offset: -10, datatype: voidtype, variable: dummy }
 
-    if(getEnum(name)) {
+    if (getEnum(name)) {
         return { offset: -3, datatype: getEnum(name) as Type, variable: undefined }
     }
 
@@ -213,9 +213,11 @@ export function getLocalOffset(name: string, tok:Token): { offset: number, datat
         }
     }
 
-    for (let v of functions[currentFn].locals.slice(0, functions[currentFn].impilicit_arity)) {
-        if (v.name === name) {
-            return { offset: 0, datatype: v.datatype, variable: v };
+    if (scopeDepth > 0) {
+        for (let v of functions[currentFn].locals.slice(0, functions[currentFn].impilicit_arity)) {
+            if (v.name === name) {
+                return { offset: 0, datatype: v.datatype, variable: v };
+            }
         }
     }
 
