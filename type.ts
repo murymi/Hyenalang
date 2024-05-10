@@ -421,7 +421,7 @@ export class Type {
     }
 
     hasMembers() {
-        return this.kind === myType.slice || this.kind === myType.struct
+        return this.kind === myType.slice || this.kind === myType.struct || this.kind === myType.array;
     }
 
     constructor() {

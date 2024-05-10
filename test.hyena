@@ -1,7 +1,7 @@
-var a = 30;
+var a = []u8{1,2,3,4};
 var b = &a;
 fn main() void {
-    return b.*;
+    return b.*.len;
 }
 
 

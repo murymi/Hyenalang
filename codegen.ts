@@ -977,7 +977,12 @@ function genGlobals(globals: Variable[]) {
             if (g.datatype.kind === myType.array) {
                 console.log(`   .quad ${g.initializer.datatype.arrayLen}`);
                 g.initializer.setters.forEach((s) => {
-                    console.log(`   .${g.initializer?.datatype.base.size}byte ${s.value.val}`)
+                    var base_size = g.initializer?.datatype.base.size;
+                    if(base_size === 1) {
+                        console.log(`   .byte ${s.value.val}`);
+                    } else {
+                        console.log(`   .${base_size}byte ${s.value.val}`);
+                    }
                 })
                 return;
             }
