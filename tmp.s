@@ -186,7 +186,7 @@ BargetSum:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 128
+   sub rsp, 144
    lea rax, [rbp-68]
    mov qword ptr [rax], 3
    add rax, 8
@@ -791,9 +791,92 @@ main:
    pop rdi
    mov [rdi], al
    add rsp, 8
-   lea rax, [test_eq]
+   mov rax, 0
+   mov rdx, rax
+   push rax
+   mov rax, 3
+   pop rdi
+   sub rax, rdi
+   mov rcx, rax
+   lea rax, [rbp-144]
+   mov [rax], rcx
+   add rax, 8
    push rax
    lea rax, [rbp-122]
+   add rax, 8
+   imul rdx, 14
+   add rax, rdx
+   pop rdi
+   mov [rdi], rax
+   lea rax, [test_eq]
+   push rax
+   lea rax, [rbp-144]
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   mov rax, 3
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
+   pop rdi
+   add rax, rdi
    add rax, 0
    mov rax, [rax]
    push rax
@@ -809,19 +892,29 @@ main:
    push rax
    mov rax, 0
    push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 0
+   push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   add rax, 0
+   lea rax, [rbp-144]
+   add rax, 8
    mov rax, [rax]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
    push rax
-   mov rax, 3
+   mov rax, 0
    push rax
    pop rsi
    pop rdi
@@ -833,19 +926,29 @@ main:
    push rax
    mov rax, 1
    push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 0
+   push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   add rax, 0
+   lea rax, [rbp-144]
+   add rax, 8
    mov rax, [rax]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
    push rax
-   mov rax, 3
+   mov rax, 1
    push rax
    pop rsi
    pop rdi
@@ -857,117 +960,19 @@ main:
    push rax
    mov rax, 2
    push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 0
+   push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   add rax, 0
+   lea rax, [rbp-144]
+   add rax, 8
    mov rax, [rax]
-   push rax
-   mov rax, 3
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eq]
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 0
-   push rax
-   mov rax, 2
-   pop rdi
-   imul rax, rdi
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 0
-   push rax
-   mov rax, 14
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   add rax, 0
-   movsx rax, byte ptr [rax]
-   push rax
-   mov rax, 0
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eq]
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 1
-   push rax
-   mov rax, 2
-   pop rdi
-   imul rax, rdi
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 0
-   push rax
-   mov rax, 14
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   pop rdi
-   add rax, rdi
-   add rax, 0
-   movsx rax, byte ptr [rax]
-   push rax
-   mov rax, 1
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eq]
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 2
-   push rax
-   mov rax, 2
-   pop rdi
-   imul rax, rdi
-   push rax
-   mov rax, 8
-   push rax
-   mov rax, 0
-   push rax
-   mov rax, 14
-   pop rdi
-   imul rax, rdi
-   push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
    pop rdi
    add rax, rdi
    pop rdi
@@ -993,17 +998,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1029,17 +1032,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1065,17 +1066,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1101,17 +1100,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1137,17 +1134,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1173,17 +1168,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1209,17 +1202,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 0
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1245,17 +1236,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 0
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1281,17 +1270,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 0
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1317,17 +1304,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1353,17 +1338,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1389,17 +1372,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1425,17 +1406,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1461,17 +1440,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1497,17 +1474,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1531,17 +1506,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1561,17 +1534,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1593,17 +1564,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1621,17 +1590,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1657,17 +1624,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1687,17 +1652,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1719,17 +1682,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1747,17 +1708,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 1
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1785,17 +1744,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1816,17 +1773,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1844,17 +1799,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1882,17 +1835,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1913,17 +1864,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1941,17 +1890,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -1979,17 +1926,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -2016,17 +1961,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -2044,17 +1987,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
@@ -2084,17 +2025,15 @@ main:
    pop rdi
    imul rax, rdi
    push rax
-   mov rax, 8
-   push rax
    mov rax, 2
    push rax
    mov rax, 14
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-122]
-   pop rdi
-   add rax, rdi
+   lea rax, [rbp-144]
+   add rax, 8
+   mov rax, [rax]
    pop rdi
    add rax, rdi
    pop rdi
