@@ -215,6 +215,8 @@ export class Type {
     arity:number;
 
     fn_type:fnType;
+    is_tagged_union:boolean;
+    tag:Type;
 
     newPointer(base: Type) {
         this.base = base;
@@ -297,6 +299,34 @@ export class Type {
 
         this.size = alignTo(this.align, lagest);
         //console.error(offt);
+        return this;
+    }
+
+    newTaggedUnion(name: string ,mems: {name: string, datatype:Type, default:Expression|undefined}[], tag:Type) {
+        this.name = name;
+        this.members = [];
+        var offset = alignTo(tag.align, 0);
+        this.members.push({name:"tag", offset:offset, type:tag as Type, default:undefined});
+        offset+= tag.size;
+        this.align = tag.align;
+        var largest_size = tag.size;
+        mems.forEach((m) => {
+            offset = alignTo(m.datatype.align, offset);
+            if (this.align < m.datatype.align) {
+                this.align = m.datatype.align;
+            }
+            if (largest_size < m.datatype.size) {
+                largest_size = m.datatype.align;
+            }
+        });
+
+        mems.forEach((m)=>{
+            this.members.push({ name: m.name, offset: offset, type: m.datatype, default:m.default });
+        })
+        offset += largest_size;
+        this.size = alignTo(this.align, offset);
+        this.is_tagged_union = true;
+        this.tag = tag;
         return this;
     }
 

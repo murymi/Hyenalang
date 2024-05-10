@@ -194,8 +194,23 @@ export class Parser {
         return { assign: assign, id: id }
     }
 
+    async taggedUnionLiteral(struc_type: Type): Promise<Expression> {
+        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
+        this.expect(tokenType.leftbrace, "{");
+        this.expect(tokenType.dot, ".");
+        var member_tok = this.expect(tokenType.identifier, "identifier");
+        var fo = getOffsetOfMember(struc_type, member_tok);
+        this.expect(tokenType.equal, "=");
+        var tag_value = struc_type.tag.enumvalues.find((v)=> v.name === member_tok.value)?.value;
+        setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression });
+        setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
+        this.expect(tokenType.rightbrace, "}");
+        return new Expression().newStructLiteral(setters, struc_type);
+    }
+
     async structLiteral(name: string): Promise<Expression> {
         var struc_type = searchStruct(name) as Type;
+        if (struc_type.is_tagged_union) return this.taggedUnionLiteral(struc_type);
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         this.expect(tokenType.leftbrace, "{");
         if (!this.check(tokenType.rightbrace)) {
@@ -1536,7 +1551,54 @@ export class Parser {
         return new Statement().newNativeFnStatement(name as string);
     }
 
+    taggedUnionDeclaration(): Statement {
+        var tag_name = this.expect(tokenType.identifier, "Tag Enum name");
+        var tag_enum = getEnum(tag_name.value as string);
+        if (!tag_enum) {
+            this.tokenError("Undefined enum", tag_name);
+        }
+        this.expect(tokenType.rightparen, ")");
+        var name_tok = this.expect(tokenType.identifier, "name");
+        var name = name_tok.value as string;
+        this.expect(tokenType.leftbrace, "{");
+
+        var strucmembers: { name: string, datatype: Type, default: Expression | undefined }[] = [];
+
+        //strucmembers.push({name:"tag", datatype:tag_enum as Type, default:undefined})
+
+        var handled:string[] = [];
+
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                var field_tok = this.expect(tokenType.identifier, "field name");
+                var field_name = field_tok.value as string;
+                if (!tag_enum?.enumvalues.find((v) => v.name === field_name)) {
+                    this.tokenError(`${field_name} is not a member of ${tag_enum?.name}`, field_tok);
+                }
+                handled.push(field_name);
+                this.expect(tokenType.colon, ":");
+                var field_type = this.parseType(false);
+                strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
+                if (!this.match([tokenType.comma])) break;
+            }
+        }
+
+        tag_enum?.enumvalues.forEach((v)=>{
+            if(!handled.find((h)=> h === v.name)) {
+                this.tokenError(`${tag_enum?.name}.${v.name} not handled`, this.peek());
+            }
+        })
+
+        if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, tag_enum as Type), name_tok)
+        this.expect(tokenType.rightbrace, "}");
+        return new Statement();
+    }
+
     structDeclaration(isunion: boolean): Statement {
+        if (this.match([tokenType.leftparen])) {
+            return this.taggedUnionDeclaration();
+        }
+
         var name_tok = this.expect(tokenType.identifier, "expect struct or union name")
         var name = name_tok.value as string;
         this.expect(tokenType.leftbrace, "Expect struct body");
