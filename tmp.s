@@ -2,10 +2,10 @@
 .data
 .align 4
 a:
-   .4byte 0
+   .4byte 30
 .align 8
 b:
-   .8byte undefined
+   .quad a
 .bss
 .data
 .align 8
@@ -29,6 +29,11 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 0
+   push offset b
+   pop rax
+   mov rax, [rax]
+   movsxd rax, dword ptr [rax]
+   jmp .L.endfn.0
 .L.endfn.0:
    mov rsp, rbp
    pop rbp

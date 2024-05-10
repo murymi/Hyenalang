@@ -992,6 +992,11 @@ function genGlobals(globals: Variable[]) {
                 return;
             }
 
+            if(g.datatype.isPtr()) {
+                console.log("   .quad " + g.initializer.left?.variable.name);
+                return
+            }
+
             if (g.initializer.datatype.size === 1) {
                 console.log("   .byte " + g.initializer.right?.val);
             } else {

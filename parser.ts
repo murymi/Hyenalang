@@ -1393,7 +1393,11 @@ export class Parser {
         if(expr.datatype.kind === myType.slice && expr.datatype.base === u8) {
             return true;
         }
-        return true;
+
+        if(expr.type === exprType.address && expr.left?.type === exprType.identifier) {
+            return true;
+        }
+        return false;
     }
 
     async varDeclaration(is_template: boolean, holders?: string[]): Promise<Statement> {
