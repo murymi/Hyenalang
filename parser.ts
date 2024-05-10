@@ -537,6 +537,10 @@ export class Parser {
             return await this.getFunctionFromStruct(expr, meta, propname);
         }
 
+        if(expr.type === exprType.get) {
+            return new Expression().newExprGet(meta.offset, expr, meta.datatype);
+        }
+
         if (expr.type !== exprType.identifier) {
             var ab = this.assignBeforeUse(expr);
             var get = new Expression().newExprGet(meta.offset, ab.id, meta.datatype);

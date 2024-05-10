@@ -1,15 +1,34 @@
 var a = []u8{1,2,3,4};
 var b = &a;
+
+enum Tag {
+    char,
+    int
+}
+
+union Bar {
+    char:u8,
+    int:u32
+}
+
+struct TaggedUnion {
+    tag:Tag,
+    number:Bar
+}
+
 fn main() void {
-    return b.*.len;
+    var tagged_union:TaggedUnion = undefined;
+    tagged_union.number.char = 70;
+    test_eql(tagged_union.number.char, 70);
 }
 
 
 
-// var total = 0;
-// var passed = 0;
-// var failed = 0;
-// 
+
+var total = 0;
+var passed = 0;
+var failed = 0;
+
 fn write(data:&u8) void {
     asm {
         "mov rsi, [rdi+8]"
@@ -21,24 +40,24 @@ fn write(data:&u8) void {
 }
 
 
-// fn test(a:bool) void {
-//     total = total + 1;
-//     if(a) {
-//         write("test: ok\n");
-//         passed += 1;
-//     } else {
-//         write("test: fail\n");
-//         failed += 1;
-//     }
-// }
-// 
-// fn test_eql(a:bool, b:bool) void {
-//     total += 1;
-//     if(a == b) {
-//         write("test: ok\n");
-//         passed += 1;
-//     } else {
-//         failed += 1;
-//         write("test: fail\n");
-//     }
-// }
+fn test(a:bool) void {
+    total = total + 1;
+    if(a) {
+        write("test: ok\n");
+        passed += 1;
+    } else {
+        write("test: fail\n");
+        failed += 1;
+    }
+}
+
+fn test_eql(a:bool, b:bool) void {
+    total += 1;
+    if(a == b) {
+        write("test: ok\n");
+        passed += 1;
+    } else {
+        failed += 1;
+        write("test: fail\n");
+    }
+}
