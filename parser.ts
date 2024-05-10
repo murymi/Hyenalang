@@ -251,7 +251,14 @@ export class Parser {
         var offset = 0;
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
-                setters.push({ field_offset: offset, data_type: base, value: await this.expression() });
+                var v = await this.expression();
+
+                if(v.datatype.kind === myType.array) {
+                    if(v.datatype.arrayLen != base.arrayLen) {
+                        this.tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
+                    }
+                }
+                setters.push({ field_offset: offset, data_type: base, value: v });
                 offset += base.size;
                 if (!this.match([tokenType.comma])) break;
             }
