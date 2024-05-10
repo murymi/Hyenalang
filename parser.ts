@@ -243,7 +243,7 @@ export class Parser {
     }
 
     async arrayLiteral(): Promise<Expression> {
-        if(isResolutionPass())return this.arrayLiteralRes();
+        if (isResolutionPass()) return this.arrayLiteralRes();
         this.expect(tokenType.rightsquare, "]");
         var base = this.parseType(false);
         this.expect(tokenType.leftbrace, "{");
@@ -252,11 +252,8 @@ export class Parser {
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 var v = await this.expression();
-
-                if(v.datatype.kind === myType.array) {
-                    if(v.datatype.arrayLen != base.arrayLen) {
-                        this.tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
-                    }
+                if (!base.eql(v.datatype)) {
+                    this.tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
                 }
                 setters.push({ field_offset: offset, data_type: base, value: v });
                 offset += base.size;
@@ -269,7 +266,7 @@ export class Parser {
     }
 
     async nameLessStruct(): Promise<Expression> {
-        if(isResolutionPass())return this.structLiteralRes();
+        if (isResolutionPass()) return this.structLiteralRes();
         this.expect(tokenType.leftbrace, "{");
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         var offset = 0;

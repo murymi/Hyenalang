@@ -423,6 +423,9 @@ export class Type {
         return this.kind === myType.slice || this.kind === myType.struct || this.kind === myType.array;
     }
 
+    eql(t:Type):boolean{
+        return this.toString() === t.toString();
+    }
     constructor() {
     }
 }
