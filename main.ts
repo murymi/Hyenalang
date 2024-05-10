@@ -5,8 +5,9 @@ import { Statement } from "./stmt";
 import { Expression } from "./expr";
 import { createWriteStream, readFile, truncate } from "fs";
 import { spawn } from "child_process";
-import { resolve } from "path"
+import { relative, resolve } from "path"
 import { Type, alignTo, beginTagScope, getEnum, getPresentModule, i32, i64, myType, searchStruct, voidtype } from "./type";
+import { cwd } from "process";
 
 export enum fnType {
     extern,
@@ -227,7 +228,7 @@ export function getLocalOffset(name: string, tok: Token): { offset: number, data
         }
     }
 
-    console.error(`${colors.yellow + tok.file_name + colors.green} line: ${tok.line} col: ${tok.col} ${colors.red + `undefined variable ${name}`} ${colors.reset + "."} `);
+    console.error(`${colors.yellow + relative(cwd(), tok.file_name) + colors.green}:${tok.line}:${tok.col} ${colors.red + `undefined variable ${name}`} ${colors.reset} `);
     process.exit();
 }
 

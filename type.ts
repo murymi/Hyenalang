@@ -327,6 +327,7 @@ export class Type {
         this.size = alignTo(this.align, offset);
         this.is_tagged_union = true;
         this.tag = tag;
+        this.kind = myType.struct
         return this;
     }
 
