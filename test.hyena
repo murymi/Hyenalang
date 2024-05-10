@@ -1,6 +1,93 @@
 struct Bar {x:u8, y:u8}
 
+impl Bar {
+    add(self:*Bar) void {
+        self.x += 1;
+        self.y += 1;
+    }
+
+    zero(self:*Bar) void {
+        self.x = 0;
+        self.y = 0;
+    }
+
+    set(self:*Bar, x:u8, y:u8) void {
+        self.x = x;
+        self.y = y;
+    }
+
+    getSum(self:*Bar) u8 {
+        return self.x + self.y;
+    }
+}
+
 fn main() void {
+    var c = [][3]i32{
+        []i32{99,99,99},
+        []i32{99,99,99},
+        []i32{99,99,99}
+    };
+
+    test_eq(c[0][0],99);
+    test_eq(c[0][1],99);
+    test_eq(c[0][2],99);
+    test_eq(c[1][0],99);
+    test_eq(c[1][1],99);
+    test_eq(c[1][2],99);
+    test_eq(c[2][0],99);
+    test_eq(c[2][1],99);
+    test_eq(c[2][2],99);
+
+    test_eq(c[0].len, 3);
+    test_eq(c[1].len, 3);
+    test_eq(c[2].len, 3);
+
+    var bar = [][3]Bar{
+         []Bar{Bar{.x = 0, .y = 0}, Bar{.x = 1, .y = 0}, Bar{.x = 2, .y = 0}},
+         []Bar{Bar{.x = 0, .y = 1}, Bar{.x = 1, .y = 1}, Bar{.x = 2, .y = 1}},
+         []Bar{Bar{.x = 0, .y = 2}, Bar{.x = 1, .y = 2}, Bar{.x = 2, .y = 2}}
+     };
+
+    test_eq(bar.len, 3);
+    test_eq(bar[0].len, 3);
+    test_eq(bar[1].len, 3);
+    test_eq(bar[2].len, 3);
+
+    test_eq(bar[0][0].x, 0);
+    test_eq(bar[0][1].x, 1);
+    test_eq(bar[0][2].x, 2);
+
+    test_eq(bar[1][0].x, 0);
+    test_eq(bar[1][1].x, 1);
+    test_eq(bar[1][2].x, 2);
+
+    test_eq(bar[2][0].x, 0);
+    test_eq(bar[2][1].x, 1);
+    test_eq(bar[2][2].x, 2);
+
+    test_eq(bar[0][0].y, 0);
+    test_eq(bar[0][1].y, 0);
+    test_eq(bar[0][2].y, 0);
+
+    test_eq(bar[1][0].y, 1);
+    test_eq(bar[1][1].y, 1);
+    test_eq(bar[1][2].y, 1);
+
+    test_eq(bar[2][0].y, 2);
+    test_eq(bar[2][1].y, 2);
+    test_eq(bar[2][2].y, 2);
+
+    bar[2][2].x = 5;
+    bar[2][2].y = 5;
+
+    test_eq(bar[2][2].x + bar[2][2].x, 10);
+
+    bar[1][2].x = 6;
+    bar[2][1].y = 9;
+
+    test_eq(bar[1][2].x + bar[2][1].y, 15);
+
+
 
 }
 

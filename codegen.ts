@@ -383,7 +383,7 @@ function assignLit(offset: number, expr: Expression) {
         } else if (s.data_type.kind === myType.array) {
             pop("rdi");
             console.log("   push rdi");
-            console.log(`   mov qword ptr [rdi + ${s.field_offset + offset}],${s.value.datatype.arrayLen}`);
+            console.log(`   mov qword ptr [rdi+${s.field_offset + offset}], ${s.value.datatype.arrayLen}`);
             assignLit(s.field_offset + offset + 8, s.value);
         } else {
             pop("rdi");

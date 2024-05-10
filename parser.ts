@@ -551,13 +551,14 @@ export class Parser {
             return new Expression().newExprDeref(expr);
         }
 
+        if (expr.datatype.kind === myType.ptr) {
+            expr = new Expression().newExprDeref(expr);
+        }
+
         if (expr.datatype === undefined || !expr.datatype.hasMembers()) {
             this.tokenError(`type ${expr.datatype.toString()} has no members`, dot);
         }
 
-        if (expr.datatype.kind === myType.ptr) {
-            expr = new Expression().newExprDeref(expr);
-        }
         var meta = getOffsetOfMember(expr.datatype, propname);
         if (meta.offset === -1) {
             return await this.getFunctionFromStruct(expr, meta, propname);

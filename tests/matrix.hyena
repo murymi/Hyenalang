@@ -86,4 +86,13 @@ fn main() void {
 
     test_eq(bar[1][2].x + bar[2][1].y, 15);
 
+    bar[2][1].zero();
+    test_eq(bar[2][1].x + bar[2][1].y, 0);
+    bar[2][1].add();
+    test_eq(bar[2][1].x + bar[2][1].y, 2);
+
+    bar[2][1].set(6,9);
+    test_eq(bar[2][1].x + bar[2][1].y, 15);
+    test_eq(bar[2][1].getSum(), 15);
+
 }

@@ -66,6 +66,122 @@ _start:
    mov rax, 60
    syscall
 .text
+.global Baradd
+Baradd:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 8
+   mov [rbp-8], rdi
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   mov rax, 1
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   mov [rdi], al
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 1
+   push rax
+   mov rax, 1
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   mov [rdi], al
+.L.endfn.0:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global Barzero
+Barzero:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 8
+   mov [rbp-8], rdi
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 1
+   push rax
+   mov rax, 0
+   pop rdi
+   mov [rdi], al
+.L.endfn.1:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global Barset
+Barset:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 16
+   mov [rbp-8], rdi
+   mov [rbp-9], sil
+   mov [rbp-10], dl
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   lea rax, [rbp-9]
+   movsx rax, byte ptr [rax]
+   pop rdi
+   mov [rdi], al
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 1
+   push rax
+   lea rax, [rbp-10]
+   movsx rax, byte ptr [rax]
+   pop rdi
+   mov [rdi], al
+.L.endfn.2:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global BargetSum
+BargetSum:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 8
+   mov [rbp-8], rdi
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   jmp .L.endfn.3
+.L.endfn.3:
+   mov rsp, rbp
+   pop rbp
+   ret
+
 .global main
 main:
    push rbp
@@ -77,7 +193,7 @@ main:
    push rax
    pop rdi
    push rdi
-   mov qword ptr [rdi + 0],3
+   mov qword ptr [rdi+0], 3
    pop rdi
    push rdi
    add rdi, 8
@@ -101,7 +217,7 @@ main:
    mov [rdi], eax
    pop rdi
    push rdi
-   mov qword ptr [rdi + 20],3
+   mov qword ptr [rdi+20], 3
    pop rdi
    push rdi
    add rdi, 28
@@ -125,7 +241,7 @@ main:
    mov [rdi], eax
    pop rdi
    push rdi
-   mov qword ptr [rdi + 40],3
+   mov qword ptr [rdi+40], 3
    pop rdi
    push rdi
    add rdi, 48
@@ -541,7 +657,7 @@ main:
    push rax
    pop rdi
    push rdi
-   mov qword ptr [rdi + 0],3
+   mov qword ptr [rdi+0], 3
    pop rdi
    push rdi
    add rdi, 8
@@ -586,7 +702,7 @@ main:
    mov [rdi], al
    pop rdi
    push rdi
-   mov qword ptr [rdi + 14],3
+   mov qword ptr [rdi+14], 3
    pop rdi
    push rdi
    add rdi, 22
@@ -631,7 +747,7 @@ main:
    mov [rdi], al
    pop rdi
    push rdi
-   mov qword ptr [rdi + 28],3
+   mov qword ptr [rdi+28], 3
    pop rdi
    push rdi
    add rdi, 36
@@ -1659,7 +1775,344 @@ main:
    pop rdi
    pop rax
    call rax
-.L.endfn.0:
+   lea rax, [Barzero]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [Baradd]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 2
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [Barset]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 6
+   push rax
+   mov rax, 9
+   push rax
+   pop rdx
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 1
+   movsx rax, byte ptr [rax]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   add rax, 0
+   movsx rax, byte ptr [rax]
+   pop rdi
+   add rax, rdi
+   push rax
+   mov rax, 15
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eq]
+   push rax
+   lea rax, [BargetSum]
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   mov rax, 2
+   pop rdi
+   imul rax, rdi
+   push rax
+   mov rax, 8
+   push rax
+   mov rax, 2
+   push rax
+   mov rax, 14
+   pop rdi
+   imul rax, rdi
+   push rax
+   lea rax, [rbp-122]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   pop rdi
+   add rax, rdi
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   push rax
+   mov rax, 15
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+.L.endfn.4:
    mov rsp, rbp
    pop rbp
    ret
@@ -1677,7 +2130,7 @@ write:
    mov rax, 1
    syscall
 # [end]
-.L.endfn.1:
+.L.endfn.5:
    mov rsp, rbp
    pop rbp
    ret
@@ -1699,7 +2152,7 @@ test_eq:
    sete al
    movzb rax, al
    cmp rax, 0
-   je .L.else.3
+   je .L.else.7
    lea rax, [write]
    push rax
    lea rax, [rbp-32]
@@ -1744,10 +2197,10 @@ test_eq:
    pop rax
    call rax
    mov rax, 0
-   jmp .L.endfn.2
-   jmp .L.end.3
-.L.else.3:
-.L.end.3:
+   jmp .L.endfn.6
+   jmp .L.end.7
+.L.else.7:
+.L.end.7:
    lea rax, [write]
    push rax
    lea rax, [rbp-48]
@@ -1791,7 +2244,7 @@ test_eq:
    pop rdi
    pop rax
    call rax
-.L.endfn.2:
+.L.endfn.6:
    mov rsp, rbp
    pop rbp
    ret
