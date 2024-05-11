@@ -1130,14 +1130,35 @@ export class Parser {
                         cases.push(new Expression().newExprCase(prongs.length, expr));
                     }
                 }
-                if (!this.check(tokenType.comma)) { can_else = true; break; };
-                this.advance();
+                if (!this.match([tokenType.comma])) {
+                    can_else = true;
+                    break; 
+                };
                 can_else = false;
             }
 
             this.expect(tokenType.plong, "Expect plong");
+
+
+
+            var has_capture = false;
+            var capture:Expression|undefined = undefined;
+            if(this.match([tokenType.pipe])) {
+                var cap_tok = this.expect(tokenType.identifier, "capture name");
+                var cap_name = cap_tok.value as string;
+                this.expect(tokenType.pipe, "|");
+                beginScope();
+                var vbl = incLocalOffset(cap_name, cond.datatype);
+                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),cond);
+                has_capture = true;
+            }
             var pron = await this.statement();
 
+            if(has_capture){
+                pron.capture = capture as Expression;
+                endScope()
+            }
+            
             if (default_prong_found) {
                 default_prong = pron;
             } else {

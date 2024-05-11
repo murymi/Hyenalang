@@ -72,11 +72,13 @@ export class Statement {
         index_var: Variable | undefined
     }[];
 
+    capture:Expression;
+
     newEnum(){
         this.type = stmtType.enumdecl;
         return this;
     }
-    
+
     newSwitch(cond: Expression, cases: Expression[], prongs: Statement[], else_: Statement) {
         this.cond = cond;
         this.cases = cases;

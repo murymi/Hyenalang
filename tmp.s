@@ -166,43 +166,54 @@ _start:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 8
+   sub rsp, 16
    lea rax, [rbp-4]
    push rax
-   mov rax, 0
+   mov rax, 77
    pop rdi
    mov [rdi], eax
+   lea rax, [rbp-4]
+   movsxd rax, dword ptr [rax]
+   cmp rax, 0
+   je .L.1.p.0
+   cmp rax, 1
+   je .L.1.p.1
+   jmp .L.1.p.else
+.L.1.p.0:
    lea rax, [rbp-8]
-   push rax
-   mov rax, 5
    push rax
    lea rax, [rbp-4]
    movsxd rax, dword ptr [rax]
    pop rdi
-   cmp rax, rdi
-   sete al
-   movzb rax, al
-cmp rax, 0
-jz .L.else.1
-.L.if.1:
-   mov rax, 1
-jmp .L.endif.1
-.L.else.1:
-   mov rax, 3
-.L.endif.1:
+   mov [rdi], eax
+   jmp .L.end.1
+.L.1.p.1:
+   lea rax, [rbp-12]
+   push rax
+   lea rax, [rbp-4]
+   movsxd rax, dword ptr [rax]
+   pop rdi
+   mov [rdi], eax
+   jmp .L.end.1
+.L.1.p.else:
+   lea rax, [rbp-16]
+   push rax
+   lea rax, [rbp-4]
+   movsxd rax, dword ptr [rax]
    pop rdi
    mov [rdi], eax
    lea rax, [test_eql]
    push rax
-   lea rax, [rbp-8]
+   lea rax, [rbp-16]
    movsxd rax, dword ptr [rax]
    push rax
-   mov rax, 3
+   mov rax, 77
    push rax
    pop rsi
    pop rdi
    pop rax
    call rax
+.L.end.1:
 .L.endfn.0:
    mov rsp, rbp
    pop rbp

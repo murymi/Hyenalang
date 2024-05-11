@@ -832,10 +832,16 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log(`   jmp .L.${label}.p.else`);
             stmt.prongs.forEach((prong, i) => {
                 console.log(`.L.${label}.p.${i}:`);
+                if(prong.capture) {
+                    generateCode(prong.capture);
+                } 
                 genStmt(prong, fnid);
                 console.log(`   jmp .L.end.${label}`)
             });
             console.log(`.L.${label}.p.else:`)
+            if(stmt.else_?.capture) {
+                generateCode(stmt.else_.capture);
+            }
             genStmt(stmt.else_ as Statement, fnid);
             console.log(`.L.end.${label}:`);
             break;
