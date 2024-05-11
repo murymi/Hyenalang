@@ -1,15 +1,21 @@
+union() Foo {
+    one:u8,
+    two:u16,
+    three:u32
+}
+
 fn main() void {
-    var j = 77;
+    var j = Foo { .three = 90 };
     
     switch(j) {
-        0 => |val| {
-
+        .one => {
+            test_eql(true, true);
         },
-        30 => |val| {
-
+        .two => |val| {
+            test_eql(val, 90);
         },
-        else => |y| {
-            test_eql(y, 77);
+        else => {
+            write("else block\n");
         }
     }
 

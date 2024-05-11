@@ -217,6 +217,7 @@ export class Type {
     fn_type:fnType;
     is_tagged_union:boolean;
     tag:Type;
+    on_index:number;
 
     newPointer(base: Type) {
         this.base = base;

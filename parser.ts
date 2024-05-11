@@ -201,7 +201,7 @@ export class Parser {
         var member_tok = this.expect(tokenType.identifier, "identifier");
         var fo = getOffsetOfMember(struc_type, member_tok);
         this.expect(tokenType.equal, "=");
-        var tag_value = struc_type.tag.enumvalues.find((v)=> v.name === member_tok.value)?.value;
+        var tag_value = struc_type.tag.enumvalues.find((v) => v.name === member_tok.value)?.value;
         setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression });
         setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
         this.expect(tokenType.rightbrace, "}");
@@ -970,7 +970,7 @@ export class Parser {
 
     async ternary(): Promise<Expression> {
         var expr = await this.logicalOr();
-        
+
         if (this.match([tokenType.qmark])) {
             var if_expr = await this.logicalOr();
             this.expect(tokenType.colon, ":");
@@ -1105,9 +1105,127 @@ export class Parser {
         return new Statement().newIfStatement(cond, then, else_);
     }
 
+    async switchEnum(tgu: Expression): Promise<Statement> {
+        if (this.isLiteral(tgu)) this.tokenError("switch on literal", this.previous());
+        this.expect(tokenType.rightparen, ") after condition");
+        this.expect(tokenType.leftbrace, "Expect switch body");
+        var prongs: Statement[] = [];
+        var cases: Expression[] = [];
+        var default_prong = new Statement();
+        var default_prong_found = false;
+        var cond = new Expression().newExprGet(0, tgu, tgu.datatype.tag);
+        while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
+            var mem_tok: Token | undefined = undefined;
+            if (this.match([tokenType.else])) {
+                default_prong_found = true;
+            } else {
+                this.expect(tokenType.dot, ".");
+                mem_tok = this.expect(tokenType.identifier, "enum field name");
+                var mem_name = mem_tok.value as string;
+                var enum_value = tgu.datatype.tag.enumvalues.find((e) => e.name == mem_name);
+                if (enum_value) {
+                    cases.push(new Expression().newExprCase(prongs.length, enum_value.value));
+                } else {
+                    this.tokenError(`${mem_name} is not member of ${cond.datatype.toString()}`, mem_tok);
+                }
+            }
+
+            this.expect(tokenType.plong, "Expect plong");
+            var has_capture = false;
+            var capture: Expression | undefined = undefined;
+            if (this.match([tokenType.pipe])) {
+                if(default_prong_found) {
+                    this.tokenError("cannot capture on else", this.previous());
+                }
+                var cap_tok = this.expect(tokenType.identifier, "capture name");
+                var cap_name = cap_tok.value as string;
+                this.expect(tokenType.pipe, "|");
+                beginScope();
+                var meta = getOffsetOfMember(tgu.datatype, mem_tok as Token);
+                var vbl = incLocalOffset(cap_name, meta.datatype);
+                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
+                    new Expression().newExprGet(meta.offset, tgu, meta.datatype));
+                has_capture = true;
+            }
+            var pron = await this.statement();
+
+            if (has_capture) {
+                pron.capture = capture as Expression;
+                endScope()
+            }
+
+            if (default_prong_found) {
+                default_prong = pron;
+            } else {
+                prongs.push(pron);
+            }
+            if (!this.check(tokenType.rightbrace)) {
+                this.expect(tokenType.comma, "Expect comma after plong");
+            }
+
+            if(default_prong_found) break;
+        }
+        if (default_prong_found === false) {
+            this.tokenError("missing else branch", this.peek());
+        }
+        this.expect(tokenType.rightbrace, "Expect } after switch body");
+        return new Statement().newSwitch(cond, cases, prongs, default_prong);
+    }
+
+    async switchRes(): Promise<Statement> {
+        this.expect(tokenType.leftparen, "Expect ( after switch");
+        await this.expression();
+        this.expect(tokenType.rightparen, ") after condition");
+        this.expect(tokenType.leftbrace, "Expect switch body");
+        while (!this.check(tokenType.rightbrace) && this.moreTokens()) {
+            var can_else = true;
+            while (true) {
+                if (this.match([tokenType.else]) && can_else) {
+                    break;
+                } else if (this.match([tokenType.dot])) {
+                    this.expect(tokenType.identifier, "enum field name");
+                } else {
+                    await this.expression();
+                    if (this.match([tokenType.range])) {
+                        await this.expression();
+                    }
+                }
+                if (!this.match([tokenType.comma])) {
+                    can_else = true;
+                    break;
+                };
+                can_else = false;
+            }
+            this.expect(tokenType.plong, "Expect plong");
+            if (this.match([tokenType.pipe])) {
+                this.expect(tokenType.identifier, "capture name");
+                this.expect(tokenType.pipe, "|");
+            }
+            await this.statement();
+
+            if (!this.check(tokenType.rightbrace)) {
+                this.expect(tokenType.comma, "Expect comma after plong");
+            }
+        }
+
+        this.expect(tokenType.rightbrace, "Expect } after switch body");
+        return new Statement();
+    }
+
     async switchStatement(): Promise<Statement> {
+        if (isResolutionPass()) return this.switchRes();
+
         this.expect(tokenType.leftparen, "Expect ( after switch");
         var cond = await this.expression();
+
+        if (cond.datatype.is_tagged_union) {
+            return this.switchEnum(cond);
+        }
+
+        if (!cond.datatype.isInteger()) {
+            this.tokenError("Switch expects integer or tagged union", this.previous());
+        }
+
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.leftbrace, "Expect switch body");
         var prongs: Statement[] = [];
@@ -1123,12 +1241,12 @@ export class Parser {
                     break;
                 } else {
                     var expr = await this.expression();
-                    if(!this.isConstExpr(expr)) {
+                    if (!this.isConstExpr(expr)) {
                         this.tokenError("Expect const expression", this.previous());
                     }
                     if (this.match([tokenType.range])) {
                         var expr2 = await this.expression();
-                        if(!this.isConstExpr(expr2)) {
+                        if (!this.isConstExpr(expr2)) {
                             this.tokenError("Expect const expression", this.previous());
                         }
                         cases.push(new Expression().newExprCase(prongs.length, new Expression().newExprRange(expr, expr2)));
@@ -1138,29 +1256,29 @@ export class Parser {
                 }
                 if (!this.match([tokenType.comma])) {
                     can_else = true;
-                    break; 
+                    break;
                 };
                 can_else = false;
             }
             this.expect(tokenType.plong, "Expect plong");
             var has_capture = false;
-            var capture:Expression|undefined = undefined;
-            if(this.match([tokenType.pipe])) {
+            var capture: Expression | undefined = undefined;
+            if (this.match([tokenType.pipe])) {
                 var cap_tok = this.expect(tokenType.identifier, "capture name");
                 var cap_name = cap_tok.value as string;
                 this.expect(tokenType.pipe, "|");
                 beginScope();
                 var vbl = incLocalOffset(cap_name, cond.datatype);
-                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),cond);
+                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl), cond);
                 has_capture = true;
             }
             var pron = await this.statement();
 
-            if(has_capture){
+            if (has_capture) {
                 pron.capture = capture as Expression;
                 endScope()
             }
-            
+
             if (default_prong_found) {
                 default_prong = pron;
             } else {
@@ -1572,7 +1690,7 @@ export class Parser {
         return new Statement().newNativeFnStatement(name as string);
     }
 
-    anonTaggedUnionDeclaration():Statement{
+    anonTaggedUnionDeclaration(): Statement {
         var name_tok = this.expect(tokenType.identifier, "name");
         var name = name_tok.value as string;
         this.expect(tokenType.leftbrace, "{");
@@ -1589,21 +1707,21 @@ export class Parser {
                 this.expect(tokenType.colon, ":");
                 var field_type = this.parseType(false);
                 strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
-                enumvalues.push({name:field_name, value:new Expression().newExprNumber(i)});
+                enumvalues.push({ name: field_name, value: new Expression().newExprNumber(i) });
                 i++;
                 if (!this.match([tokenType.comma])) break;
             }
         }
         var enum_ = new Type().newEnum("", enumvalues);
 
-        if (isResolutionPass()) pushEnum(enum_ , name_tok);
+        if (isResolutionPass()) pushEnum(enum_, name_tok);
         if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, enum_), name_tok);
         this.expect(tokenType.rightbrace, "}");
         return new Statement();
     }
 
     taggedUnionDeclaration(): Statement {
-        if(this.match([tokenType.rightparen])) {
+        if (this.match([tokenType.rightparen])) {
             return this.anonTaggedUnionDeclaration();
         }
         var tag_name = this.expect(tokenType.identifier, "Tag Enum name");
@@ -1620,7 +1738,7 @@ export class Parser {
 
         //strucmembers.push({name:"tag", datatype:tag_enum as Type, default:undefined})
 
-        var handled:string[] = [];
+        var handled: string[] = [];
 
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
@@ -1637,8 +1755,8 @@ export class Parser {
             }
         }
 
-        tag_enum?.enumvalues.forEach((v)=>{
-            if(!handled.find((h)=> h === v.name)) {
+        tag_enum?.enumvalues.forEach((v) => {
+            if (!handled.find((h) => h === v.name)) {
                 this.tokenError(`${tag_enum?.name}.${v.name} not handled`, this.peek());
             }
         })
