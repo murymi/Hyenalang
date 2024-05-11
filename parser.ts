@@ -296,9 +296,9 @@ export class Parser {
         if (isResolutionPass()) return this.nameLessStructRes();
         this.expect(tokenType.leftbrace, "{");
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
-        var offset = 0;
+        var offset = 8;
         var data_type = new Type();
-        data_type.align = 0;
+        data_type.align = 8;
         data_type.members = [];
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
@@ -313,8 +313,8 @@ export class Parser {
                 if (!this.match([tokenType.comma])) break;
             }
         }
-        //setters.splice(0, 0, { field_offset: 0, data_type:u64 , value:new Expression().newExprNumber(data_type.members.length) });
-        //data_type.members.splice(0, 0,{name:"len", offset:0, type:u64, default:undefined})
+        setters.splice(0, 0, { field_offset: 0, data_type:u64 , value:new Expression().newExprNumber(data_type.members.length) });
+        data_type.members.splice(0, 0,{name:"len", offset:0, type:u64, default:undefined});
         data_type.size = alignTo(data_type.align, offset);
         data_type.kind = myType.tuple;
         this.expect(tokenType.rightbrace, "}");
@@ -663,18 +663,20 @@ export class Parser {
         if (index.val > expr.datatype.members.length) {
             this.tokenError("invalid index", this.previous());
         }
+        var idx = index.val as number;
         return new Expression().newExprGet(
-            expr.datatype.members[index.val as number].offset,
-            expr, expr.datatype.members[index.val as number].type);
+            expr.datatype.members[idx+1].offset,
+            expr, expr.datatype.members[idx+1].type);
     }
 
     async parseTuplePtrIndex(expr: Expression, index: Expression): Promise<Expression> {
         if (index.val > expr.datatype.base.members.length) {
             this.tokenError("invalid index", this.previous());
         }
+        var idx = index.val as number
         return new Expression().newExprGet(
-            expr.datatype.base.members[index.val as number].offset,
-            new Expression().newExprDeref(expr), expr.datatype.base.members[index.val as number].type);
+            expr.datatype.base.members[idx+1].offset,
+            new Expression().newExprDeref(expr), expr.datatype.base.members[idx+1].type);
     }
 
     async index(expr: Expression): Promise<Expression> {
@@ -741,6 +743,9 @@ export class Parser {
                 }
                 break;
             case myType.tuple:
+                if(!this.isConstExpr(index)) {
+                    this.tokenError("Tuple index must be const expr", t);
+                }
                 return this.parseTupleIndex(expr, index);
             default:
                 console.error("indexing non array", expr.datatype);

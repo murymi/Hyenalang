@@ -453,7 +453,8 @@ export class Type {
     }
 
     hasMembers() {
-        return this.kind === myType.slice || this.kind === myType.struct || this.kind === myType.array;
+        return this.kind === myType.slice || this.kind === myType.struct || this.kind === myType.array
+         || this.kind === myType.tuple
     }
 
     eql(t:Type):boolean{
