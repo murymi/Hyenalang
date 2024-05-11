@@ -972,9 +972,9 @@ export class Parser {
         var expr = await this.logicalOr();
         
         if (this.match([tokenType.qmark])) {
-            var if_expr = await this.expression();
+            var if_expr = await this.logicalOr();
             this.expect(tokenType.colon, ":");
-            var else_expr = await this.expression();
+            var else_expr = await this.ternary();
             return new Expression().newIfExpr(expr, if_expr, else_expr)
         }
 
