@@ -167,42 +167,37 @@ main:
    push rbp
    mov rbp, rsp
    sub rsp, 8
-   lea rax, [rbp-8]
+   lea rax, [rbp-4]
    push rax
-   pop rdi
-   push rdi
-   add rdi, 0
-   push rdi
-   mov rax, 1
+   mov rax, 0
    pop rdi
    mov [rdi], eax
+   lea rax, [rbp-8]
+   push rax
+   mov rax, 5
+   push rax
+   lea rax, [rbp-4]
+   movsxd rax, dword ptr [rax]
    pop rdi
-   push rdi
-   add rdi, 4
-   push rdi
-   mov rax, 7
+   cmp rax, rdi
+   sete al
+   movzb rax, al
+cmp rax, 0
+jz .L.else.1
+.L.if.1:
+   mov rax, 1
+jmp .L.endif.1
+.L.else.1:
+   mov rax, 3
+.L.endif.1:
    pop rdi
-   mov [rdi], ax
-   add rsp, 8
+   mov [rdi], eax
    lea rax, [test_eql]
    push rax
    lea rax, [rbp-8]
-   add rax, 0
    movsxd rax, dword ptr [rax]
    push rax
-   mov rax, 1
-   push rax
-   pop rsi
-   pop rdi
-   pop rax
-   call rax
-   lea rax, [test_eql]
-   push rax
-   lea rax, [rbp-8]
-   add rax, 4
-   movsx rax, byte ptr [rax]
-   push rax
-   mov rax, 7
+   mov rax, 3
    push rax
    pop rsi
    pop rdi
@@ -226,7 +221,7 @@ write:
    mov rax, 1
    syscall
 # [end]
-.L.endfn.1:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret
@@ -240,7 +235,7 @@ test:
    lea rax, [rbp-1]
    movsx rax, byte ptr [rax]
    cmp rax, 0
-   je .L.else.3
+   je .L.else.4
    lea rax, [write]
    push rax
    lea rax, [rbp-32]
@@ -284,8 +279,8 @@ test:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.3
-.L.else.3:
+   jmp .L.end.4
+.L.else.4:
    lea rax, [write]
    push rax
    lea rax, [rbp-48]
@@ -329,8 +324,8 @@ test:
    pop rdi
    pop rax
    call rax
-.L.end.3:
-.L.endfn.2:
+.L.end.4:
+.L.endfn.3:
    mov rsp, rbp
    pop rbp
    ret
@@ -352,7 +347,7 @@ test_eql:
    sete al
    movzb rax, al
    cmp rax, 0
-   je .L.else.5
+   je .L.else.6
    lea rax, [write]
    push rax
    lea rax, [rbp-32]
@@ -396,8 +391,8 @@ test_eql:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.5
-.L.else.5:
+   jmp .L.end.6
+.L.else.6:
    lea rax, [write]
    push rax
    lea rax, [rbp-48]
@@ -441,8 +436,8 @@ test_eql:
    pop rdi
    pop rax
    call rax
-.L.end.5:
-.L.endfn.4:
+.L.end.6:
+.L.endfn.5:
    mov rsp, rbp
    pop rbp
    ret

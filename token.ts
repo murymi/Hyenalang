@@ -104,6 +104,7 @@ export enum tokenType {
     cast,
     argv,
     bslash,
+    qmark,
     eof
 };
 
@@ -306,7 +307,7 @@ export class Lexer {
     }
 
     tokenError(message: string): void {
-        console.error(`${colors.yellow + relative(cwd(),this.file_name) + ":" + colors.green}${this.line}:${this.col} ${colors.red + message} '${this.peek()}'${colors.reset}`);
+        console.error(`${colors.yellow + relative(cwd(), this.file_name) + ":" + colors.green}${this.line}:${this.col} ${colors.red + message} '${this.peek()}'${colors.reset}`);
         process.exit();
     }
 
@@ -387,6 +388,9 @@ export class Lexer {
                     break;
                 case ",":
                     this.push(tokenType.comma, char);
+                    break;
+                case "?":
+                    this.push(tokenType.qmark, char);
                     break;
                 case '(':
                     this.push(tokenType.leftparen, char);

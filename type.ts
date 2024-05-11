@@ -332,6 +332,7 @@ export class Type {
     }
 
     newEnum(name:string, mems:{name:string, value:Expression}[]) {
+        if(name === "") name+=enums.length;
         this.module_name = getPresentModule() as string;
         this.kind = myType.enum;
         this.size = 4;

@@ -1,20 +1,8 @@
-enum Tag {
-    one,
-    two,
-    three
-}
-
-
-union() Tu {
-    one:u8, two:u16, three:u8
-}
-
-
 fn main() void {
-    var a = Tu { .two = 7 };
+    var j = 0;
+    var a = j == 5?1:3;
 
-    test_eql(a.tag, 1);
-    test_eql(a.one, 7);
+    test_eql(a, 3);
 }
 
 
