@@ -173,7 +173,7 @@ main:
    push rdi
    add rdi, 0
    push rdi
-   mov rax, 0
+   mov rax, 1
    pop rdi
    mov [rdi], eax
    pop rdi
@@ -182,7 +182,7 @@ main:
    push rdi
    mov rax, 7
    pop rdi
-   mov [rdi], al
+   mov [rdi], ax
    add rsp, 8
    lea rax, [test_eql]
    push rax
@@ -190,7 +190,7 @@ main:
    add rax, 0
    movsxd rax, dword ptr [rax]
    push rax
-   mov rax, 0
+   mov rax, 1
    push rax
    pop rsi
    pop rdi

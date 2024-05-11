@@ -5,15 +5,15 @@ enum Tag {
 }
 
 
-union(Tag) Tu {
+union() Tu {
     one:u8, two:u16, three:u8
 }
 
 
 fn main() void {
-    var a = Tu { .one = 7 };
+    var a = Tu { .two = 7 };
 
-    test_eql(a.tag, Tag.one);
+    test_eql(a.tag, 1);
     test_eql(a.one, 7);
 }
 

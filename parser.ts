@@ -1551,7 +1551,40 @@ export class Parser {
         return new Statement().newNativeFnStatement(name as string);
     }
 
+    anonTaggedUnionDeclaration():Statement{
+        var name_tok = this.expect(tokenType.identifier, "name");
+        var name = name_tok.value as string;
+        this.expect(tokenType.leftbrace, "{");
+
+        var strucmembers: { name: string, datatype: Type, default: Expression | undefined }[] = [];
+        var enumvalues: { name: string, value: Expression }[] = [];
+
+        var i = 0;
+
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                var field_tok = this.expect(tokenType.identifier, "field name");
+                var field_name = field_tok.value as string;
+                this.expect(tokenType.colon, ":");
+                var field_type = this.parseType(false);
+                strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
+                enumvalues.push({name:field_name, value:new Expression().newExprNumber(i)});
+                i++;
+                if (!this.match([tokenType.comma])) break;
+            }
+        }
+        var enum_ = new Type().newEnum("", enumvalues);
+
+        if (isResolutionPass()) pushEnum(enum_ , name_tok);
+        if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, enum_), name_tok);
+        this.expect(tokenType.rightbrace, "}");
+        return new Statement();
+    }
+
     taggedUnionDeclaration(): Statement {
+        if(this.match([tokenType.rightparen])) {
+            return this.anonTaggedUnionDeclaration();
+        }
         var tag_name = this.expect(tokenType.identifier, "Tag Enum name");
         var tag_enum = getEnum(tag_name.value as string);
         if (!tag_enum) {
@@ -1589,7 +1622,7 @@ export class Parser {
             }
         })
 
-        if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, tag_enum as Type), name_tok)
+        if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, tag_enum as Type), name_tok);
         this.expect(tokenType.rightbrace, "}");
         return new Statement();
     }
