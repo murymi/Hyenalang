@@ -390,8 +390,13 @@ function assignLit(offset: number, expr: Expression) {
             console.log("   push rdi");
             console.log(`   add rdi, ${s.field_offset + offset}`);
             console.log("   push rdi");
-            generateCode(s.value);
-            store(s.data_type);
+            if(s.data_type.size > 8) {
+                generateAddress(s.value);
+                storeStruct(s.data_type)
+            } else {
+                generateCode(s.value);
+                store(s.data_type);
+            }
         }
     }
     )

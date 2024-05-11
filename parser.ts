@@ -280,24 +280,38 @@ export class Parser {
         return new Expression().arrayLiteral(setters, new Type().newArray(base, setters.length));
     }
 
+    async nameLessStructRes(): Promise<Expression> {
+        this.expect(tokenType.leftbrace, "{");
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                await this.expression();
+                if (!this.match([tokenType.comma])) break;
+            }
+        }
+        this.expect(tokenType.rightbrace, "}");
+        return new Expression().newStructLiteral([], voidtype);
+    }
+
     async nameLessStruct(): Promise<Expression> {
-        if (isResolutionPass()) return this.structLiteralRes();
+        if (isResolutionPass()) return this.nameLessStructRes();
         this.expect(tokenType.leftbrace, "{");
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         var offset = 0;
         var data_type = new Type();
         data_type.align = 0;
         data_type.members = [];
-        while (true) {
-            var expr = await this.expression();
-            offset = alignTo(expr.datatype.align, offset);
-            setters.push({ field_offset: offset, data_type: expr.datatype, value: expr });
-            data_type.members.push({ name: "", offset: offset, type: expr.datatype, default: undefined });
-            offset += expr.datatype.size;
-            if (data_type.align < expr.datatype.align) {
-                data_type.align = expr.datatype.align;
+        if (!this.check(tokenType.rightbrace)) {
+            while (true) {
+                var expr = await this.expression();
+                offset = alignTo(expr.datatype.align, offset);
+                setters.push({ field_offset: offset, data_type: expr.datatype, value: expr });
+                data_type.members.push({ name: "", offset: offset, type: expr.datatype, default: undefined });
+                offset += expr.datatype.size;
+                if (data_type.align < expr.datatype.align) {
+                    data_type.align = expr.datatype.align;
+                }
+                if (!this.match([tokenType.comma])) break;
             }
-            if (!this.match([tokenType.comma])) break;
         }
         //setters.splice(0, 0, { field_offset: 0, data_type:u64 , value:new Expression().newExprNumber(data_type.members.length) });
         //data_type.members.splice(0, 0,{name:"len", offset:0, type:u64, default:undefined})
@@ -1158,17 +1172,17 @@ export class Parser {
                 if (this.match([tokenType.multiply])) {
                     is_ref = true;
                 }
-                
+
                 var cap_tok = this.expect(tokenType.identifier, "capture name");
                 var cap_name = cap_tok.value as string;
                 this.expect(tokenType.pipe, "|");
                 beginScope();
                 var meta = getOffsetOfMember(tgu.datatype, mem_tok as Token);
-                
-                if (is_ref) { 
+
+                if (is_ref) {
                     var vbl = incLocalOffset(cap_name, new Type().newPointer(meta.datatype));
                     capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
-                    new Expression().newExprAddress(new Expression().newExprGet(meta.offset, tgu, meta.datatype)));
+                        new Expression().newExprAddress(new Expression().newExprGet(meta.offset, tgu, meta.datatype)));
                 } else {
                     var vbl = incLocalOffset(cap_name, meta.datatype);
                     capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
