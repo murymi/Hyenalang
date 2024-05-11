@@ -176,7 +176,7 @@ main:
    movsxd rax, dword ptr [rax]
    cmp rax, 0
    je .L.1.p.0
-   cmp rax, 1
+   cmp rax, 30
    je .L.1.p.1
    jmp .L.1.p.else
 .L.1.p.0:

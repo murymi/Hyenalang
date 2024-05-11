@@ -1123,8 +1123,14 @@ export class Parser {
                     break;
                 } else {
                     var expr = await this.expression();
+                    if(!this.isConstExpr(expr)) {
+                        this.tokenError("Expect const expression", this.previous());
+                    }
                     if (this.match([tokenType.range])) {
                         var expr2 = await this.expression();
+                        if(!this.isConstExpr(expr2)) {
+                            this.tokenError("Expect const expression", this.previous());
+                        }
                         cases.push(new Expression().newExprCase(prongs.length, new Expression().newExprRange(expr, expr2)));
                     } else {
                         cases.push(new Expression().newExprCase(prongs.length, expr));
@@ -1136,11 +1142,7 @@ export class Parser {
                 };
                 can_else = false;
             }
-
             this.expect(tokenType.plong, "Expect plong");
-
-
-
             var has_capture = false;
             var capture:Expression|undefined = undefined;
             if(this.match([tokenType.pipe])) {
