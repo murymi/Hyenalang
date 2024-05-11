@@ -1,18 +1,26 @@
 union() Foo {
     one:u8,
-    two:u16,
-    three:u32
+    two:u8,
+    three:u16
 }
 
 fn main() void {
-    var j = Foo { .three = 90 };
+    var j = Foo { .one = 90 };
     
     switch(j) {
-        .one => {
-            test_eql(true, true);
+        .one, .two => |*val| {
+            test_eql(val.*, 90);
+            val.* = 93;
         },
-        .two => |val| {
-            test_eql(val, 90);
+        else => {
+            write("else block\n");
+        }
+    }
+
+    switch(j) {
+        .one, .two => |*val| {
+            test_eql(val.*, 93);
+            val.* = 93;
         },
         else => {
             write("else block\n");

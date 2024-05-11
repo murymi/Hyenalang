@@ -1119,14 +1119,30 @@ export class Parser {
             if (this.match([tokenType.else])) {
                 default_prong_found = true;
             } else {
-                this.expect(tokenType.dot, ".");
-                mem_tok = this.expect(tokenType.identifier, "enum field name");
-                var mem_name = mem_tok.value as string;
-                var enum_value = tgu.datatype.tag.enumvalues.find((e) => e.name == mem_name);
-                if (enum_value) {
-                    cases.push(new Expression().newExprCase(prongs.length, enum_value.value));
-                } else {
-                    this.tokenError(`${mem_name} is not member of ${cond.datatype.toString()}`, mem_tok);
+                var first_round = true;
+                var group_data_type: Type | undefined = undefined;
+                while (true) {
+                    this.expect(tokenType.dot, ".");
+                    mem_tok = this.expect(tokenType.identifier, "enum field name");
+                    var mem_name = mem_tok.value as string;
+                    var enum_value = tgu.datatype.tag.enumvalues.find((e) => e.name == mem_name);
+                    var meta = getOffsetOfMember(tgu.datatype, mem_tok as Token);
+                    if (first_round) {
+                        group_data_type = meta.datatype;
+                    } else {
+                        if (!group_data_type?.eql(meta.datatype)) {
+                            this.tokenError(`Expect ${group_data_type?.toString()} found ${meta.datatype.toString()}`, mem_tok);
+                        }
+                    }
+
+                    if (enum_value) {
+                        cases.push(new Expression().newExprCase(prongs.length, enum_value.value));
+                    } else {
+                        this.tokenError(`${mem_name} is not member of ${cond.datatype.toString()}`, mem_tok);
+                    }
+
+                    if (!this.match([tokenType.comma])) break;
+                    first_round = false;
                 }
             }
 
@@ -1134,17 +1150,30 @@ export class Parser {
             var has_capture = false;
             var capture: Expression | undefined = undefined;
             if (this.match([tokenType.pipe])) {
-                if(default_prong_found) {
+                var is_ref = false;
+                if (default_prong_found) {
                     this.tokenError("cannot capture on else", this.previous());
                 }
+
+                if (this.match([tokenType.multiply])) {
+                    is_ref = true;
+                }
+                
                 var cap_tok = this.expect(tokenType.identifier, "capture name");
                 var cap_name = cap_tok.value as string;
                 this.expect(tokenType.pipe, "|");
                 beginScope();
                 var meta = getOffsetOfMember(tgu.datatype, mem_tok as Token);
-                var vbl = incLocalOffset(cap_name, meta.datatype);
-                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
-                    new Expression().newExprGet(meta.offset, tgu, meta.datatype));
+                
+                if (is_ref) { 
+                    var vbl = incLocalOffset(cap_name, new Type().newPointer(meta.datatype));
+                    capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
+                    new Expression().newExprAddress(new Expression().newExprGet(meta.offset, tgu, meta.datatype)));
+                } else {
+                    var vbl = incLocalOffset(cap_name, meta.datatype);
+                    capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
+                        new Expression().newExprGet(meta.offset, tgu, meta.datatype));
+                }
                 has_capture = true;
             }
             var pron = await this.statement();
@@ -1163,7 +1192,7 @@ export class Parser {
                 this.expect(tokenType.comma, "Expect comma after plong");
             }
 
-            if(default_prong_found) break;
+            if (default_prong_found) break;
         }
         if (default_prong_found === false) {
             this.tokenError("missing else branch", this.peek());
@@ -1198,6 +1227,7 @@ export class Parser {
             }
             this.expect(tokenType.plong, "Expect plong");
             if (this.match([tokenType.pipe])) {
+                this.match([tokenType.multiply]);
                 this.expect(tokenType.identifier, "capture name");
                 this.expect(tokenType.pipe, "|");
             }
