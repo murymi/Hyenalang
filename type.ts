@@ -394,6 +394,8 @@ export class Type {
                 return this.name;
             case myType.ptr:
                 return "*"+this.base.toString();
+            case myType.tuple:
+                return "tuple";
             case myType.array:
                 return `[${this.arrayLen}]`+this.base.toString();
             default:
