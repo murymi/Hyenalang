@@ -210,7 +210,7 @@ _start:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 56
+   sub rsp, 40
    lea rax, [rbp-16]
    push rax
    lea rax, .L.data.strings.6
@@ -247,7 +247,7 @@ main:
    mov [rdi+14], cl
    mov cl, [rax+15]
    mov [rdi+15], cl
-   lea rax, [rbp-44]
+   lea rax, [rbp-29]
    mov qword ptr [rax], 5
    add rax, 8
    push rax
@@ -257,50 +257,50 @@ main:
    push rdi
    mov rax, 1
    pop rdi
-   mov [rdi], eax
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 1
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 2
+   push rdi
+   mov rax, 3
+   pop rdi
+   mov [rdi], al
+   pop rdi
+   push rdi
+   add rdi, 3
+   push rdi
+   mov rax, 4
+   pop rdi
+   mov [rdi], al
    pop rdi
    push rdi
    add rdi, 4
    push rdi
-   mov rax, 2
-   pop rdi
-   mov [rdi], eax
-   pop rdi
-   push rdi
-   add rdi, 8
-   push rdi
-   mov rax, 3
-   pop rdi
-   mov [rdi], eax
-   pop rdi
-   push rdi
-   add rdi, 12
-   push rdi
-   mov rax, 4
-   pop rdi
-   mov [rdi], eax
-   pop rdi
-   push rdi
-   add rdi, 16
-   push rdi
    mov rax, 5
    pop rdi
-   mov [rdi], eax
+   mov [rdi], al
    add rsp, 8
    mov rax, -1
-   mov [rbp-56], rax
+   mov [rbp-40], rax
 .L.continue.1:
-   inc qword ptr [rbp-56]
-   lea rax, [rbp-48]
+   inc qword ptr [rbp-40]
+   lea rax, [rbp-30]
    push rax
-   lea rax, [rbp-44]
-   mov rdi, qword ptr [rbp-56]
-   imul rdi, 4
+   lea rax, [rbp-29]
+   mov rdi, qword ptr [rbp-40]
+   imul rdi, 1
    add rdi, 8
    add rax, rdi
    mov rax, [rax]
    pop rdi
-   mov [rdi], eax
+   mov [rdi], al
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.7
@@ -310,7 +310,7 @@ main:
    call rax
    mov rax, 5
    dec rax
-   cmp [rbp-56], rax
+   cmp [rbp-40], rax
    jge .L.break.1
    jmp .L.continue.1
 .L.break.1:

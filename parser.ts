@@ -267,6 +267,9 @@ export class Parser {
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 var v = await this.expression();
+                if(base.isInteger() && v.datatype.isInteger()) {
+                    v.datatype = base;
+                }
                 if (!base.eql(v.datatype)) {
                     this.tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
                 }
