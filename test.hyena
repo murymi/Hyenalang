@@ -6,7 +6,12 @@ struct Foo {
 fn main() void {
     var a  = "q";
 
-    write(a);
+    switch("".len) {
+        1 => {
+            write("one\n");
+        },
+        else => write("else\n");
+    }
 }
 
 

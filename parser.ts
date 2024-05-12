@@ -1435,7 +1435,6 @@ export class Parser {
         }
 
         this.expect(tokenType.pipe, "|");
-        this.expect(tokenType.leftbrace, "{");
         var metadata: {
             counter: Variable,
             range_type: rangeType,
@@ -1469,7 +1468,7 @@ export class Parser {
             }
         }
 
-        var body = await this.block();
+        var body = await this.statement();
         endScope();
         return new Statement().newIntLoop(body, metadata);
     }
