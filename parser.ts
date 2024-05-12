@@ -21,6 +21,13 @@ import { Type, alignTo, argv, bool, f32, getEnum, getOffsetOfMember, i16, i32, i
 import { relative } from "node:path";
 import { cwd } from "node:process";
 
+
+export function tokenError(message: string, token: Token): void {
+    console.error(`${colors.yellow + relative(cwd(), token.file_name) + colors.green}:${token.line}:${token.col} ${colors.red + message} '${token.value}'${colors.reset} `);
+    console.table(isResolutionPass());
+    process.exit();
+}
+
 export class Parser {
     tokens: Token[];
     current: number;
@@ -54,15 +61,9 @@ export class Parser {
     expect(type, name): Token {
         if (this.peek().type !== type) {
             console.error(isResolutionPass());
-            this.tokenError("Expected " + name + " found ", this.peek());
+            tokenError("Expected " + name + " found ", this.peek());
         }
         return this.advance();
-    }
-
-    tokenError(message: string, token: Token): void {
-        console.error(`${colors.yellow + relative(cwd(), token.file_name) + colors.green}:${token.line}:${token.col} ${colors.red + message} '${token.value}'${colors.reset} `);
-        console.table(isResolutionPass());
-        process.exit();
     }
 
     getTempPos(templates: string[], char: string): number {
@@ -119,7 +120,7 @@ export class Parser {
                     case tokenType.bitnot:
                         return ~right;
                     default:
-                        this.tokenError("unsupported unary operator", expr.operator as Token);
+                        tokenError("unsupported unary operator", expr.operator as Token);
                 }
             case exprType.binary_op:
                 var left = this.evalConstExpr(expr.left as Expression);
@@ -162,7 +163,7 @@ export class Parser {
                     case tokenType.shr:
                         return left >> right;
                     default:
-                        this.tokenError("unsupported binary operator", expr.operator as Token);
+                        tokenError("unsupported binary operator", expr.operator as Token);
                 }
             case exprType.grouping:
                 return this.evalConstExpr(expr.left as Expression)
@@ -190,7 +191,7 @@ export class Parser {
         if (val.type === exprType.call && val.datatype.size > 8) {
             val.params.splice(0, 0, new Expression().newExprAddress(id));
         }
-        var assign = new Expression().newExprAssign(id, val);
+        var assign = new Expression().newExprAssign(id, val, this.previous());
         return { assign: assign, id: id }
     }
 
@@ -267,11 +268,11 @@ export class Parser {
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 var v = await this.expression();
-                if(base.isInteger() && v.datatype.isInteger()) {
+                if (base.isInteger() && v.datatype.isInteger()) {
                     v.datatype = base;
                 }
                 if (!base.eql(v.datatype)) {
-                    this.tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
+                    tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
                 }
                 setters.push({ field_offset: offset, data_type: base, value: v });
                 offset += base.size;
@@ -316,8 +317,8 @@ export class Parser {
                 if (!this.match([tokenType.comma])) break;
             }
         }
-        setters.splice(0, 0, { field_offset: 0, data_type:u64 , value:new Expression().newExprNumber(data_type.members.length) });
-        data_type.members.splice(0, 0,{name:"len", offset:0, type:u64, default:undefined});
+        setters.splice(0, 0, { field_offset: 0, data_type: u64, value: new Expression().newExprNumber(data_type.members.length) });
+        data_type.members.splice(0, 0, { name: "len", offset: 0, type: u64, default: undefined });
         data_type.size = alignTo(data_type.align, offset);
         data_type.kind = myType.tuple;
         this.expect(tokenType.rightbrace, "}");
@@ -342,7 +343,7 @@ export class Parser {
             return val.value;
         }
 
-        this.tokenError(`enum ${id} has no field`, tok);
+        tokenError(`enum ${id} has no field`, tok);
         return new Expression();
     }
 
@@ -354,7 +355,7 @@ export class Parser {
             case "0": return '\0';
             case "b": return '\b';
         }
-        this.tokenError(`unsupported escape sequence \\${char.value}`, char);
+        tokenError(`unsupported escape sequence \\${char.value}`, char);
         process.exit(1);
     }
 
@@ -466,7 +467,7 @@ export class Parser {
                     break;
                     break;
                 default:
-                    this.tokenError("unknown expression", what);
+                    tokenError("unknown expression", what);
             }
             this.expect(tokenType.rightparen, ")");
             return ex as Expression;
@@ -485,7 +486,7 @@ export class Parser {
             }
 
             if (val.length !== 1) {
-                this.tokenError("expected single character", this.previous());
+                tokenError("expected single character", this.previous());
             }
             this.expect(tokenType.squote, "Expect closing ' ");
             var expr = new Expression().newExprNumber(val.charCodeAt(0));
@@ -493,18 +494,18 @@ export class Parser {
             return expr
         }
         //console.log(this.peek());
-        this.tokenError("unexpected token", this.peek());
+        tokenError("unexpected token", this.peek());
         throw new Error("Unexpected token");
 
     }
 
-    isIdentifier(expr:Expression) {
+    isIdentifier(expr: Expression) {
         return expr.type === exprType.string || expr.type === exprType.identifier;
     }
 
     async finishCall(callee: Expression, optional?: Expression): Promise<Expression> {
         if (callee.datatype.kind !== myType.function && !isResolutionPass()) {
-            this.tokenError("Not a function", this.previous());
+            tokenError("Not a function", this.previous());
         }
         var args: Expression[] = [];
         if (!this.check(tokenType.rightparen)) {
@@ -529,7 +530,7 @@ export class Parser {
         if (optional) { args.splice(0, 0, optional); }
         var expr = new Expression().newExprCall(callee, callee.datatype.return_type, args, fnType.native);
         if (callee.datatype.arity !== args.length && !isResolutionPass()) {
-            this.tokenError(callee.name + " expects " + callee.datatype.arity + " args but " + args.length + " provided.", fntok);
+            tokenError(callee.name + " expects " + callee.datatype.arity + " args but " + args.length + " provided.", fntok);
         }
 
         return expr;
@@ -551,7 +552,7 @@ export class Parser {
         var obj = getLocalOffset(meta.name, tok);
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype)) {
-            this.tokenError(`${expr.datatype.name} has no such member function`, this.previous());
+            tokenError(`${expr.datatype.name} has no such member function`, this.previous());
         }
 
         this.expect(tokenType.leftparen, "Expect ( ");
@@ -563,7 +564,7 @@ export class Parser {
         var fakeid = new Expression().newExprFnIdentifier(meta.name, obj.datatype);
         this.expect(tokenType.leftparen, "Expect ( ");
         if (obj.datatype.arguments.length === 0 || !this.typeEql(obj.datatype.arguments[0].datatype.base, expr.datatype.base)) {
-            this.tokenError(`${expr.datatype.base.name} has no such member function`, this.previous());
+            tokenError(`${expr.datatype.base.name} has no such member function`, this.previous());
         }
         return await this.finishCall(fakeid, expr);
     }
@@ -577,12 +578,12 @@ export class Parser {
         }
 
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
-            this.tokenError("expect property name after dot", this.peek());
+            tokenError("expect property name after dot", this.peek());
         }
 
         if (propname.type === tokenType.multiply) {
             if (!expr.datatype.isPtr()) {
-                this.tokenError(`attempt to dereference non ptr type ${expr.datatype.toString()}`, propname);
+                tokenError(`attempt to dereference non ptr type ${expr.datatype.toString()}`, propname);
             }
             return new Expression().newExprDeref(expr);
         }
@@ -592,7 +593,7 @@ export class Parser {
         }
 
         if (expr.datatype === undefined || !expr.datatype.hasMembers()) {
-            this.tokenError(`type ${expr.datatype.toString()} has no members`, dot);
+            tokenError(`type ${expr.datatype.toString()} has no members`, dot);
         }
 
         var meta = getOffsetOfMember(expr.datatype, propname);
@@ -668,22 +669,22 @@ export class Parser {
 
     async parseTupleIndex(expr: Expression, index: Expression): Promise<Expression> {
         if (index.val > expr.datatype.members.length) {
-            this.tokenError("invalid index", this.previous());
+            tokenError("invalid index", this.previous());
         }
         var idx = index.val as number;
         return new Expression().newExprGet(
-            expr.datatype.members[idx+1].offset,
-            expr, expr.datatype.members[idx+1].type);
+            expr.datatype.members[idx + 1].offset,
+            expr, expr.datatype.members[idx + 1].type);
     }
 
     async parseTuplePtrIndex(expr: Expression, index: Expression): Promise<Expression> {
         if (index.val > expr.datatype.base.members.length) {
-            this.tokenError("invalid index", this.previous());
+            tokenError("invalid index", this.previous());
         }
         var idx = index.val as number
         return new Expression().newExprGet(
-            expr.datatype.base.members[idx+1].offset,
-            new Expression().newExprDeref(expr), expr.datatype.base.members[idx+1].type);
+            expr.datatype.base.members[idx + 1].offset,
+            new Expression().newExprDeref(expr), expr.datatype.base.members[idx + 1].type);
     }
 
     async index(expr: Expression): Promise<Expression> {
@@ -721,7 +722,7 @@ export class Parser {
                         }
                         return this.parseSliceIndex(expr, index);
                     default:
-                        this.tokenError("Expect ]", t);
+                        tokenError("Expect ]", t);
 
                 }
                 break;
@@ -745,13 +746,13 @@ export class Parser {
                         }
                         return this.parseArrayIndex(expr, index);
                     default:
-                        this.tokenError("Expect ]", t);
+                        tokenError("Expect ]", t);
 
                 }
                 break;
             case myType.tuple:
-                if(!this.isConstExpr(index)) {
-                    this.tokenError("Tuple index must be const expr", t);
+                if (!this.isConstExpr(index)) {
+                    tokenError("Tuple index must be const expr", t);
                 }
                 return this.parseTupleIndex(expr, index);
             default:
@@ -770,13 +771,13 @@ export class Parser {
 
         var struc = searchStruct(name.value as string);
         if (struc === undefined) {
-            this.tokenError("No such struct", name);
+            tokenError("No such struct", name);
         }
         var tok = this.expect(tokenType.identifier, "Expect fn name")
         var fnname = tok.value as string;
 
         if (struc?.member_fn_names.find((f) => f === fnname) === undefined) {
-            this.tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
+            tokenError(`${struc?.name} has no fn ${fnname}`, this.previous());
         }
 
         var obj = getLocalOffset(struc?.name + fnname, tok);
@@ -989,7 +990,7 @@ export class Parser {
             case tokenType.shleq:
                 return tokenType.shl;
             default:
-                this.tokenError("Unexpected operator", equals);
+                tokenError("Unexpected operator", equals);
                 return tokenType.addeq
         }
     }
@@ -1026,6 +1027,7 @@ export class Parser {
         ])) {
             equals = this.previous();
             var val = await this.assign();
+
             if (val.type === exprType.call && expr.datatype.size > 8) {
                 val.params.splice(0, 0, new Expression().newExprAddress(expr))
             }
@@ -1036,13 +1038,13 @@ export class Parser {
             switch (expr.type) {
                 case exprType.identifier:
                 case exprType.deref:
-                    return new Expression().newExprAssign(expr, val);
+                    return new Expression().newExprAssign(expr, val, equals);
                 case exprType.get:
-                    return new Expression().newExprSet(expr, val);
+                    return new Expression().newExprSet(expr, val, equals);
                 default:
                     if (isResolutionPass()) return expr;
                     console.error(expr);
-                    this.tokenError(`Unexpected assignment target ${expr.datatype.toString()}`, equals);
+                    tokenError(`Unexpected assignment target ${expr.datatype.toString()}`, equals);
             }
         }
         return expr;
@@ -1120,7 +1122,7 @@ export class Parser {
     }
 
     async switchEnum(tgu: Expression): Promise<Statement> {
-        if (this.isLiteral(tgu)) this.tokenError("switch on literal", this.previous());
+        if (this.isLiteral(tgu)) tokenError("switch on literal", this.previous());
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.leftbrace, "Expect switch body");
         var prongs: Statement[] = [];
@@ -1145,14 +1147,14 @@ export class Parser {
                         group_data_type = meta.datatype;
                     } else {
                         if (!group_data_type?.eql(meta.datatype)) {
-                            this.tokenError(`Expect ${group_data_type?.toString()} found ${meta.datatype.toString()}`, mem_tok);
+                            tokenError(`Expect ${group_data_type?.toString()} found ${meta.datatype.toString()}`, mem_tok);
                         }
                     }
 
                     if (enum_value) {
                         cases.push(new Expression().newExprCase(prongs.length, enum_value.value));
                     } else {
-                        this.tokenError(`${mem_name} is not member of ${cond.datatype.toString()}`, mem_tok);
+                        tokenError(`${mem_name} is not member of ${cond.datatype.toString()}`, mem_tok);
                     }
 
                     if (!this.match([tokenType.comma])) break;
@@ -1166,7 +1168,7 @@ export class Parser {
             if (this.match([tokenType.pipe])) {
                 var is_ref = false;
                 if (default_prong_found) {
-                    this.tokenError("cannot capture on else", this.previous());
+                    tokenError("cannot capture on else", this.previous());
                 }
 
                 if (this.match([tokenType.multiply])) {
@@ -1182,11 +1184,11 @@ export class Parser {
                 if (is_ref) {
                     var vbl = incLocalOffset(cap_name, new Type().newPointer(meta.datatype), cap_tok);
                     capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
-                        new Expression().newExprAddress(new Expression().newExprGet(meta.offset, tgu, meta.datatype)));
+                        new Expression().newExprAddress(new Expression().newExprGet(meta.offset, tgu, meta.datatype)), cap_tok);
                 } else {
-                    var vbl = incLocalOffset(cap_name, meta.datatype,cap_tok);
+                    var vbl = incLocalOffset(cap_name, meta.datatype, cap_tok);
                     capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
-                        new Expression().newExprGet(meta.offset, tgu, meta.datatype));
+                        new Expression().newExprGet(meta.offset, tgu, meta.datatype), cap_tok);
                 }
                 has_capture = true;
             }
@@ -1209,7 +1211,7 @@ export class Parser {
             if (default_prong_found) break;
         }
         if (default_prong_found === false) {
-            this.tokenError("missing else branch", this.peek());
+            tokenError("missing else branch", this.peek());
         }
         this.expect(tokenType.rightbrace, "Expect } after switch body");
         return new Statement().newSwitch(cond, cases, prongs, default_prong);
@@ -1267,7 +1269,7 @@ export class Parser {
         }
 
         if (!cond.datatype.isInteger()) {
-            this.tokenError("Switch expects integer or tagged union", this.previous());
+            tokenError("Switch expects integer or tagged union", this.previous());
         }
 
         this.expect(tokenType.rightparen, ") after condition");
@@ -1286,12 +1288,12 @@ export class Parser {
                 } else {
                     var expr = await this.expression();
                     if (!this.isConstExpr(expr)) {
-                        this.tokenError("Expect const expression", this.previous());
+                        tokenError("Expect const expression", this.previous());
                     }
                     if (this.match([tokenType.range])) {
                         var expr2 = await this.expression();
                         if (!this.isConstExpr(expr2)) {
-                            this.tokenError("Expect const expression", this.previous());
+                            tokenError("Expect const expression", this.previous());
                         }
                         cases.push(new Expression().newExprCase(prongs.length, new Expression().newExprRange(expr, expr2)));
                     } else {
@@ -1313,7 +1315,7 @@ export class Parser {
                 this.expect(tokenType.pipe, "|");
                 beginScope();
                 var vbl = incLocalOffset(cap_name, cond.datatype, cap_tok);
-                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl), cond);
+                capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl), cond, cap_tok);
                 has_capture = true;
             }
             var pron = await this.statement();
@@ -1333,7 +1335,7 @@ export class Parser {
             }
         }
         if (default_prong_found === false) {
-            this.tokenError("missing else branch", this.peek());
+            tokenError("missing else branch", this.peek());
         }
         this.expect(tokenType.rightbrace, "Expect } after switch body");
         return new Statement().newSwitch(cond, cases, prongs, default_prong);
@@ -1385,7 +1387,7 @@ export class Parser {
             return await this.loopRes();
         }
 
-        var assigns:Expression[] = [];
+        var assigns: Expression[] = [];
 
         var ranges: { range: Expression, range_type: rangeType, id: Expression | undefined }[] = []
         while (true) {
@@ -1395,7 +1397,7 @@ export class Parser {
             } else {
                 switch (bottom.datatype.kind) {
                     case myType.array:
-                        if(bottom.isLiteral()) {
+                        if (bottom.isLiteral()) {
                             var obj = this.assignBeforeUse(bottom);
                             bottom = obj.id;
                             assigns.push(obj.assign);
@@ -1421,7 +1423,7 @@ export class Parser {
                         break;
                     default:
                         console.error(bottom.datatype);
-                        this.tokenError("attemp to loop unsupported type", this.previous());
+                        tokenError("attemp to loop unsupported type", this.previous());
                 }
             }
 
@@ -1456,8 +1458,8 @@ export class Parser {
                 var r_id = ranges[i].id as Expression;
                 var is_ptr = variables[i].ptr;
                 var data_type = is_ptr ? new Type().newPointer(r_id.datatype.base) : r_id.datatype.base;
-                var ptr_var = incLocalOffset(variables[i].name.value as string, data_type,variables[i].name, new Expression().newExprUndefined());
-                var counter = incLocalOffset("", u64,undefined, ranges[i].range.left);
+                var ptr_var = incLocalOffset(variables[i].name.value as string, data_type, variables[i].name, new Expression().newExprUndefined());
+                var counter = incLocalOffset("", u64, undefined, ranges[i].range.left);
                 metadata.push({
                     counter: counter,
                     range_type: ranges[i].range_type,
@@ -1469,7 +1471,7 @@ export class Parser {
 
             } else {
                 metadata.push({
-                    counter: incLocalOffset(variables[i].name.value as string, u64, variables[i].name,ranges[i].range.left),
+                    counter: incLocalOffset(variables[i].name.value as string, u64, variables[i].name, ranges[i].range.left),
                     range_type: rangeType.int,
                     range: ranges[i].range,
                     ptr: undefined, array_id: undefined, index_var: undefined
@@ -1611,13 +1613,13 @@ export class Parser {
                 if (tbn) {
                     return tbn;
                 }
-                this.tokenError("Undefined Type", tok);
+                tokenError("Undefined Type", tok);
                 break;
             default:
                 break;
         }
 
-        this.tokenError("[..]Expect type", tok);
+        tokenError("[..]Expect type", tok);
         return i64;
     }
 
@@ -1652,32 +1654,27 @@ export class Parser {
 
 
         if (initializer.type === exprType.undefnd && type === undefined) {
-            this.tokenError("Type not known", this.previous());
+            tokenError("Type not known", this.previous());
         }
 
         type = type ?? initializer.datatype;
         //console.error(initializer);
-        var variable = incLocalOffset(name.value as string, type as Type,name, initializer);
+        var variable = incLocalOffset(name.value as string, type as Type, name, initializer);
 
         if (variable.is_global && !this.validGlobalInitializer(initializer)) {
-            this.tokenError("Global initializer should be const expression", eq)
+            tokenError("Global initializer should be const expression", eq)
         }
 
         if (initializer.type === exprType.call && type.size > 8) {
             initializer.params.splice(0, 0, new Expression().newExprAddress(new Expression().newExprIdentifier(variable)));
         }
 
-        if (initializer.datatype.kind === myType.string) {
-            initializer =
-                new Expression().newExprAssign(
-                    new Expression().newExprIdentifier(variable),
-                    new Expression().newExprSlideString(initializer))
-        } else {
-            initializer = new Expression().newExprAssign(
-                new Expression().newExprIdentifier(variable)
-                , initializer
-            );
-        }
+
+        initializer = new Expression().newExprAssign(
+            new Expression().newExprIdentifier(variable)
+            , initializer, eq
+        );
+
         this.expect(tokenType.semicolon, ";");
         return new Statement().newVarstatement(initializer);
     }
@@ -1776,7 +1773,7 @@ export class Parser {
         var tag_name = this.expect(tokenType.identifier, "Tag Enum name");
         var tag_enum = getEnum(tag_name.value as string);
         if (!tag_enum) {
-            this.tokenError("Undefined enum", tag_name);
+            tokenError("Undefined enum", tag_name);
         }
         this.expect(tokenType.rightparen, ")");
         var name_tok = this.expect(tokenType.identifier, "name");
@@ -1794,7 +1791,7 @@ export class Parser {
                 var field_tok = this.expect(tokenType.identifier, "field name");
                 var field_name = field_tok.value as string;
                 if (!tag_enum?.enumvalues.find((v) => v.name === field_name)) {
-                    this.tokenError(`${field_name} is not a member of ${tag_enum?.name}`, field_tok);
+                    tokenError(`${field_name} is not a member of ${tag_enum?.name}`, field_tok);
                 }
                 handled.push(field_name);
                 this.expect(tokenType.colon, ":");
@@ -1806,7 +1803,7 @@ export class Parser {
 
         tag_enum?.enumvalues.forEach((v) => {
             if (!handled.find((h) => h === v.name)) {
-                this.tokenError(`${tag_enum?.name}.${v.name} not handled`, this.peek());
+                tokenError(`${tag_enum?.name}.${v.name} not handled`, this.peek());
             }
         })
 
@@ -1863,7 +1860,7 @@ export class Parser {
                 var equal = this.previous();
                 var expr = await this.expression();
                 if (!this.isConstExpr(expr)) {
-                    this.tokenError("Expect constant expression", equal);
+                    tokenError("Expect constant expression", equal);
                 }
                 expr = this.evalConst(expr);
                 enumvalues.push({ name: tok.value as string, value: expr });
@@ -1901,7 +1898,7 @@ export class Parser {
         pushModule(name as string);
         var struc = searchStruct(name as string);
         if (struc === undefined) {
-            this.tokenError("no such struct", this.previous());
+            tokenError("no such struct", this.previous());
         }
         this.expect(tokenType.leftbrace, "Expect module body");
         while (!this.check(tokenType.rightbrace)) {
@@ -1953,7 +1950,7 @@ export class Parser {
             return this.statement();
         }
 
-        this.tokenError("unexpected token", this.peek());
+        tokenError("unexpected token", this.peek());
         return this.statement();
     }
 

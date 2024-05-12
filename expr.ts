@@ -1,4 +1,5 @@
-import { Variable, addGlobalString, fnType } from "./main";
+import { Variable, addGlobalString, fnType, isResolutionPass } from "./main";
+import { tokenError } from "./parser";
 import { Statement } from "./stmt";
 import { Token } from "./token";
 import { Type, f32, i32, i64, myType, nullptr, u64, u8, voidtype } from "./type";
@@ -178,7 +179,13 @@ export class Expression {
         return this;
     }
 
-    newExprSet(expr: Expression, assign:Expression):Expression{
+    newExprSet(expr: Expression, assign:Expression, token:Token):Expression{
+        if(!expr.datatype.eql(assign.datatype) && !isResolutionPass()) {
+            if(expr.datatype.isInteger() && assign.type === exprType.number) {} else {
+                tokenError(`Expected ${expr.datatype.toString()} found ${assign.datatype.toString()}`, token);
+            }
+        }
+
         this.type = exprType.assign;
         this.left = expr;
         this.right = assign;
@@ -238,7 +245,12 @@ export class Expression {
         return this;
     }
 
-    newExprAssign(left:Expression, val:Expression):Expression{
+    newExprAssign(left:Expression, val:Expression, token:Token):Expression{
+        if(!left.datatype.eql(val.datatype) && !isResolutionPass()) {
+            if(left.datatype.isInteger() && val.type === exprType.number) {} else {
+                tokenError(`Expected ${left.datatype.toString()} found ${val.datatype.toString()}`, token);
+            }
+        }
         this.type = exprType.assign;
         this.right = val;
         this.left = left;
