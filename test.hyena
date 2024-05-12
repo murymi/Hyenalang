@@ -2,14 +2,11 @@ struct Foo {
     string:&u8
 }
 
-fn vararg(args:argv) void {
-}
 
 fn main() void {
 
-    var j = .{ "hello", 1, "head" };
-
-    test_eql(j[0].len, 5);
+    var a = 0;
+    var a = 0;
 }
 
 

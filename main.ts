@@ -103,8 +103,9 @@ export class Variable {
     datatype: Type;
     is_global: boolean;
     initializer?: Expression;
+    token:Token|undefined
 
-    global(name: string, datatype: Type, initializer?: Expression) {
+    global(name: string, datatype: Type,  initializer: Expression|undefined = undefined) {
         this.name = name;
         this.initializer = initializer;
         this.datatype = datatype
@@ -120,8 +121,9 @@ export class Variable {
         return this;
     }
 
-    constructor() {
+    constructor(token:Token|undefined = undefined) {
         if (currentFn === -1) this.is_global = true;
+        this.token = token;
         this.scope = scopeDepth;
     }
 }
@@ -129,27 +131,22 @@ export class Variable {
 
 var functions: Function[] = [];
 
-function checkVariableInCurrScope(name: string) {
-    // for (let i = functions[currentFn].locals.length - 1; i >= 0; i--) {
-    //     if (functions[currentFn].locals[i].name === name && functions[currentFn].locals[i].scope === scopeDepth) {
-    //         throw new Error("Redefination of a variable " + name);
-    //     }
-    // }
-
+function checkVariableInCurrScope(name:string, tok: Token) {
     for (let v of variable_scopes[0].variables) {
         if (v.name == name) {
-            throw new Error("Redefination of a variable " + name);
+            console.error(`${colors.yellow + relative(cwd(), tok.file_name) + colors.green}:${tok.line}:${tok.col} ${colors.red + `redeclaration variable ${name} previously declared at ${relative(cwd(), (v.token as Token).file_name)}:${v.token?.line}:${v.token?.col}`} ${colors.reset} `);
+            process.exit();
         }
     }
 }
 
-function addVariableInFn(name: string, type: Type) {
+function addVariableInFn(name: string, type: Type, token:Token|undefined) {
     var old = functions[currentFn].locals.length;
-    functions[currentFn].locals.push(new Variable().local(name, type));
+    functions[currentFn].locals.push(new Variable(token).local(name, type));
     return functions[currentFn].locals[old];
 }
 
-export function incLocalOffset(name: string, type: Type, initializer?: Expression): Variable {
+export function incLocalOffset(name: string, type: Type, token:undefined|Token, initializer?: Expression): Variable {
     var dummy = new Variable();
     dummy.datatype = type;
     if (resolution_pass) return dummy;
@@ -163,12 +160,12 @@ export function incLocalOffset(name: string, type: Type, initializer?: Expressio
     }
 
     if (scopeDepth === 0) {
-        globals.push(new Variable().global(name, type, initializer));
+        globals.push(new Variable(token).global(name, type, initializer));
         return globals[globals.length - 1];
     }
 
-    checkVariableInCurrScope(name);
-    return addVariableInFn(name, type);
+    checkVariableInCurrScope(name, token);
+    return addVariableInFn(name, type,token);
 }
 
 export function addGlobalString(value: string): number {

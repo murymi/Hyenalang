@@ -185,7 +185,7 @@ export class Parser {
     }
 
     assignBeforeUse(val: Expression): { assign: Expression, id: Expression } {
-        var variable = incLocalOffset("", val.datatype);
+        var variable = incLocalOffset("", val.datatype, undefined);
         var id = new Expression().newExprIdentifier(variable);
         if (val.type === exprType.call && val.datatype.size > 8) {
             val.params.splice(0, 0, new Expression().newExprAddress(id));
@@ -1104,7 +1104,7 @@ export class Parser {
         }
         var expr = await this.expression();
         if (expr.type === exprType.call && expr.datatype.size > 8) {
-            var variable = incLocalOffset("", expr.datatype)
+            var variable = incLocalOffset("", expr.datatype, undefined)
             expr.params.splice(0, 0, new Expression().newExprAddress(
                 new Expression().newExprIdentifier(variable)))
         }
@@ -1185,11 +1185,11 @@ export class Parser {
                 var meta = getOffsetOfMember(tgu.datatype, mem_tok as Token);
 
                 if (is_ref) {
-                    var vbl = incLocalOffset(cap_name, new Type().newPointer(meta.datatype));
+                    var vbl = incLocalOffset(cap_name, new Type().newPointer(meta.datatype), cap_tok);
                     capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
                         new Expression().newExprAddress(new Expression().newExprGet(meta.offset, tgu, meta.datatype)));
                 } else {
-                    var vbl = incLocalOffset(cap_name, meta.datatype);
+                    var vbl = incLocalOffset(cap_name, meta.datatype,cap_tok);
                     capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl),
                         new Expression().newExprGet(meta.offset, tgu, meta.datatype));
                 }
@@ -1317,7 +1317,7 @@ export class Parser {
                 var cap_name = cap_tok.value as string;
                 this.expect(tokenType.pipe, "|");
                 beginScope();
-                var vbl = incLocalOffset(cap_name, cond.datatype);
+                var vbl = incLocalOffset(cap_name, cond.datatype, cap_tok);
                 capture = new Expression().newExprAssign(new Expression().newExprIdentifier(vbl), cond);
                 has_capture = true;
             }
@@ -1430,12 +1430,12 @@ export class Parser {
 
         this.expect(tokenType.rightparen, ") after condition");
         this.expect(tokenType.pipe, "loop payload");
-        var variables: { ptr: boolean, name: string }[] = [];
+        var variables: { ptr: boolean, name: Token }[] = [];
         for (let i = 0; i < ranges.length; i++) {
             if (this.match([tokenType.multiply])) {
-                variables.push({ ptr: true, name: this.expect(tokenType.identifier, "identifier").value as string });
+                variables.push({ ptr: true, name: this.expect(tokenType.identifier, "identifier") });
             } else {
-                variables.push({ ptr: false, name: this.expect(tokenType.identifier, "identifier").value as string });
+                variables.push({ ptr: false, name: this.expect(tokenType.identifier, "identifier") });
             }
             if (i < ranges.length - 1) {
                 this.expect(tokenType.comma, ",");
@@ -1456,8 +1456,8 @@ export class Parser {
                 var r_id = ranges[i].id as Expression;
                 var is_ptr = variables[i].ptr;
                 var data_type = is_ptr ? new Type().newPointer(r_id.datatype.base) : r_id.datatype.base;
-                var ptr_var = incLocalOffset(variables[i].name, data_type, new Expression().newExprUndefined());
-                var counter = incLocalOffset("", u64, ranges[i].range.left);
+                var ptr_var = incLocalOffset(variables[i].name.value as string, data_type,variables[i].name, new Expression().newExprUndefined());
+                var counter = incLocalOffset("", u64,undefined, ranges[i].range.left);
                 metadata.push({
                     counter: counter,
                     range_type: ranges[i].range_type,
@@ -1469,7 +1469,7 @@ export class Parser {
 
             } else {
                 metadata.push({
-                    counter: incLocalOffset(variables[i].name, u64, ranges[i].range.left),
+                    counter: incLocalOffset(variables[i].name.value as string, u64, variables[i].name,ranges[i].range.left),
                     range_type: rangeType.int,
                     range: ranges[i].range,
                     ptr: undefined, array_id: undefined, index_var: undefined
@@ -1657,7 +1657,7 @@ export class Parser {
 
         type = type ?? initializer.datatype;
         //console.error(initializer);
-        var variable = incLocalOffset(name.value as string, type as Type, initializer);
+        var variable = incLocalOffset(name.value as string, type as Type,name, initializer);
 
         if (variable.is_global && !this.validGlobalInitializer(initializer)) {
             this.tokenError("Global initializer should be const expression", eq)
