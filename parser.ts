@@ -495,6 +495,10 @@ export class Parser {
 
     }
 
+    isIdentifier(expr:Expression) {
+        return expr.type === exprType.string || expr.type === exprType.identifier;
+    }
+
     async finishCall(callee: Expression, optional?: Expression): Promise<Expression> {
         if (callee.datatype.kind !== myType.function && !isResolutionPass()) {
             this.tokenError("Not a function", this.previous());
@@ -503,7 +507,7 @@ export class Parser {
         if (!this.check(tokenType.rightparen)) {
             do {
                 var arg = await this.expression();
-                if (arg.datatype.size > 8 && arg.type !== exprType.identifier) {
+                if (arg.datatype.size > 8 && !this.isIdentifier(arg)) {
                     var ab = this.assignBeforeUse(arg);
                     args.push(new Expression().newAssignForUse(ab.assign, new Expression().newExprAddress(ab.id)))
                 } else if (arg.datatype.size > 8) {
@@ -597,7 +601,7 @@ export class Parser {
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
         }
 
-        if (expr.type !== exprType.identifier) {
+        if (!this.isIdentifier(expr)) {
             var ab = this.assignBeforeUse(expr);
             var get = new Expression().newExprGet(meta.offset, ab.id, meta.datatype);
             return new Expression().newAssignForUse(ab.assign, get);
@@ -697,7 +701,7 @@ export class Parser {
             case myType.slice:// likes char*
                 switch (t.type) {
                     case tokenType.range:
-                        if (expr.type !== exprType.identifier) {
+                        if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = await this.parseSliceSlide(ab.id, index);
                             return new Expression().newAssignForUse(ab.assign, slicer);
@@ -707,7 +711,7 @@ export class Parser {
                         if (expr.type === exprType.deref) {
                             return this.parseArrayIndex(expr, index);
                         }
-                        if (expr.type !== exprType.identifier) {
+                        if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = await this.parseSliceIndex(ab.id, index);
                             return new Expression().newAssignForUse(ab.assign, slicer);
@@ -721,7 +725,7 @@ export class Parser {
             case myType.array:
                 switch (t.type) {
                     case tokenType.range:
-                        if (expr.type !== exprType.identifier) {
+                        if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = await this.parseArraySlide(ab.id, index);
                             return new Expression().newAssignForUse(ab.assign, slicer);
@@ -731,7 +735,7 @@ export class Parser {
                         if (expr.type === exprType.deref) {
                             return this.parseArrayIndex(expr, index);
                         }
-                        if (expr.type !== exprType.identifier) {
+                        if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = this.parseArrayIndex(ab.id, index);
                             return new Expression().newAssignForUse(ab.assign, slicer);
@@ -1002,9 +1006,6 @@ export class Parser {
 
     async assign(): Promise<Expression> {
         var expr = await this.ternary();
-        // identifier 
-        // a.c.foo -> get
-        //  a[0] -> deref
         var equals: Token;
         if (this.match([
             tokenType.equal,
@@ -1022,18 +1023,9 @@ export class Parser {
         ])) {
             equals = this.previous();
             var val = await this.assign();
-
-
             if (val.type === exprType.call && expr.datatype.size > 8) {
                 val.params.splice(0, 0, new Expression().newExprAddress(expr))
             }
-
-            /**
-             * a += 1;
-             * a = a + 1;
-             */
-
-
             if (equals.type !== tokenType.equal) {
                 var operator = this.getOperator(equals);
                 val = new Expression().newExprBinary(new Token(operator, "", 0, 0, ""), expr, val)

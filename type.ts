@@ -367,6 +367,10 @@ export class Type {
         return this;
     }
 
+    isString():boolean {
+        return this.kind === myType.slice && this.base === u8;
+    }
+
     toString() {
         switch(this.kind) {
             case myType.void:

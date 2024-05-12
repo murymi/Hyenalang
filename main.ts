@@ -358,7 +358,10 @@ if (process.argv.length < 3) {
         genStart(globalstrings, globals, anon_strings, functions);
         bitstream.end();
         console.log = orig;
-        spawn("make", ["bin"]);
+        var proc = spawn("make", ["bin"]);
+        proc.on("exit", ()=>{
+            process.exit();
+        })
     })
 
 }
