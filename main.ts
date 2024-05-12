@@ -152,7 +152,7 @@ export function incLocalOffset(name: string, type: Type, token:undefined|Token, 
     if (resolution_pass) return dummy;
 
 
-    if (name === "") {
+    if (name === "" || name === "_") {
         if (resolution_pass && currentFn != -1) { } else {
             name = "anon" + anon_count.toString(2);
             anon_count++;

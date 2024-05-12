@@ -6,7 +6,7 @@ struct Foo {
 fn main() void {
     var a  = "q";
 
-    for([]u8{1,2,3,4,5}) |c| write("line\n");
+    for([]u8{1,2,3,4,5}, 0..) |_, _| write("line\n");
 }
 
 

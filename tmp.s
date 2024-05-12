@@ -210,7 +210,7 @@ _start:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 40
+   sub rsp, 48
    lea rax, [rbp-16]
    push rax
    lea rax, .L.data.strings.6
@@ -289,6 +289,8 @@ main:
    add rsp, 8
    mov rax, -1
    mov [rbp-40], rax
+   mov rax, -1
+   mov [rbp-48], rax
 .L.continue.1:
    inc qword ptr [rbp-40]
    lea rax, [rbp-30]
@@ -301,6 +303,7 @@ main:
    mov rax, [rax]
    pop rdi
    mov [rdi], al
+   inc qword ptr [rbp-48]
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.7
