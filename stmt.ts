@@ -74,6 +74,9 @@ export class Statement {
 
     capture:Expression;
 
+    loop_var_assigns: Expression[];
+
+
     newEnum(){
         this.type = stmtType.enumdecl;
         return this;
@@ -101,10 +104,11 @@ export class Statement {
         ptr: boolean | undefined,
         array_id: Expression | undefined,
         index_var: Variable | undefined
-    }[]) {
+    }[], assigns:Expression[]) {
         this.type = stmtType.intloop;
         this.body = body;
         this.metadata = metadata;
+        this.loop_var_assigns = assigns;
         return this;
     }
 

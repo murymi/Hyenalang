@@ -1371,10 +1371,9 @@ export class Parser {
         }
 
         this.expect(tokenType.pipe, "|");
-        this.expect(tokenType.leftbrace, "{");
         beginScope();
         endScope();
-        await this.block();
+        await this.statement();
         return new Statement();
     }
 
@@ -1382,6 +1381,8 @@ export class Parser {
         if (isResolutionPass()) {
             return await this.loopRes();
         }
+
+        var assigns:Expression[] = [];
 
         var ranges: { range: Expression, range_type: rangeType, id: Expression | undefined }[] = []
         while (true) {
@@ -1391,6 +1392,11 @@ export class Parser {
             } else {
                 switch (bottom.datatype.kind) {
                     case myType.array:
+                        if(bottom.isLiteral()) {
+                            var obj = this.assignBeforeUse(bottom);
+                            bottom = obj.id;
+                            assigns.push(obj.assign);
+                        }
                         ranges.push({
                             range: new Expression().newExprRange(
                                 new Expression().newExprNumber(-1),
@@ -1470,7 +1476,7 @@ export class Parser {
 
         var body = await this.statement();
         endScope();
-        return new Statement().newIntLoop(body, metadata);
+        return new Statement().newIntLoop(body, metadata, assigns);
     }
 
     async forStatement(): Promise<Statement> {

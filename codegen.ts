@@ -378,9 +378,9 @@ function genLvalue(expr: Expression | Statement) {
 
 function assignLit(offset: number, expr: Expression) {
     expr.setters.forEach((s) => {
-        if (s.data_type.kind === myType.struct || s.data_type.kind === myType.tuple) {
+        if ((s.data_type.kind === myType.struct || s.data_type.kind === myType.tuple) && s.value.isLiteral()) {
             assignLit(s.field_offset + offset, s.value);
-        } else if (s.data_type.kind === myType.array) {
+        } else if (s.data_type.kind === myType.array && s.value.isLiteral()) {
             pop("rdi");
             console.log("   push rdi");
             console.log(`   mov qword ptr [rdi+${s.field_offset + offset}], ${s.value.datatype.arrayLen}`);
@@ -852,7 +852,10 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.intloop:
             var labeloffset = incLabel();
-
+            stmt.loop_var_assigns.forEach((lpa)=>{
+                generateCode(lpa);
+            })
+            
             stmt.metadata.forEach((m) => {
                 generateCode(m.range.left as Expression);
                 console.log(`   mov [rbp-${m.counter.offset}], rax`)
@@ -908,6 +911,9 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log("   jge .L.break." + labeloffset);
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
+            break;
+        case stmtType.defer:
+            genStmt(stmt.then, fnid);
             break;
         case stmtType.enumdecl:
         case stmtType.structdecl:

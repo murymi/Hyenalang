@@ -105,6 +105,10 @@ export class Expression {
 
     setters:{ field_offset:number,data_type:Type, value:Expression }[];
 
+    isLiteral():boolean {
+        return this.type === exprType.array_literal || this.type === exprType.struct_literal;
+    }
+
     arrayLiteral(setters:{ field_offset:number,data_type:Type, value:Expression }[], data_type:Type) {
         this.datatype = data_type;
         this.setters = setters;

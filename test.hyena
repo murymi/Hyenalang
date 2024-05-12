@@ -6,12 +6,7 @@ struct Foo {
 fn main() void {
     var a  = "q";
 
-    switch("".len) {
-        1 => {
-            write("one\n");
-        },
-        else => write("else\n");
-    }
+    for([]i32{1,2,3,4,5}) |c| defer write("line\n");
 }
 
 

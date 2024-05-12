@@ -11,36 +11,52 @@
    .quad offset .L.data.bytes.0 + 8
 .align 8
 .L.data.bytes.1:
-   .quad 0
-   .byte 0
-.align 8
-.L.data.strings.1:
-   .quad 0
-   .quad offset .L.data.bytes.1 + 8
-.align 8
-.L.data.bytes.2:
-   .quad 4
-   .byte 0x6f 
+   .quad 5
+   .byte 0x6c 
+   .byte 0x69 
    .byte 0x6e 
    .byte 0x65 
    .byte 0xa 
    .byte 0
 .align 8
+.L.data.strings.1:
+   .quad 5
+   .quad offset .L.data.bytes.1 + 8
+.align 8
+.L.data.bytes.2:
+   .quad 9
+   .byte 0x74 
+   .byte 0x65 
+   .byte 0x73 
+   .byte 0x74 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x6f 
+   .byte 0x6b 
+   .byte 0xa 
+   .byte 0
+.align 8
 .L.data.strings.2:
-   .quad 4
+   .quad 9
    .quad offset .L.data.bytes.2 + 8
 .align 8
 .L.data.bytes.3:
-   .quad 5
+   .quad 11
+   .byte 0x74 
    .byte 0x65 
-   .byte 0x6c 
    .byte 0x73 
-   .byte 0x65 
+   .byte 0x74 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x66 
+   .byte 0x61 
+   .byte 0x69 
+   .byte 0x6c 
    .byte 0xa 
    .byte 0
 .align 8
 .L.data.strings.3:
-   .quad 5
+   .quad 11
    .quad offset .L.data.bytes.3 + 8
 .align 8
 .L.data.bytes.4:
@@ -80,154 +96,98 @@
    .quad offset .L.data.bytes.5 + 8
 .align 8
 .L.data.bytes.6:
-   .quad 9
-   .byte 0x74 
-   .byte 0x65 
-   .byte 0x73 
-   .byte 0x74 
-   .byte 0x3a 
-   .byte 0x20 
-   .byte 0x6f 
-   .byte 0x6b 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.6:
-   .quad 9
-   .quad offset .L.data.bytes.6 + 8
-.align 8
-.L.data.bytes.7:
-   .quad 11
-   .byte 0x74 
-   .byte 0x65 
-   .byte 0x73 
-   .byte 0x74 
-   .byte 0x3a 
-   .byte 0x20 
-   .byte 0x66 
-   .byte 0x61 
-   .byte 0x69 
-   .byte 0x6c 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.7:
-   .quad 11
-   .quad offset .L.data.bytes.7 + 8
-.align 8
-.L.data.bytes.8:
    .quad 1
    .byte 0x71 
    .byte 0
 .align 8
-.L.data.strings.8:
+.L.data.strings.6:
    .quad 1
-   .quad offset .L.data.bytes.8 + 8
+   .quad offset .L.data.bytes.6 + 8
 .align 8
-.L.data.bytes.9:
-   .quad 0
-   .byte 0
-.align 8
-.L.data.strings.9:
-   .quad 0
-   .quad offset .L.data.bytes.9 + 8
-.align 8
-.L.data.bytes.10:
-   .quad 4
-   .byte 0x6f 
+.L.data.bytes.7:
+   .quad 5
+   .byte 0x6c 
+   .byte 0x69 
    .byte 0x6e 
    .byte 0x65 
    .byte 0xa 
    .byte 0
 .align 8
+.L.data.strings.7:
+   .quad 5
+   .quad offset .L.data.bytes.7 + 8
+.align 8
+.L.data.bytes.8:
+   .quad 9
+   .byte 0x74 
+   .byte 0x65 
+   .byte 0x73 
+   .byte 0x74 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x6f 
+   .byte 0x6b 
+   .byte 0xa 
+   .byte 0
+.align 8
+.L.data.strings.8:
+   .quad 9
+   .quad offset .L.data.bytes.8 + 8
+.align 8
+.L.data.bytes.9:
+   .quad 11
+   .byte 0x74 
+   .byte 0x65 
+   .byte 0x73 
+   .byte 0x74 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x66 
+   .byte 0x61 
+   .byte 0x69 
+   .byte 0x6c 
+   .byte 0xa 
+   .byte 0
+.align 8
+.L.data.strings.9:
+   .quad 11
+   .quad offset .L.data.bytes.9 + 8
+.align 8
+.L.data.bytes.10:
+   .quad 9
+   .byte 0x74 
+   .byte 0x65 
+   .byte 0x73 
+   .byte 0x74 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x6f 
+   .byte 0x6b 
+   .byte 0xa 
+   .byte 0
+.align 8
 .L.data.strings.10:
-   .quad 4
+   .quad 9
    .quad offset .L.data.bytes.10 + 8
 .align 8
 .L.data.bytes.11:
-   .quad 5
+   .quad 11
+   .byte 0x74 
    .byte 0x65 
-   .byte 0x6c 
    .byte 0x73 
-   .byte 0x65 
+   .byte 0x74 
+   .byte 0x3a 
+   .byte 0x20 
+   .byte 0x66 
+   .byte 0x61 
+   .byte 0x69 
+   .byte 0x6c 
    .byte 0xa 
    .byte 0
 .align 8
 .L.data.strings.11:
-   .quad 5
+   .quad 11
    .quad offset .L.data.bytes.11 + 8
-.align 8
-.L.data.bytes.12:
-   .quad 9
-   .byte 0x74 
-   .byte 0x65 
-   .byte 0x73 
-   .byte 0x74 
-   .byte 0x3a 
-   .byte 0x20 
-   .byte 0x6f 
-   .byte 0x6b 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.12:
-   .quad 9
-   .quad offset .L.data.bytes.12 + 8
-.align 8
-.L.data.bytes.13:
-   .quad 11
-   .byte 0x74 
-   .byte 0x65 
-   .byte 0x73 
-   .byte 0x74 
-   .byte 0x3a 
-   .byte 0x20 
-   .byte 0x66 
-   .byte 0x61 
-   .byte 0x69 
-   .byte 0x6c 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.13:
-   .quad 11
-   .quad offset .L.data.bytes.13 + 8
-.align 8
-.L.data.bytes.14:
-   .quad 9
-   .byte 0x74 
-   .byte 0x65 
-   .byte 0x73 
-   .byte 0x74 
-   .byte 0x3a 
-   .byte 0x20 
-   .byte 0x6f 
-   .byte 0x6b 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.14:
-   .quad 9
-   .quad offset .L.data.bytes.14 + 8
-.align 8
-.L.data.bytes.15:
-   .quad 11
-   .byte 0x74 
-   .byte 0x65 
-   .byte 0x73 
-   .byte 0x74 
-   .byte 0x3a 
-   .byte 0x20 
-   .byte 0x66 
-   .byte 0x61 
-   .byte 0x69 
-   .byte 0x6c 
-   .byte 0xa 
-   .byte 0
-.align 8
-.L.data.strings.15:
-   .quad 11
-   .quad offset .L.data.bytes.15 + 8
 .bss
 .data
 .align 8
@@ -250,10 +210,10 @@ _start:
 main:
    push rbp
    mov rbp, rsp
-   sub rsp, 16
+   sub rsp, 56
    lea rax, [rbp-16]
    push rax
-   lea rax, .L.data.strings.8
+   lea rax, .L.data.strings.6
    pop rdi
    mov cl, [rax+0]
    mov [rdi+0], cl
@@ -287,30 +247,73 @@ main:
    mov [rdi+14], cl
    mov cl, [rax+15]
    mov [rdi+15], cl
-   lea rax, .L.data.strings.9
-   add rax, 0
+   lea rax, [rbp-44]
+   mov qword ptr [rax], 5
+   add rax, 8
+   push rax
+   pop rdi
+   push rdi
+   add rdi, 0
+   push rdi
+   mov rax, 1
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 4
+   push rdi
+   mov rax, 2
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 8
+   push rdi
+   mov rax, 3
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 12
+   push rdi
+   mov rax, 4
+   pop rdi
+   mov [rdi], eax
+   pop rdi
+   push rdi
+   add rdi, 16
+   push rdi
+   mov rax, 5
+   pop rdi
+   mov [rdi], eax
+   add rsp, 8
+   mov rax, -1
+   mov [rbp-56], rax
+.L.continue.1:
+   inc qword ptr [rbp-56]
+   lea rax, [rbp-48]
+   push rax
+   lea rax, [rbp-44]
+   mov rdi, qword ptr [rbp-56]
+   imul rdi, 4
+   add rdi, 8
+   add rax, rdi
    mov rax, [rax]
-   cmp rax, 1
-   je .L.1.p.0
-   jmp .L.1.p.else
-.L.1.p.0:
+   pop rdi
+   mov [rdi], eax
    lea rax, [write]
    push rax
-   lea rax, .L.data.strings.10
+   lea rax, .L.data.strings.7
    push rax
    pop rdi
    pop rax
    call rax
-   jmp .L.end.1
-.L.1.p.else:
-   lea rax, [write]
-   push rax
-   lea rax, .L.data.strings.11
-   push rax
-   pop rdi
-   pop rax
-   call rax
-.L.end.1:
+   mov rax, 5
+   dec rax
+   cmp [rbp-56], rax
+   jge .L.break.1
+   jmp .L.continue.1
+.L.break.1:
 .L.endfn.0:
    mov rsp, rbp
    pop rbp
@@ -346,7 +349,7 @@ test:
    je .L.else.4
    lea rax, [write]
    push rax
-   lea rax, .L.data.strings.12
+   lea rax, .L.data.strings.8
    push rax
    pop rdi
    pop rax
@@ -355,7 +358,7 @@ test:
 .L.else.4:
    lea rax, [write]
    push rax
-   lea rax, .L.data.strings.13
+   lea rax, .L.data.strings.9
    push rax
    pop rdi
    pop rax
@@ -386,7 +389,7 @@ test_eql:
    je .L.else.6
    lea rax, [write]
    push rax
-   lea rax, .L.data.strings.14
+   lea rax, .L.data.strings.10
    push rax
    pop rdi
    pop rax
@@ -395,7 +398,7 @@ test_eql:
 .L.else.6:
    lea rax, [write]
    push rax
-   lea rax, .L.data.strings.15
+   lea rax, .L.data.strings.11
    push rax
    pop rdi
    pop rax
