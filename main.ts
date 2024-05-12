@@ -164,7 +164,7 @@ export function incLocalOffset(name: string, type: Type, token:undefined|Token, 
         return globals[globals.length - 1];
     }
 
-    checkVariableInCurrScope(name, token);
+    checkVariableInCurrScope(name, token as Token);
     return addVariableInFn(name, type,token);
 }
 
