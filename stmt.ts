@@ -129,8 +129,9 @@ export class Statement {
         return this;
     }
 
-    newIfStatement(cond: Expression, then: Statement, else_: Statement | undefined): Statement {
+    newIfStatement(cond: Expression, then: Statement, else_: Statement | undefined, assign:Expression|undefined): Statement {
         this.type = stmtType.ifStmt;
+        this.initializer = assign;
         this.then = then;
         this.else_ = else_;
         this.cond = cond;

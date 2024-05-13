@@ -716,6 +716,9 @@ function genStmt(stmt: Statement, fnid: number): void {
             break
         case stmtType.ifStmt:
             var labeloffset = incLabel();
+            if(stmt.initializer) {
+                generateCode(stmt.initializer);
+            }
             generateCode(stmt.cond);
             console.log("   cmp rax, 0");
             console.log("   je .L.else." + labeloffset);

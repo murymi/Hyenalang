@@ -185,8 +185,8 @@ export class Parser {
         return expr;
     }
 
-    assignBeforeUse(val: Expression): { assign: Expression, id: Expression } {
-        var variable = incLocalOffset("", val.datatype, undefined);
+    assignBeforeUse(val: Expression, name = ""): { assign: Expression, id: Expression } {
+        var variable = incLocalOffset(name, val.datatype, undefined);
         var id = new Expression().newExprIdentifier(variable);
         if (val.type === exprType.call && val.datatype.size > 8) {
             val.params.splice(0, 0, new Expression().newExprAddress(id));
@@ -1110,13 +1110,30 @@ export class Parser {
     async ifStatement(): Promise<Statement> {
         this.expect(tokenType.leftparen, "( after if");
         var cond = await this.expression();
+        if(cond.datatype.isInteger() || cond.datatype.isPtr()) {} else {
+            if(!isResolutionPass()) {
+                console.error(cond.datatype);
+                tokenError("Expression should be bool, ptr or int", this.previous());
+            }
+        }
         this.expect(tokenType.rightparen, ") after condition");
+        beginScope();
+        var assign:Expression|undefined = undefined;
+        if(this.match([tokenType.pipe])) {
+            var captok = this.expect(tokenType.identifier, "capture");
+            var cap_name = captok.value as string;
+            var obj = this.assignBeforeUse(cond, cap_name);
+            cond = obj.id;
+            assign = obj.assign;
+            this.expect(tokenType.pipe,"|");
+        }
         var then = await this.statement();
         var else_: Statement | undefined = undefined;
         if (this.match([tokenType.else])) {
             else_ = await this.statement();
         }
-        return new Statement().newIfStatement(cond, then, else_);
+        endScope();
+        return new Statement().newIfStatement(cond, then, else_, assign);
     }
 
     async switchEnum(tgu: Expression): Promise<Statement> {
