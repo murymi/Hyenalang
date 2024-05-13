@@ -649,22 +649,23 @@ function generateCode(expr: Expression) {
             for (let i = expr.params.length - 1; i >= 0; i--) {
                 pop(argRegisters[i]);
             }
+
             if (expr.callee.datatype.fn_type === fnType.native) {
                 pop("rax");
                 console.log("   call rax");
             } else {
-                pop("rdi");
+                pop("r15");
                 var label = incLabel();
                 console.log(`   mov rax, rsp`);
                 console.log(`   and rax, 15`);
                 console.log(`   jnz .L.call.${label}`);
-                console.log(`   mov rax, 0`);
-                console.log(`   call rdi`);
+                console.log(`   xor rax, rax`);
+                console.log(`   call r15`);
                 console.log(`   jmp .L.end.${label}`);
                 console.log(`.L.call.${label}:`)
                 console.log(`   sub rsp, 8`);
-                console.log(`   mov rax, 0`);
-                console.log(`   call rdi`);
+                console.log(`   xor rax, rax`);
+                console.log(`   call r15`);
                 console.log(`   add rsp, 8`);
                 console.log(`.L.end.${label}:`);
             }
@@ -855,7 +856,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             stmt.loop_var_assigns.forEach((lpa)=>{
                 generateCode(lpa);
             })
-            
+
             stmt.metadata.forEach((m) => {
                 generateCode(m.range.left as Expression);
                 console.log(`   mov [rbp-${m.counter.offset}], rax`)
