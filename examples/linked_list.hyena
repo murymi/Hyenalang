@@ -1,0 +1,149 @@
+extern fn malloc(n:u64) *void;
+extern fn free(ptr:*void) void;
+
+struct Node {
+    next:*Node,
+    value:u64
+}
+
+impl Node {
+    init(value:u64) *Node {
+        var ptr = cast(*Node) malloc(sizeof(Node));
+        ptr.* = Node {.value = value, .next = null };
+        return ptr;
+    }
+
+    next_node(self:*Node) *Node {
+        return self.next;
+    }
+}
+
+struct LinkedList {
+    head:*Node,
+    size:u64
+}
+
+impl LinkedList {
+    init() LinkedList {
+        return LinkedList {.head = null, .size = 0 };
+    }
+
+    // insert a Node at the end of the list
+    append(self:*LinkedList, value:u64) void {
+        if(self.head == null) {
+            self.head = Node::init(value);
+            self.size += 1;
+            return;
+        }
+
+        var tmp = self.head;
+
+        while(tmp.next) tmp = tmp.next_node();
+        tmp.next = Node::init(value);
+        self.size += 1;
+    }
+
+    // get node at any index
+    at(self:*LinkedList, pos:u64) *Node {
+        if(pos >= self.size) {
+            write("index out of bounds\n");
+            return null;
+        }
+        var tmp = self.head;
+        for(0..pos) |_| {
+            tmp = tmp.next_node();
+        }
+        return tmp;
+    }
+
+    // delete and return deleted node
+    delete(self:*LinkedList, pos:u64) *Node {
+        if(pos >= self.size) {
+            write("index out of bounds\n");
+            return null;
+        }
+        var tmp = self.head;
+        for(0..pos-1) |_| tmp = tmp.next_node();
+        var to_delete = tmp.next_node();
+        tmp.next = tmp.next.next_node();
+        self.size -= 1;
+        return to_delete;
+    }
+
+    insert(self:*LinkedList, pos:u64, value:u64) void {
+        if(pos == 0) {
+            var new_head = Node::init(value);
+            new_head.next = self.head;
+            self.head = new_head;
+            test_eql(self.head, new_head);
+            test_eql(new_head.next_node().value, 20);
+            return;
+        }
+
+        if(pos >= self.size) {
+            self.append(value);
+            return;
+        }
+
+        var tmp = self.head;
+        for(0..pos-1) |_| tmp = tmp.next_node();
+        var next_next = tmp.next_node();
+        tmp.next = Node::init(value);
+        tmp.next.next = next_next;
+        self.size += 1;
+    }
+}
+
+fn main() void {
+    var my_list = LinkedList::init();
+    test_eql(my_list.size, 0);
+    my_list.append(20);
+    test_eql(my_list.size, 1);
+    test_eql(my_list.head.value, 20);
+    my_list.append(30);
+    my_list.append(40);
+    my_list.append(50);
+    my_list.append(60);
+    my_list.append(70);
+
+    test_eql(my_list.size, 6);
+    test_eql(my_list.head.next.value, 30);
+    var n = my_list.at(1);
+    if(n) test_eql(n.value, 30);
+    test_eql(my_list.at(2).value, 40);
+    var deleted = my_list.delete(2);
+    test_eql(deleted.value, 40);
+    free(deleted);
+    test_eql(my_list.size, 5);
+    test_eql(my_list.at(2).value, 50);
+    my_list.insert(0, 8);
+    test_eql(my_list.at(0).value, 8);
+}
+
+
+fn write(data:&u8) void {
+    asm {
+        "mov rsi, [rdi+8]"
+        "mov rdx, [rdi +0]"
+        "mov rdi, 1"
+        "mov rax, 1"
+        "syscall"
+    }
+}
+
+
+fn test(a:bool) void {
+    if(a) {
+        write("test: ok\n");
+    } else {
+        write("test: fail\n");
+    }
+}
+
+fn test_eql(a:bool, b:bool) void {
+    if(a == b) {
+        write("test: ok\n");
+    } else {
+        write("test: fail\n");
+    }
+}
