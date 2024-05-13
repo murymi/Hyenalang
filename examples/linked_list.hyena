@@ -16,6 +16,10 @@ impl Node {
     next_node(self:*Node) *Node {
         return self.next;
     }
+
+    delete(self:*Node) void {
+        free(self);
+    }
 }
 
 struct LinkedList {
@@ -113,7 +117,7 @@ fn main() void {
     test_eql(my_list.at(2).value, 40);
     var deleted = my_list.delete(2);
     test_eql(deleted.value, 40);
-    free(deleted);
+    deleted.delete();
     test_eql(my_list.size, 5);
     test_eql(my_list.at(2).value, 50);
     my_list.insert(0, 8);
