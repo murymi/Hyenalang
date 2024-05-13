@@ -1,11 +1,17 @@
-struct Foo {
-    string:&u8
+extern fn malloc() *void;
+
+struct Node {
+    number:**Node, // size = 8
+    nnr:*Node, // size = 8
+    next:*Node, // size = 8
+    n:*Node, // size = 8
+    cow:u32
 }
 
 
 fn main() void {
     var a = 80;
-    a = '3';
+    a = sizeof(a);
 }
 
 

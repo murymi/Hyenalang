@@ -174,10 +174,10 @@ main:
    mov [rdi], eax
    lea rax, [rbp-4]
    push rax
-   mov rax, 51
+   mov rax, 4
    pop rdi
    mov [rdi], eax
-.L.endfn.0:
+.L.endfn.1:
    mov rsp, rbp
    pop rbp
    ret
@@ -195,7 +195,7 @@ write:
    mov rax, 1
    syscall
 # [end]
-.L.endfn.1:
+.L.endfn.2:
    mov rsp, rbp
    pop rbp
    ret
@@ -209,7 +209,7 @@ test:
    lea rax, [rbp-1]
    movsx rax, byte ptr [rax]
    cmp rax, 0
-   je .L.else.3
+   je .L.else.4
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.4
@@ -217,8 +217,8 @@ test:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.3
-.L.else.3:
+   jmp .L.end.4
+.L.else.4:
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.5
@@ -226,8 +226,8 @@ test:
    pop rdi
    pop rax
    call rax
-.L.end.3:
-.L.endfn.2:
+.L.end.4:
+.L.endfn.3:
    mov rsp, rbp
    pop rbp
    ret
@@ -249,7 +249,7 @@ test_eql:
    sete al
    movzb rax, al
    cmp rax, 0
-   je .L.else.5
+   je .L.else.6
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.6
@@ -257,8 +257,8 @@ test_eql:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.5
-.L.else.5:
+   jmp .L.end.6
+.L.else.6:
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.7
@@ -266,8 +266,8 @@ test_eql:
    pop rdi
    pop rax
    call rax
-.L.end.5:
-.L.endfn.4:
+.L.end.6:
+.L.endfn.5:
    mov rsp, rbp
    pop rbp
    ret

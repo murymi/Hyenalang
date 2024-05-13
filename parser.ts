@@ -17,7 +17,7 @@ import {
     resetCurrentFunction,
     setCurrentFuction
 } from "./main";
-import { Type, alignTo, argv, bool, f32, getEnum, getOffsetOfMember, i16, i32, i64, i8, myType, popModule, pushEnum, pushModule, pushStructType, searchStruct, u16, u32, u64, u8, voidtype } from "./type";
+import { Type, alignTo, argv, bool, f32, getEnum, getOffsetOfMember, i16, i32, i64, i8, myType, popModule, pushEnum, pushModule, pushStructType, searchStruct, self_ref, u16, u32, u64, u8, voidtype } from "./type";
 import { relative } from "node:path";
 import { cwd } from "node:process";
 
@@ -245,7 +245,7 @@ export class Parser {
 
     async arrayLiteralRes(): Promise<Expression> {
         this.expect(tokenType.rightsquare, "]");
-        this.parseType(false);
+        this.parseType();
         this.expect(tokenType.leftbrace, "{");
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
@@ -261,7 +261,7 @@ export class Parser {
     async arrayLiteral(): Promise<Expression> {
         if (isResolutionPass()) return this.arrayLiteralRes();
         this.expect(tokenType.rightsquare, "]");
-        var base = this.parseType(false);
+        var base = this.parseType();
         this.expect(tokenType.leftbrace, "{");
         var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
         var offset = 0;
@@ -430,44 +430,42 @@ export class Parser {
             return new Expression().newExprNull();
         }
 
-        if (this.match([tokenType.at])) {
-            var what = this.expect(tokenType.identifier, "expect option");
-            this.expect(tokenType.leftparen, "(");
+        if (this.match([tokenType.sizeof])) {
             var ex: Expression | undefined = undefined;
-            switch (what.value) {
-                case "sizeof":
-                    if (this.check(tokenType.identifier)) {
-                        if (this.isTypeId(this.peek().value as string)) {
-                            ex = new Expression().newExprNumber(this.parseType(false).size);
-                        } else {
-                            var size = (await this.expression()).datatype.size;
-                            ex = new Expression().newExprNumber(size);
-                        }
-                    } else if (this.check(tokenType.number)) {
-                        var size = (await this.expression()).datatype.size;
-                        ex = new Expression().newExprNumber(size);
-                    } else {
-                        ex = new Expression().newExprNumber(this.parseType(false).size);
-                    }
-                    break;
-                case "alignof":
-                    if (this.check(tokenType.identifier)) {
-                        if (this.isTypeId(this.peek().value as string)) {
-                            ex = new Expression().newExprNumber(this.parseType(false).align);
-                        } else {
-                            var size = (await this.expression()).datatype.align;
-                            ex = new Expression().newExprNumber(size);
-                        }
-                    } else if (this.check(tokenType.number)) {
-                        var size = (await this.expression()).datatype.align;
-                        ex = new Expression().newExprNumber(size);
-                    } else {
-                        ex = new Expression().newExprNumber(this.parseType(false).align);
-                    }
-                    break;
-                    break;
-                default:
-                    tokenError("unknown expression", what);
+            this.expect(tokenType.leftparen, "(");
+            if (this.check(tokenType.identifier)) {
+                if (this.isTypeId(this.peek().value as string)) {
+                    ex = new Expression().newExprNumber(this.parseType().size);
+                } else {
+                    var size = (await this.expression()).datatype.size;
+                    ex = new Expression().newExprNumber(size);
+                }
+            } else if (this.check(tokenType.number)) {
+                var size = (await this.expression()).datatype.size;
+                ex = new Expression().newExprNumber(size);
+            } else {
+                ex = new Expression().newExprNumber(this.parseType().size);
+            }
+            this.expect(tokenType.rightparen, ")");
+            return ex as Expression;
+        }
+
+
+        if (this.match([tokenType.alignof])) {
+            var ex: Expression | undefined = undefined;
+            this.expect(tokenType.leftparen, "(");
+            if (this.check(tokenType.identifier)) {
+                if (this.isTypeId(this.peek().value as string)) {
+                    ex = new Expression().newExprNumber(this.parseType().align);
+                } else {
+                    var size = (await this.expression()).datatype.align;
+                    ex = new Expression().newExprNumber(size);
+                }
+            } else if (this.check(tokenType.number)) {
+                var size = (await this.expression()).datatype.align;
+                ex = new Expression().newExprNumber(size);
+            } else {
+                ex = new Expression().newExprNumber(this.parseType().align);
             }
             this.expect(tokenType.rightparen, ")");
             return ex as Expression;
@@ -840,7 +838,7 @@ export class Parser {
     async cast(): Promise<Expression> {
         if (this.match([tokenType.cast])) {
             this.expect(tokenType.leftparen, "(");
-            var type = this.parseType(false);
+            var type = this.parseType();
             this.expect(tokenType.rightparen, ")");
             var expr = await this.cast();
             expr.datatype = type;
@@ -1554,21 +1552,21 @@ export class Parser {
         return this.ExprStatement();
     }
 
-    parseType(is_template: boolean, holders?: string[]): Type {
+    parseType(curr_struct?: string): Type {
         if (this.match([tokenType.leftsquare])) {
             var len = this.expect(tokenType.number, "Expect size of array").value;
             this.expect(tokenType.rightsquare, "] expected");
-            var base = this.parseType(is_template, holders);
+            var base = this.parseType(curr_struct);
             return new Type().newArray(base, len as number);
         }
 
         if (this.match([tokenType.bitand])) {
-            return new Type().newSlice(this.parseType(is_template, holders));
+            return new Type().newSlice(this.parseType(curr_struct));
         }
-
+        var prev = this.previous();
         var tok = this.advance();
         if (tok.type === tokenType.multiply) {
-            return new Type().newPointer(this.parseType(is_template, holders));
+            return new Type().newPointer(this.parseType(curr_struct));
         }
 
 
@@ -1606,12 +1604,19 @@ export class Parser {
                 if (en) {
                     return en;
                 }
-                if (is_template) {
-                    if (holders?.find((h) => h === tok.value)) return new Type().newTemp(tok.value as string);
-                }
+
                 var tbn = Type.getTypeByName(tok.value as string)
                 if (tbn) {
                     return tbn;
+                }
+
+                if (curr_struct) {
+                    if (tok.value === curr_struct) {
+                        if(prev.type === tokenType.rightsquare) {
+                            tokenError(`Attempt to declare recursive struct`, tok);
+                        }
+                        return self_ref;
+                    }
                 }
                 tokenError("Undefined Type", tok);
                 break;
@@ -1647,7 +1652,7 @@ export class Parser {
         var initializer: Expression;
         var type: Type | undefined = undefined;
         if (this.match([tokenType.colon])) {
-            type = this.parseType(is_template, holders)
+            type = this.parseType();
         }
         var eq = this.expect(tokenType.equal, "var initializer");
         initializer = await this.rvalue();
@@ -1691,7 +1696,7 @@ export class Parser {
                 var paramname = this.expect(tokenType.identifier, "param name");
 
                 this.expect(tokenType.colon, "Expect : after name");
-                var type = this.parseType(false);
+                var type = this.parseType();
 
                 params.push({ name: paramname.value as string, datatype: type, module_name: "" });
                 if (!this.check(tokenType.comma)) break;
@@ -1699,7 +1704,7 @@ export class Parser {
             }
         }
         this.expect(tokenType.rightparen, ") after params");
-        var type = this.parseType(false);
+        var type = this.parseType();
         this.expect(tokenType.semicolon, ";");
         pushFunction(name.value as string, params, fnType.extern, type);
         return new Statement().newExternFnStatement(name.value as string, params);
@@ -1716,7 +1721,7 @@ export class Parser {
                 var paramname = this.expect(tokenType.identifier, "param name");
 
                 this.expect(tokenType.colon, "Expect : after name");
-                var type = this.parseType(false);
+                var type = this.parseType();
 
                 params.push({ name: paramname.value as string, datatype: type, module_name: "" });
                 if (!this.check(tokenType.comma)) break;
@@ -1724,7 +1729,7 @@ export class Parser {
             }
         }
         this.expect(tokenType.rightparen, ") after params");
-        var type = this.parseType(false);
+        var type = this.parseType();
         var curr_fn = pushFunction(name, params, fnType.native, type);
         if (this.match([tokenType.semicolon])) {
             return new Statement().newNativeFnStatement(name as string);
@@ -1751,7 +1756,7 @@ export class Parser {
                 var field_tok = this.expect(tokenType.identifier, "field name");
                 var field_name = field_tok.value as string;
                 this.expect(tokenType.colon, ":");
-                var field_type = this.parseType(false);
+                var field_type = this.parseType();
                 strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
                 enumvalues.push({ name: field_name, value: new Expression().newExprNumber(i) });
                 i++;
@@ -1795,7 +1800,7 @@ export class Parser {
                 }
                 handled.push(field_name);
                 this.expect(tokenType.colon, ":");
-                var field_type = this.parseType(false);
+                var field_type = this.parseType();
                 strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
                 if (!this.match([tokenType.comma])) break;
             }
@@ -1813,10 +1818,13 @@ export class Parser {
     }
 
     structDeclaration(isunion: boolean): Statement {
+        var first_pass = true;
+
         if (this.match([tokenType.leftparen])) {
             return this.taggedUnionDeclaration();
         }
 
+        var struc: Type | undefined = undefined;
         var name_tok = this.expect(tokenType.identifier, "expect struct or union name")
         var name = name_tok.value as string;
         this.expect(tokenType.leftbrace, "Expect struct body");
@@ -1826,9 +1834,16 @@ export class Parser {
             var member: { name: string, datatype: Type, default: Expression | undefined } = { name: "", datatype: u8, default: undefined };
             member.name = this.expect(tokenType.identifier, "Expect member name").value as string;
             this.expect(tokenType.colon, "expect : after name");
-            member.datatype = this.parseType(false);
 
+            if(this.peek().type === tokenType.identifier) {
+                if(this.peek().value === name) {
+                    tokenError(`Attempt to declare recursive struct`, this.peek());
+                }
+            }
+
+            member.datatype = this.parseType(name);
             strucmembers.push(member);
+
             if (this.check(tokenType.comma)) {
                 this.advance();
             } else {
@@ -1838,7 +1853,19 @@ export class Parser {
         }
 
         this.expect(tokenType.rightbrace, "Expect } after struct body");
-        if (isResolutionPass()) pushStructType(isunion ? new Type().newUnion(name, strucmembers) : new Type().newStruct(name, strucmembers), name_tok)
+
+
+        if (isunion) {
+            struc = new Type().newUnion(name, strucmembers)
+        } else {
+            struc = new Type().newStruct(name, strucmembers)
+        }
+
+        struc.replaceSelfRef()
+
+
+        if (isResolutionPass() ) pushStructType(struc, name_tok);
+
         return new Statement().newStructDeclStatement();
     }
 

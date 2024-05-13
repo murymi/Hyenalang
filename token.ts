@@ -105,6 +105,8 @@ export enum tokenType {
     argv,
     bslash,
     qmark,
+    sizeof,
+    alignof,
     eof
 };
 
@@ -287,7 +289,9 @@ export class Lexer {
             defer: tokenType.defer,
             null: tokenType.null,
             cast: tokenType.cast,
-            argv: tokenType.argv
+            argv: tokenType.argv,
+            sizeof: tokenType.sizeof,
+            alignof: tokenType.alignof
         }
     }
 

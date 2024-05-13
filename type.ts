@@ -466,6 +466,33 @@ export class Type {
     eql(t:Type):boolean{
         return this.toString() === t.toString();
     }
+
+    selfRefReplace(t:Type, curr:Type) {
+        if(t.kind === myType.ptr || t.kind === myType.array) {
+            if(t.base === self_ref) {
+                t.base = curr;
+            } else {
+                this.selfRefReplace(t.base, curr);
+            }
+        }
+    }
+
+    replaceSelfRef() {
+        if(this.kind !== myType.struct) return;
+
+        this.members.forEach((m)=>{
+            if(m.type === self_ref) {
+                m.type = this;
+            }
+
+            if(m.type.kind === myType.ptr || m.type.kind === myType.array) {
+                this.selfRefReplace(m.type, this);
+            }
+        })
+
+        //console.error(this.members[0].type.base.base, isResolutionPass());
+    }
+
     constructor() {
     }
 }
@@ -485,3 +512,4 @@ export var f32 = new Type().newType(myType.f32, 4, 4);
 export var enm = new Type().newType(myType.enum, 4, 4);
 export var nullptr = new Type().newPointer(voidtype);
 export var argv = new Type().newPointer(voidtype);
+export var self_ref = new Type().newPointer(voidtype);
