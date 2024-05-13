@@ -402,6 +402,8 @@ export class Type {
                 return "tuple";
             case myType.array:
                 return `[${this.arrayLen}]`+this.base.toString();
+            case myType.slice:
+                return "&"+this.base.toString();
             default:
                 throw new Error("Unhandled type");
         }

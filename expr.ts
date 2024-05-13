@@ -180,8 +180,8 @@ export class Expression {
     }
 
     newExprSet(expr: Expression, assign:Expression, token:Token):Expression{
-        if(!expr.datatype.eql(assign.datatype) && !isResolutionPass()) {
-            if(expr.datatype.isInteger() && assign.type === exprType.number) {} else {
+        if(!expr.datatype.eql(assign.datatype) && !isResolutionPass() && assign.type !== exprType.undefnd) {
+            if(expr.datatype.isInteger() && assign.datatype.isInteger()) {} else {
                 tokenError(`Expected ${expr.datatype.toString()} found ${assign.datatype.toString()}`, token);
             }
         }
@@ -246,8 +246,8 @@ export class Expression {
     }
 
     newExprAssign(left:Expression, val:Expression, token:Token):Expression{
-        if(!left.datatype.eql(val.datatype) && !isResolutionPass()) {
-            if(left.datatype.isInteger() && val.type === exprType.number) {} else {
+        if(!left.datatype.eql(val.datatype) && !isResolutionPass() && val.type !== exprType.undefnd) {
+            if(left.datatype.isInteger() && val.datatype.isInteger()) {} else {
                 tokenError(`Expected ${left.datatype.toString()} found ${val.datatype.toString()}`, token);
             }
         }
