@@ -1,6 +1,3 @@
-extern fn malloc(n:u64) *void;
-extern fn free(ptr:*void) void;
-
 struct Node {
     next:*Node,
     value:u64
