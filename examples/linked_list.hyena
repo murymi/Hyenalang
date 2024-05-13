@@ -151,3 +151,7 @@ fn test_eql(a:bool, b:bool) void {
         write("test: fail\n");
     }
 }
+
+extern fn malloc(n:u64) *void;
+extern fn free(ptr:*void) void;
+extern fn exit(status:u64) void;
