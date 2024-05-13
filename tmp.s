@@ -532,6 +532,11 @@ LinkedListat:
    mov rax, -1
    mov [rbp-32], rax
 .L.continue.11:
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   dec rax
+   cmp [rbp-32], rax
+   jge .L.break.11
    inc qword ptr [rbp-32]
    lea rax, [rbp-24]
    push rax
@@ -545,11 +550,6 @@ LinkedListat:
    call rax
    pop rdi
    mov [rdi], rax
-   lea rax, [rbp-16]
-   mov rax, [rax]
-   dec rax
-   cmp [rbp-32], rax
-   jge .L.break.11
    jmp .L.continue.11
 .L.break.11:
    lea rax, [rbp-24]
@@ -603,6 +603,15 @@ LinkedListdelete:
    mov rax, -1
    mov [rbp-32], rax
 .L.continue.14:
+   mov rax, 1
+   push rax
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   pop rdi
+   sub rax, rdi
+   dec rax
+   cmp [rbp-32], rax
+   jge .L.break.14
    inc qword ptr [rbp-32]
    lea rax, [rbp-24]
    push rax
@@ -616,15 +625,6 @@ LinkedListdelete:
    call rax
    pop rdi
    mov [rdi], rax
-   mov rax, 1
-   push rax
-   lea rax, [rbp-16]
-   mov rax, [rax]
-   pop rdi
-   sub rax, rdi
-   dec rax
-   cmp [rbp-32], rax
-   jge .L.break.14
    jmp .L.continue.14
 .L.break.14:
    lea rax, [rbp-40]
@@ -673,6 +673,212 @@ LinkedListdelete:
    mov rax, [rax]
    jmp .L.endfn.12
 .L.endfn.12:
+   mov rsp, rbp
+   pop rbp
+   ret
+
+.global LinkedListinsert
+LinkedListinsert:
+   push rbp
+   mov rbp, rsp
+   sub rsp, 56
+   mov [rbp-8], rdi
+   mov [rbp-16], rsi
+   mov [rbp-24], rdx
+   mov rax, 0
+   push rax
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   pop rdi
+   cmp rax, rdi
+   sete al
+   movzb rax, al
+   cmp rax, 0
+   je .L.else.16
+   lea rax, [rbp-32]
+   push rax
+   lea rax, [Nodeinit]
+   push rax
+   lea rax, [rbp-24]
+   mov rax, [rax]
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-32]
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   lea rax, [rbp-32]
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   lea rax, [test_eql]
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   mov rax, [rax]
+   push rax
+   lea rax, [rbp-32]
+   mov rax, [rax]
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eql]
+   push rax
+   lea rax, [Nodenext_node]
+   push rax
+   lea rax, [rbp-32]
+   mov rax, [rax]
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   add rax, 8
+   mov rax, [rax]
+   push rax
+   mov rax, 20
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   mov rax, 0
+   jmp .L.endfn.15
+   jmp .L.end.16
+.L.else.16:
+.L.end.16:
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 8
+   mov rax, [rax]
+   push rax
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   pop rdi
+   cmp rax, rdi
+   setge al
+   movzb rax, al
+   cmp rax, 0
+   je .L.else.17
+   lea rax, [LinkedListappend]
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   push rax
+   lea rax, [rbp-24]
+   mov rax, [rax]
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   mov rax, 0
+   jmp .L.endfn.15
+   jmp .L.end.17
+.L.else.17:
+.L.end.17:
+   lea rax, [rbp-40]
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 0
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   mov rax, -1
+   mov [rbp-48], rax
+.L.continue.18:
+   mov rax, 1
+   push rax
+   lea rax, [rbp-16]
+   mov rax, [rax]
+   pop rdi
+   sub rax, rdi
+   dec rax
+   cmp [rbp-48], rax
+   jge .L.break.18
+   inc qword ptr [rbp-48]
+   lea rax, [rbp-40]
+   push rax
+   lea rax, [Nodenext_node]
+   push rax
+   lea rax, [rbp-40]
+   mov rax, [rax]
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   pop rdi
+   mov [rdi], rax
+   jmp .L.continue.18
+.L.break.18:
+   lea rax, [rbp-56]
+   push rax
+   lea rax, [Nodenext_node]
+   push rax
+   lea rax, [rbp-40]
+   mov rax, [rax]
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-40]
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   lea rax, [Nodeinit]
+   push rax
+   lea rax, [rbp-24]
+   mov rax, [rax]
+   push rax
+   pop rdi
+   pop rax
+   call rax
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-40]
+   mov rax, [rax]
+   add rax, 0
+   mov rax, [rax]
+   add rax, 0
+   push rax
+   lea rax, [rbp-56]
+   mov rax, [rax]
+   pop rdi
+   mov [rdi], rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 8
+   push rax
+   mov rax, 1
+   push rax
+   lea rax, [rbp-8]
+   mov rax, [rax]
+   add rax, 8
+   mov rax, [rax]
+   pop rdi
+   add rax, rdi
+   pop rdi
+   mov [rdi], rax
+.L.endfn.15:
    mov rsp, rbp
    pop rbp
    ret
@@ -832,7 +1038,7 @@ main:
    lea rax, [rbp-24]
    mov rax, [rax]
    cmp rax, 0
-   je .L.else.16
+   je .L.else.20
    lea rax, [test_eql]
    push rax
    lea rax, [rbp-24]
@@ -846,9 +1052,9 @@ main:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.16
-.L.else.16:
-.L.end.16:
+   jmp .L.end.20
+.L.else.20:
+.L.end.20:
    lea rax, [test_eql]
    push rax
    lea rax, [LinkedListat]
@@ -906,16 +1112,16 @@ main:
    pop r15
    mov rax, rsp
    and rax, 15
-   jnz .L.call.17
+   jnz .L.call.21
    xor rax, rax
    call r15
-   jmp .L.end.17
-.L.call.17:
+   jmp .L.end.21
+.L.call.21:
    sub rsp, 8
    xor rax, rax
    call r15
    add rsp, 8
-.L.end.17:
+.L.end.21:
    lea rax, [test_eql]
    push rax
    lea rax, [rbp-16]
@@ -949,7 +1155,41 @@ main:
    pop rdi
    pop rax
    call rax
-.L.endfn.15:
+   lea rax, [LinkedListinsert]
+   push rax
+   lea rax, [rbp-16]
+   push rax
+   mov rax, 0
+   push rax
+   mov rax, 8
+   push rax
+   pop rdx
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   lea rax, [test_eql]
+   push rax
+   lea rax, [LinkedListat]
+   push rax
+   lea rax, [rbp-16]
+   push rax
+   mov rax, 0
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+   add rax, 8
+   mov rax, [rax]
+   push rax
+   mov rax, 8
+   push rax
+   pop rsi
+   pop rdi
+   pop rax
+   call rax
+.L.endfn.19:
    mov rsp, rbp
    pop rbp
    ret
@@ -967,7 +1207,7 @@ write:
    mov rax, 1
    syscall
 # [end]
-.L.endfn.18:
+.L.endfn.22:
    mov rsp, rbp
    pop rbp
    ret
@@ -981,7 +1221,7 @@ test:
    lea rax, [rbp-1]
    movsx rax, byte ptr [rax]
    cmp rax, 0
-   je .L.else.20
+   je .L.else.24
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.8
@@ -989,8 +1229,8 @@ test:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.20
-.L.else.20:
+   jmp .L.end.24
+.L.else.24:
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.9
@@ -998,8 +1238,8 @@ test:
    pop rdi
    pop rax
    call rax
-.L.end.20:
-.L.endfn.19:
+.L.end.24:
+.L.endfn.23:
    mov rsp, rbp
    pop rbp
    ret
@@ -1021,7 +1261,7 @@ test_eql:
    sete al
    movzb rax, al
    cmp rax, 0
-   je .L.else.22
+   je .L.else.26
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.10
@@ -1029,8 +1269,8 @@ test_eql:
    pop rdi
    pop rax
    call rax
-   jmp .L.end.22
-.L.else.22:
+   jmp .L.end.26
+.L.else.26:
    lea rax, [write]
    push rax
    lea rax, .L.data.strings.11
@@ -1038,8 +1278,8 @@ test_eql:
    pop rdi
    pop rax
    call rax
-.L.end.22:
-.L.endfn.21:
+.L.end.26:
+.L.endfn.25:
    mov rsp, rbp
    pop rbp
    ret

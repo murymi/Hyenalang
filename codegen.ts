@@ -865,6 +865,17 @@ function genStmt(stmt: Statement, fnid: number): void {
             latestBreakLabel = ".L.break." + labeloffset;
             latestContinueLabel = ".L.continue." + labeloffset;
             console.log(".L.continue." + labeloffset + ":");
+
+            if (stmt.metadata[0].range_type !== rangeType.slice) {
+                generateCode(stmt.metadata[0].range.right as Expression);
+            } else {
+                generateAddress(stmt.metadata[0].array_id as Expression);
+                console.log("   mov rax, [rax]");
+            }
+            console.log("   dec rax");
+            console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
+            console.log("   jge .L.break." + labeloffset);
+
             stmt.metadata.forEach((m) => {
                 console.log(`   inc qword ptr [rbp-${m.counter.offset}]`);
                 if (m.range_type === rangeType.array) {
@@ -901,15 +912,6 @@ function genStmt(stmt: Statement, fnid: number): void {
                 }
             })
             genStmt(stmt.body, fnid);
-            if (stmt.metadata[0].range_type !== rangeType.slice) {
-                generateCode(stmt.metadata[0].range.right as Expression);
-            } else {
-                generateAddress(stmt.metadata[0].array_id as Expression);
-                console.log("   mov rax, [rax]");
-            }
-            console.log("   dec rax");
-            console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
-            console.log("   jge .L.break." + labeloffset);
             console.log("   jmp .L.continue." + labeloffset);
             console.log(".L.break." + labeloffset + ":");
             break;

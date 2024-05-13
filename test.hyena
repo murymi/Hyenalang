@@ -50,8 +50,9 @@ impl LinkedList {
             return null;
         }
         var tmp = self.head;
-
-        for(0..pos) |_| tmp = tmp.next_node();
+        for(0..pos) |_| {
+            tmp = tmp.next_node();
+        }
         return tmp;
     }
 
@@ -67,6 +68,30 @@ impl LinkedList {
         tmp.next = tmp.next.next_node();
         self.size -= 1;
         return to_delete;
+    }
+
+    insert(self:*LinkedList, pos:u64, value:u64) void {
+        if(pos == 0) {
+            var new_head = Node::init(value);
+            new_head.next = self.head;
+            self.head = new_head;
+            test_eql(self.head, new_head);
+            test_eql(new_head.next_node().value, 20);
+            return;
+        }
+
+        if(pos >= self.size) {
+            self.append(value);
+            return;
+        }
+
+
+        var tmp = self.head;
+        for(0..pos-1) |_| tmp = tmp.next_node();
+        var next_next = tmp.next_node();
+        tmp.next = Node::init(value);
+        tmp.next.next = next_next;
+        self.size += 1;
     }
 }
 
@@ -92,6 +117,8 @@ fn main() void {
     free(deleted);
     test_eql(my_list.size, 5);
     test_eql(my_list.at(2).value, 50);
+    my_list.insert(0, 8);
+    test_eql(my_list.at(0).value, 8);
 }
 
 
