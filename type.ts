@@ -490,7 +490,7 @@ export class Type {
             }
         })
 
-        //console.error(this.members[0].type.base.base, isResolutionPass());
+        //console.error(this.members[1].type.base.base, isResolutionPass());
     }
 
     constructor() {

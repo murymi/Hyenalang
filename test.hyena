@@ -1,6 +1,6 @@
 extern fn malloc() *void;
 
-struct Node {
+union() Node {
     number:**Node, // size = 8
     nnr:*Node, // size = 8
     next:*Node, // size = 8

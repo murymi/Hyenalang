@@ -1756,7 +1756,7 @@ export class Parser {
                 var field_tok = this.expect(tokenType.identifier, "field name");
                 var field_name = field_tok.value as string;
                 this.expect(tokenType.colon, ":");
-                var field_type = this.parseType();
+                var field_type = this.parseType(name);
                 strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
                 enumvalues.push({ name: field_name, value: new Expression().newExprNumber(i) });
                 i++;
@@ -1764,9 +1764,10 @@ export class Parser {
             }
         }
         var enum_ = new Type().newEnum("", enumvalues);
-
+        var tg = new Type().newTaggedUnion(name, strucmembers, enum_)
+        tg.replaceSelfRef();
         if (isResolutionPass()) pushEnum(enum_, name_tok);
-        if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, enum_), name_tok);
+        if (isResolutionPass()) pushStructType(tg, name_tok);
         this.expect(tokenType.rightbrace, "}");
         return new Statement();
     }
@@ -1800,7 +1801,7 @@ export class Parser {
                 }
                 handled.push(field_name);
                 this.expect(tokenType.colon, ":");
-                var field_type = this.parseType();
+                var field_type = this.parseType(name);
                 strucmembers.push({ name: field_name, datatype: field_type, default: undefined });
                 if (!this.match([tokenType.comma])) break;
             }
@@ -1812,7 +1813,10 @@ export class Parser {
             }
         })
 
-        if (isResolutionPass()) pushStructType(new Type().newTaggedUnion(name, strucmembers, tag_enum as Type), name_tok);
+        var tg = new Type().newTaggedUnion(name, strucmembers, tag_enum as Type);
+        tg.replaceSelfRef();
+
+        if (isResolutionPass()) pushStructType(tg, name_tok);
         this.expect(tokenType.rightbrace, "}");
         return new Statement();
     }
@@ -1860,10 +1864,7 @@ export class Parser {
         } else {
             struc = new Type().newStruct(name, strucmembers)
         }
-
-        struc.replaceSelfRef()
-
-
+        struc.replaceSelfRef();
         if (isResolutionPass() ) pushStructType(struc, name_tok);
 
         return new Statement().newStructDeclStatement();
