@@ -4,9 +4,8 @@ fn main() void {
         exit(1);
     }
 
-    fmt::println("%d", .{Args::arg_count()});
-    //var slice = Args::get_argument_at(1);
-    fmt::println("%s", .{Args::get_argument_at(0)});
+    var source_code = file::read_to_string(Args::get_argument_at(1));
+    fmt::println("%s", .{source_code});
 }
 
 import "args.hyena"

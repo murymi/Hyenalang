@@ -220,16 +220,7 @@ export class Parser {
                 var member_tok = this.expect(tokenType.identifier, "identifier");
                 var fo = getOffsetOfMember(struc_type, member_tok);
                 this.expect(tokenType.equal, "=");
-
                 var val = await this.expression();
-
-                // if (val.type === exprType.call && fo.datatype.size > 8) {
-                //     val.params.splice(0, 0, 
-                //         new Expression().newExprAddress(
-                //         new Expression().newExprGet(fo.offset, ,fo.datatype))
-                //     )
-                // }
-
                 setters.push({ field_offset: fo.offset, data_type: fo.datatype, value:val  });
                 if (!this.match([tokenType.comma])) break;
             }
@@ -334,7 +325,7 @@ export class Parser {
         data_type.members.splice(0, 0, { name: "len", offset: 0, type: u64, default: undefined });
         data_type.size = alignTo(data_type.align, offset);
         data_type.kind = myType.tuple;
-        console.error(data_type.members);
+        //console.error(data_type.members);
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, data_type);
     }
