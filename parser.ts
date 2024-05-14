@@ -307,7 +307,10 @@ export class Parser {
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 var expr = await this.expression();
-                offset = alignTo(expr.datatype.align, offset);
+                if(expr.datatype.size > 8 && expr.datatype.size !== 16) {
+                    tokenError(`Large field ${expr.datatype.toString()} not allowed in tuple `, this.previous());
+                }
+                offset = alignTo(8, offset);
                 setters.push({ field_offset: offset, data_type: expr.datatype, value: expr });
                 data_type.members.push({ name: "", offset: offset, type: expr.datatype, default: undefined });
                 offset += expr.datatype.size;
@@ -321,6 +324,7 @@ export class Parser {
         data_type.members.splice(0, 0, { name: "len", offset: 0, type: u64, default: undefined });
         data_type.size = alignTo(data_type.align, offset);
         data_type.kind = myType.tuple;
+        console.error(data_type.members);
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, data_type);
     }
@@ -698,7 +702,11 @@ export class Parser {
 
         var index = await this.expression();
         var t = this.advance();
-        if (expr.datatype.kind === myType.ptr) expr = new Expression().newExprDeref(expr);
+
+        if (expr.datatype.kind === myType.ptr) {
+            expr = new Expression().newExprDeref(expr);
+        }
+
         switch (expr.datatype.kind) {
             case myType.slice:// likes char*
                 switch (t.type) {
@@ -710,9 +718,10 @@ export class Parser {
                         }
                         return this.parseSliceSlide(expr, index)
                     case tokenType.rightsquare:
-                        if (expr.type === exprType.deref) {
-                            return this.parseArrayIndex(expr, index);
-                        }
+                        // if (expr.type === exprType.deref) {
+                        //     console.error("==================");
+                        //     return this.parseArrayIndex(expr, index);
+                        // }
                         if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = await this.parseSliceIndex(ab.id, index);
@@ -734,9 +743,9 @@ export class Parser {
                         }
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
-                        if (expr.type === exprType.deref) {
-                            return this.parseArrayIndex(expr, index);
-                        }
+                        //if (expr.type === exprType.deref) {
+                        //    return this.parseArrayIndex(expr, index);
+                        //}
                         if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = this.parseArrayIndex(ab.id, index);
@@ -825,7 +834,7 @@ export class Parser {
                 process.exit(1);
             }
 
-            if (this.isLiteral(left)) {
+            if (!this.isIdentifier(left)) {
                 var ab = this.assignBeforeUse(left);
                 return new Expression().newAssignForUse(ab.assign, new Expression().newExprAddress(ab.id));
             }
@@ -1410,6 +1419,7 @@ export class Parser {
             if (bottom.datatype.isInteger()) {
                 ranges.push({ range: await this.makeIntRange(bottom), range_type: rangeType.int, id: undefined });
             } else {
+                if(bottom.datatype.isPtr()) bottom = new Expression().newExprDeref(bottom);
                 switch (bottom.datatype.kind) {
                     case myType.array:
                         if (bottom.isLiteral()) {

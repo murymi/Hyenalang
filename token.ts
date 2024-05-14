@@ -345,8 +345,8 @@ export class Lexer {
             } else if (char === "/") {
                 if (this.peekNext() === "/") {
                     this.skipComment();
+                    continue;
                 }
-                continue;
             }
 
             if (char === "eof") {

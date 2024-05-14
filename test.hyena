@@ -1,74 +1,9 @@
 fn main() void {
-    if(Args::arg_count() != 2) {
-        write("Usage: bin <filename>\n");
-        exit(1);
-    }
-
-    var slice = Args::get_argument_at(1);
-    write(slice);
+    //fmt::write_char('a');
+    //fmt::write_integer(-45);
+    fmt::println("hello world %d %s %s %c %d %c\n",.{45, "hello", "nugu", 'x', 67, 'a'});
+    fmt::println("%d %w %b %q\n",.{7, cast(u16)8, 'a', cast(u64)90});
 }
 
-fn write(data:&u8) void {
-    asm {
-        "mov rsi, [rdi+8]"
-        "mov rdx, [rdi +0]"
-        "mov rdi, 1"
-        "mov rax, 1"
-        "syscall"
-    }
-}
+import "fmt.hyena"
 
-
-fn test(a:bool) void {
-    if(a) {
-        write("test: ok\n");
-    } else {
-        write("test: fail\n");
-    }
-}
-
-fn test_eql(a:bool, b:bool) void {
-    if(a == b) {
-        write("test: ok\n");
-    } else {
-        write("test: fail\n");
-    }
-}
-
-extern fn malloc(n:u64) *void;
-extern fn exit(n:u64) void;
-
-struct Args{}
-
-impl Args {
-    arg_count() u64 {
-        asm {"mov rax, [__argc__]"}
-    }
-
-    arg_vec() **u8 {
-        asm {"mov rax, [__argv__]"}
-    }
-
-    get_argument_at(pos:u64) &u8 {
-        var argument_count = Args::arg_count();
-        var arguments = Args::arg_vec();
-
-        if(pos >= argument_count) {
-            write("Err: arg index out of bounds.\n");
-            exit(1);
-        }
-
-        var len = 0;
-        var string_ptr  = (arguments + pos).*;
-        for(0..)|_| {
-            if(string_ptr.* == '\0') break;
-            string_ptr += 1;
-            len += 1;
-        }
-
-        var slice:&u8 = undefined;
-        slice.len = len;
-        slice.ptr = (arguments + pos).*;
-        return slice;
-    }
-}

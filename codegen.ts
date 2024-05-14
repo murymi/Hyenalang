@@ -361,6 +361,9 @@ function generateAddress(expr: Expression | Statement) {
         case exprType.assigned_for_use:
             generateCode(expr);
             break;
+        case exprType.grouping:
+            generateAddress(expr.left as Expression);
+            break;
         default:
             console.error(expr);
             console.error("not an lvalue");
@@ -576,6 +579,7 @@ function generateCode(expr: Expression) {
         case exprType.deref:
             // a.*
             generateCode(expr.left as Expression);
+            //console.error(expr.datatype, "====================");
             if (expr.datatype.kind !== myType.array) {
                 load(expr.datatype);
             }

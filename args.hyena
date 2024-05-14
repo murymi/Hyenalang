@@ -1,0 +1,36 @@
+struct Args{}
+
+impl Args {
+    arg_count() u64 {
+        asm {"mov rax, [__argc__]"}
+    }
+
+    arg_vec() **u8 {
+        asm {"mov rax, [__argv__]"}
+    }
+
+    get_argument_at(pos:u64) &u8 {
+        var argument_count = Args::arg_count();
+        var arguments = Args::arg_vec();
+
+        if(pos >= argument_count) {
+            write("Err: arg index out of bounds.\n");
+            exit(1);
+        }
+
+        var len = 0;
+        var string_ptr  = (arguments + pos).*;
+        for(0..)|_| {
+            if(string_ptr.* == '\0') break;
+            string_ptr += 1;
+            len += 1;
+        }
+
+        var slice:&u8 = undefined;
+        slice.len = len;
+        slice.ptr = (arguments + pos).*;
+        return slice;
+    }
+}
+
+import "c.hyena"

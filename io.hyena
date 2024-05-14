@@ -1,0 +1,6 @@
+fn write(fd:u64, buff:*u8, len:u64) i64 {
+    asm {
+        "mov rax, 1"
+        "syscall"
+    }
+}

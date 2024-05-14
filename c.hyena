@@ -1,0 +1,4 @@
+extern fn malloc(n:u64) *void;
+extern fn exit(n:u64) void;
+extern fn free(ptr:*void) void;
+
