@@ -1,9 +1,8 @@
 fn main() void {
-    //fmt::write_char('a');
-    //fmt::write_integer(-45);
-    fmt::println("hello world %d %s %s %c %d %c\n",.{45, "hello", "nugu", 'x', 67, 'a'});
-    fmt::println("%d %w %b %q\n",.{7, cast(u16)8, 'a', cast(u64)90});
+    var fi = file::read_to_string("./c.hyena");
+    fmt::print("%s", .{fi});
 }
 
 import "fmt.hyena"
+import "file.hyena"
 

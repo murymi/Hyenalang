@@ -4,15 +4,24 @@ impl fmt {
         write(1, &char, 1);
     }
 
-    write_integer(int:i64) void {
+    write_int(int:i64) void {
         if(int < 0) {
             int = -int;
             fmt::write_char('-');
-        } 
+        }
         if(int <= 0) return;
         var char = int % 10 + '0';
-        fmt::write_integer(int/10);
+        fmt::write_int(int/10);
         fmt::write_char(char);
+    }
+
+    write_integer(int:i64) void {
+        if(int == 0) {
+            fmt::write_char('0');
+            return;
+        }
+
+        fmt::write_int(int);
     }
 
     println(format:&u8, args:argv) void {

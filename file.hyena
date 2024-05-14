@@ -1,0 +1,31 @@
+
+struct file {}
+
+impl file {
+    read_to_string(filename:&u8) &u8 {
+        if(fopen(filename.ptr, "r".ptr)) |fl| {
+            fseek(fl, 0, 2);
+            var fsize = ftell(fl);
+            //fmt::println("size = %q", .{fsize});
+            rewind(fl);
+            if(cast(*u8)malloc(fsize+1))|ptr| {
+                var read_size = fread(ptr, 1, fsize, fl) + 1;
+                (ptr + read_size).* = '\0';
+                var slice:&u8 = undefined;
+                slice.len = fsize;
+                slice.ptr = ptr;
+                return slice;
+            } else {
+                fmt::println("malloc failed",.{});
+                exit(1);
+            }
+
+        } else {
+            fmt::println("Failed to open file %s",.{filename});
+            exit(1);
+        }
+    }
+}
+
+import "c.hyena"
+import "fmt.hyena"

@@ -214,11 +214,19 @@ export class Expression {
         return this;
     }
 
+    depointerize(id:Expression):Expression {
+        return new Expression().newExprDeref(id);
+    }
+
     newExprIdentifier(variable:Variable):Expression{
         this.type = exprType.identifier;
         this.variable = variable;
         if(variable) {
             this.datatype = variable.datatype;
+
+            if(variable.pointerised) {
+                return this.depointerize(this);
+            }
         }
         return this;
     }

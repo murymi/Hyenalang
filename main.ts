@@ -65,8 +65,16 @@ export class Function {
         if (type === fnType.native) {
             var i = 0;
             params.forEach((p) => {
-                var arg_data_type = p.datatype.size > 8 ? new Type().newPointer(p.datatype) : p.datatype
-                this.locals.splice(i, 0, new Variable().local(p.name, arg_data_type));
+                var arg_data_type:Type;
+                var pointerised = false;
+                if(p.datatype.size > 8) {
+                    arg_data_type = new Type().newPointer(p.datatype);
+                    pointerised = true; 
+                } else {
+                    arg_data_type = p.datatype
+                }
+                
+                this.locals.splice(i, 0, new Variable().local(p.name, arg_data_type, pointerised));
                 i++;
             })
         }
@@ -103,7 +111,8 @@ export class Variable {
     datatype: Type;
     is_global: boolean;
     initializer?: Expression;
-    token:Token|undefined
+    token:Token|undefined;
+    pointerised:boolean;
 
     global(name: string, datatype: Type,  initializer: Expression|undefined = undefined) {
         this.name = name;
@@ -112,9 +121,10 @@ export class Variable {
         return this;
     }
 
-    local(name: string, datatype: Type) {
+    local(name: string, datatype: Type, pointerised = false) {
         this.name = name;
         this.datatype = datatype;
+        this.pointerised = pointerised;
         if (scopeDepth !== 0) {
             variable_scopes[0].variables.push(this);
         }

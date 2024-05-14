@@ -1,4 +1,9 @@
 extern fn malloc(n:u64) *void;
 extern fn exit(n:u64) void;
 extern fn free(ptr:*void) void;
+extern fn fopen(name:*u8, opt:*u8) *void;
+extern fn fseek(f:*void, a:u64, b:u64) void;
+extern fn ftell(f:*void) u64;
+extern fn rewind(f:*void) void;
+extern fn fread(buff:*u8, n:u64, m:u64, f:*void) u64;
 
