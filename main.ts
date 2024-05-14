@@ -310,7 +310,6 @@ function offsetLocalVariables(fn: Function) {
         fn.localOffset += p.datatype.size;
         p.offset = fn.localOffset;
         p.is_global = false;
-
     })
     //console.error(fn.name,fn.locals);
 }

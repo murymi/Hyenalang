@@ -1,6 +1,6 @@
 fn main() void {
     if(Args::arg_count() != 2) {
-        fmt::println("Usage: %s <filename>\n", .{Args::get_argument_at(0)});
+        fmt::println("Usage: %s <filename>", .{Args::get_argument_at(0)});
         exit(1);
     }
 

@@ -107,6 +107,8 @@ export class Expression {
 
     setters:{ field_offset:number,data_type:Type, value:Expression }[];
 
+    call_in_lit:boolean
+
     isLiteral():boolean {
         return this.type === exprType.array_literal || this.type === exprType.struct_literal;
     }
@@ -115,11 +117,6 @@ export class Expression {
         this.datatype = data_type;
         this.setters = setters;
         this.type = exprType.array_literal;
-        return this;
-    }
-
-    newEprBGCL() {
-        this.type = exprType.big_call_in_literal;
         return this;
     }
 
@@ -278,6 +275,7 @@ export class Expression {
         this.datatype = datatype;
         this.params = args;
         this.fntype = fnT;
+        this.call_in_lit = false;
         return this;
     }
 
