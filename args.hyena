@@ -9,12 +9,12 @@ impl Args {
         asm {"mov rax, [__argv__]"}
     }
 
-    get_argument_at(pos:u64) &u8 {
+    get_argument_at(pos:u32) &u8 {
         var argument_count = Args::arg_count();
         var arguments = Args::arg_vec();
 
         if(pos >= argument_count) {
-            write("Err: arg index out of bounds.\n");
+            fmt::println("Err: arg index %d out of bounds.\n", .{cast(u32)pos});
             exit(1);
         }
 

@@ -394,8 +394,15 @@ function assignLit(offset: number, expr: Expression) {
             console.log(`   add rdi, ${s.field_offset + offset}`);
             console.log("   push rdi");
             if(s.data_type.size > 8) {
-                generateAddress(s.value);
-                storeStruct(s.data_type)
+                if(s.value.type === exprType.call) {
+                    //console.log("# ====call found=====");
+                    console.log("pop r14");
+                    s.value.params.splice(0,0, new Expression().newEprBGCL());
+                    generateCode(s.value);
+                } else {
+                    generateAddress(s.value); 
+                    storeStruct(s.data_type);
+                }
             } else {
                 generateCode(s.value);
                 store(s.data_type);
@@ -643,13 +650,21 @@ function generateCode(expr: Expression) {
             generateCode(expr.callee);
             push();
             expr.params.forEach((p) => {
+                if(p.type === exprType.big_call_in_literal) {
+                    console.log("push r14");
+                    return;
+                }
+
                 if (p.datatype.size > 8) {
                     generateAddress(p);
                 } else {
                     generateCode(p);
                 }
+                console.error(p.datatype.size);
                 push();
             });
+
+            //console.error(expr.params.length, "len");
             for (let i = expr.params.length - 1; i >= 0; i--) {
                 pop(argRegisters[i]);
             }

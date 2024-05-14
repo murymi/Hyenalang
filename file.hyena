@@ -8,7 +8,7 @@ impl file {
             var fsize = ftell(fl);
             //fmt::println("size = %q", .{fsize});
             rewind(fl);
-            if(cast(*u8)malloc(fsize+1))|ptr| {
+            if(cast(*u8)malloc(fsize + 1)) |ptr| {
                 var read_size = fread(ptr, 1, fsize, fl) + 1;
                 (ptr + read_size).* = '\0';
                 var slice:&u8 = undefined;

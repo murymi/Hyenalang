@@ -34,7 +34,8 @@ export enum exprType {
     null,
     cast,
     struct_literal,
-    array_literal
+    array_literal,
+    big_call_in_literal
 }
 
 export enum identifierType {
@@ -114,6 +115,11 @@ export class Expression {
         this.datatype = data_type;
         this.setters = setters;
         this.type = exprType.array_literal;
+        return this;
+    }
+
+    newEprBGCL() {
+        this.type = exprType.big_call_in_literal;
         return this;
     }
 

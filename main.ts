@@ -287,6 +287,7 @@ export function resetCurrentFunction(name: string, body: Statement, tokens?: Tok
     if (!resolution_pass) {
         functions[currentFn].body = body;
     }
+    //console.error(functions[currentFn].locals)
     currentFn = -1;
 }
 
@@ -309,7 +310,9 @@ function offsetLocalVariables(fn: Function) {
         fn.localOffset += p.datatype.size;
         p.offset = fn.localOffset;
         p.is_global = false;
+
     })
+    //console.error(fn.name,fn.locals);
 }
 
 var parsers: Parser[] = [];

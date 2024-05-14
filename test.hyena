@@ -1,8 +1,21 @@
-fn main() void {
-    var fi = file::read_to_string("./c.hyena");
-    fmt::print("%s", .{fi});
+struct Hoo {
+    a:&u8,
+    b:&u8
 }
 
-import "fmt.hyena"
-import "file.hyena"
+fn string() Hoo {
+    var hoo:Hoo = undefined;
+    return hoo;
+}
+
+struct Foo {
+    ss:Hoo
+}
+
+fn main() void {
+    var obj = Foo{ .ss = string() };
+}
+
+// import "fmt.hyena"
+// import "file.hyena"
 

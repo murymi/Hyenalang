@@ -220,7 +220,17 @@ export class Parser {
                 var member_tok = this.expect(tokenType.identifier, "identifier");
                 var fo = getOffsetOfMember(struc_type, member_tok);
                 this.expect(tokenType.equal, "=");
-                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
+
+                var val = await this.expression();
+
+                // if (val.type === exprType.call && fo.datatype.size > 8) {
+                //     val.params.splice(0, 0, 
+                //         new Expression().newExprAddress(
+                //         new Expression().newExprGet(fo.offset, ,fo.datatype))
+                //     )
+                // }
+
+                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value:val  });
                 if (!this.match([tokenType.comma])) break;
             }
         }
@@ -308,7 +318,7 @@ export class Parser {
             while (true) {
                 var expr = await this.expression();
                 if(expr.datatype.size > 8 && expr.datatype.size !== 16) {
-                    tokenError(`Large field ${expr.datatype.toString()} not allowed in tuple `, this.previous());
+                   tokenError(`Large field ${expr.datatype.toString()} not allowed in tuple `, this.previous());
                 }
                 offset = alignTo(8, offset);
                 setters.push({ field_offset: offset, data_type: expr.datatype, value: expr });
