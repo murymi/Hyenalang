@@ -3,4 +3,4 @@
 **.out
 tmp
 *.out
-*.s
+**.s
