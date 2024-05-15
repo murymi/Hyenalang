@@ -1,9 +1,8 @@
-### Don't take as serious. Just like your lover.
+### Don't take as serious.
 
 ### hello world
 ##### file: hello.hyena
 ```zig
-# The hardest hello world project
 fn write(data:&u8) void {
     asm {
         "mov rsi, [rdi+8]"
