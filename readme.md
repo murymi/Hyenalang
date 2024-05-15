@@ -2,7 +2,7 @@
 
 ### hello world
 ##### file: hello.hyena
-```hyena
+```zig
 # The hardest hello world project
 fn write(data:&u8) void {
     asm {
