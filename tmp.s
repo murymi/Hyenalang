@@ -916,7 +916,7 @@ fmtprintln:
 fmtprint:
    push rbp
    mov rbp, rsp
-   sub rsp, 96
+   sub rsp, 80
    mov [rbp-8], rdi
    mov [rbp-16], rsi
    lea rax, [rbp-17]
@@ -984,43 +984,6 @@ fmtprint:
    mov rax, 1
    pop rdi
    mov [rdi], al
-   lea rax, [rbp-80]
-   push rax
-   lea rax, [rbp-8]
-   mov rax, [rax]
-   pop rdi
-   mov cl, [rax+0]
-   mov [rdi+0], cl
-   mov cl, [rax+1]
-   mov [rdi+1], cl
-   mov cl, [rax+2]
-   mov [rdi+2], cl
-   mov cl, [rax+3]
-   mov [rdi+3], cl
-   mov cl, [rax+4]
-   mov [rdi+4], cl
-   mov cl, [rax+5]
-   mov [rdi+5], cl
-   mov cl, [rax+6]
-   mov [rdi+6], cl
-   mov cl, [rax+7]
-   mov [rdi+7], cl
-   mov cl, [rax+8]
-   mov [rdi+8], cl
-   mov cl, [rax+9]
-   mov [rdi+9], cl
-   mov cl, [rax+10]
-   mov [rdi+10], cl
-   mov cl, [rax+11]
-   mov [rdi+11], cl
-   mov cl, [rax+12]
-   mov [rdi+12], cl
-   mov cl, [rax+13]
-   mov [rdi+13], cl
-   mov cl, [rax+14]
-   mov [rdi+14], cl
-   mov cl, [rax+15]
-   mov [rdi+15], cl
    lea rax, [rbp-56]
    mov rax, [rax]
    push rax
@@ -1028,7 +991,8 @@ fmtprint:
    pop rdi
    imul rax, rdi
    push rax
-   lea rax, [rbp-80]
+   lea rax, [rbp-8]
+   mov rax, [rax]
    add rax, 8
    mov rax, [rax]
    pop rdi
@@ -1166,7 +1130,7 @@ fmtprint:
    mov [rdi], eax
    jmp .L.end.29
 .L.29.p.4:
-   lea rax, [rbp-96]
+   lea rax, [rbp-80]
    push rax
    mov rax, 8
    push rax
@@ -1216,11 +1180,11 @@ fmtprint:
    push rax
    mov rax, 1
    push rax
-   lea rax, [rbp-96]
+   lea rax, [rbp-80]
    add rax, 8
    mov rax, [rax]
    push rax
-   lea rax, [rbp-96]
+   lea rax, [rbp-80]
    add rax, 0
    mov rax, [rax]
    push rax

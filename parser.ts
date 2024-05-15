@@ -608,7 +608,7 @@ export class Parser {
             return new Expression().newExprGet(meta.offset, expr, meta.datatype);
         }
 
-        if (!this.isIdentifier(expr)) {
+        if (!(this.isIdentifier(expr))) {
             var ab = this.assignBeforeUse(expr);
             var get = new Expression().newExprGet(meta.offset, ab.id, meta.datatype);
             return new Expression().newAssignForUse(ab.assign, get);
@@ -619,7 +619,7 @@ export class Parser {
 
     parseSliceIndex(expr: Expression, index: Expression): Expression {
         var ex = new Expression().newExprGet(8/*ptr*/, expr, new Type().newPointer(expr.datatype.base));
-        var ret = new Expression().newExprDeref(
+        return new Expression().newExprDeref(
             this.evalConst(
                 new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), ex,
                     new Expression().newExprBinary(
@@ -629,13 +629,11 @@ export class Parser {
                     ))
             )
         )
-        ret.type = exprType.deref;
-        ret.datatype = expr.datatype.base;
-        return ret;
+
     }
 
     parseArrayIndex(expr: Expression, index: Expression): Expression {
-        var ret = new Expression().newExprDeref(
+        return new Expression().newExprDeref(
             this.evalConst(
                 new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""),
                     new Expression().newExprBinary(new Token(tokenType.plus, "+", 0, 0, ""), expr,
@@ -648,10 +646,6 @@ export class Parser {
                 )
             )
         )
-
-        ret.type = exprType.deref;
-        ret.datatype = expr.datatype.base
-        return ret;
     }
 
     async parseArraySlide(expr: Expression, index: Expression): Promise<Expression> {
@@ -719,10 +713,9 @@ export class Parser {
                         }
                         return this.parseSliceSlide(expr, index)
                     case tokenType.rightsquare:
-                        // if (expr.type === exprType.deref) {
-                        //     console.error("==================");
-                        //     return this.parseArrayIndex(expr, index);
-                        // }
+                        if (expr.type === exprType.deref) {
+                            return this.parseSliceIndex(expr, index);
+                        }
                         if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = await this.parseSliceIndex(ab.id, index);
@@ -744,9 +737,9 @@ export class Parser {
                         }
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
-                        //if (expr.type === exprType.deref) {
-                        //    return this.parseArrayIndex(expr, index);
-                        //}
+                        if (expr.type === exprType.deref) {
+                            return this.parseArrayIndex(expr, index);
+                        }
                         if (!this.isIdentifier(expr)) {
                             var ab = this.assignBeforeUse(expr);
                             var slicer = this.parseArrayIndex(ab.id, index);
@@ -1046,6 +1039,7 @@ export class Parser {
             switch (expr.type) {
                 case exprType.identifier:
                 case exprType.deref:
+                case exprType.deref_index:
                     return new Expression().newExprAssign(expr, val, equals);
                 case exprType.get:
                     return new Expression().newExprSet(expr, val, equals);

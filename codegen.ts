@@ -342,6 +342,7 @@ function generateAddress(expr: Expression | Statement) {
             generateAddress(expr.left as Expression);
             console.log("   add rax, " + expr.offset);
             break;
+        case exprType.deref_index:
         case exprType.deref:
             generateCode(expr.left as Expression);
             break;
@@ -583,6 +584,7 @@ function generateCode(expr: Expression) {
             generateCode(expr.left as Expression);
             genBinary(expr.operator?.type as tokenType, expr.datatype);
             break;
+        case exprType.deref_index:
         case exprType.deref:
             // a.*
             generateCode(expr.left as Expression);

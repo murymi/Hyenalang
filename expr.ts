@@ -35,7 +35,7 @@ export enum exprType {
     cast,
     struct_literal,
     array_literal,
-    big_call_in_literal
+    deref_index
 }
 
 export enum identifierType {
@@ -252,6 +252,13 @@ export class Expression {
     newExprDeref(left:Expression) :Expression {
         this.left = left;
         this.type = exprType.deref;
+        this.datatype = left.datatype.base;
+        return this;
+    }
+
+    newExprDerefIndex(left:Expression) :Expression {
+        this.left = left;
+        this.type = exprType.deref_index;
         this.datatype = left.datatype.base;
         return this;
     }

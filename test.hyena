@@ -1,21 +1,9 @@
-struct Hoo {
-    a:&u8,
-    b:&u8
-}
-
-fn string(y:u64, j:u64, k:u64) Hoo {
-    var hoo:Hoo = undefined;
-    return hoo;
-}
-
-struct Foo {
-    ss:Hoo
-}
-
 fn main() void {
-    var obj = Foo{ .ss = string(1,2,3) };
+    var a = []&u8{"cow"};
+    var k = a[0..1];
+    var b = &k;
+    b[0] = "hello";
+    a[0].len;
 }
 
-// import "fmt.hyena"
-// import "file.hyena"
 
