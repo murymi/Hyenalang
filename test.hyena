@@ -1,9 +1,6 @@
 fn main() void {
-    var a = []&u8{"cow"};
-    var k = a[0..1];
-    var b = &k;
-    b[0] = "hello";
-    a[0].len;
+    strings::is_alnum('9');
 }
 
 
+import "string.hyena"

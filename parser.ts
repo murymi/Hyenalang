@@ -839,7 +839,7 @@ export class Parser {
     }
 
     async cast(): Promise<Expression> {
-        if (this.match([tokenType.cast])) {
+        while (this.match([tokenType.cast])) {
             this.expect(tokenType.leftparen, "(");
             var type = this.parseType();
             this.expect(tokenType.rightparen, ")");
@@ -894,7 +894,6 @@ export class Parser {
 
     async comparisson(): Promise<Expression> {
         var expr = await this.shift();
-
         while (this.match([tokenType.less, tokenType.greater, tokenType.gte, tokenType.lte])) {
             var operator = this.previous();
             var right = await this.shift();
@@ -906,7 +905,6 @@ export class Parser {
 
     async relational(): Promise<Expression> {
         var expr = await this.comparisson();
-
         while (this.match([tokenType.neq, tokenType.eq])) {
             var operator = this.previous();
             var right = await this.comparisson();
@@ -918,7 +916,7 @@ export class Parser {
 
     async BitwiseAnd(): Promise<Expression> {
         var expr = await this.relational();
-        if (this.match([tokenType.bitand])) {
+        while(this.match([tokenType.bitand])) {
             var operator = this.previous();
             var right = await this.relational();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -928,7 +926,7 @@ export class Parser {
 
     async bitwiseXor(): Promise<Expression> {
         var expr = await this.BitwiseAnd();
-        if (this.match([tokenType.bitxor])) {
+        while(this.match([tokenType.bitxor])) {
             var operator = this.previous();
             var right = await this.BitwiseAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -938,7 +936,7 @@ export class Parser {
 
     async bitwiseOr(): Promise<Expression> {
         var expr = await this.bitwiseXor();
-        if (this.match([tokenType.bitor])) {
+        while(this.match([tokenType.bitor])) {
             var operator = this.previous();
             var right = await this.bitwiseXor();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -948,7 +946,7 @@ export class Parser {
 
     async logicalAnd(): Promise<Expression> {
         var expr = await this.bitwiseOr();
-        if (this.match([tokenType.and])) {
+        while(this.match([tokenType.and])) {
             var operator = this.previous();
             var right = await this.bitwiseOr();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -958,7 +956,7 @@ export class Parser {
 
     async logicalOr(): Promise<Expression> {
         var expr = await this.logicalAnd();
-        if (this.match([tokenType.or])) {
+        while(this.match([tokenType.or])) {
             var operator = this.previous();
             var right = await this.logicalAnd();
             expr = new Expression().newExprBinary(operator, expr, right);

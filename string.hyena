@@ -1,0 +1,16 @@
+struct strings{}
+
+impl strings {
+
+    is_number(char:u8) bool {
+        return char <= '9' and char >= '0';
+    }
+
+    is_alpha(char:u8) bool {
+        return (char >= 'a' and char <= 'z') or (char >= 'A' and char <= 'Z') or char == '_';
+    }
+
+    is_alnum(char:u8) bool {
+        return strings::is_number(char) or strings::is_alpha(char);
+    }
+}
