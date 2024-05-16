@@ -1,6 +1,8 @@
 fn main() void {
-    strings::is_alnum('9');
+    var a = Token::init(TokType._eof, "end of file");
+    a.value.len;
 }
 
 
 import "string.hyena"
+import "token.hyena"

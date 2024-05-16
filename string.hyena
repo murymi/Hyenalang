@@ -13,4 +13,8 @@ impl strings {
     is_alnum(char:u8) bool {
         return strings::is_number(char) or strings::is_alpha(char);
     }
+
+    is_space(char:u8) bool {
+        return char == '\t' or char == '\n' or char == 'p';
+    }
 }

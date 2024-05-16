@@ -480,19 +480,8 @@ export class Parser {
             return new Expression().newExprUndefined();
         }
 
-        if (this.match([tokenType.squote])) {
-            var tok = this.advance()
-            var val = tok.value.toString();
-
-            if (tok.type === tokenType.bslash) {
-                val = this.getEscape(this.advance());
-            }
-
-            if (val.length !== 1) {
-                tokenError("expected single character", this.previous());
-            }
-            this.expect(tokenType.squote, "Expect closing ' ");
-            var expr = new Expression().newExprNumber(val.charCodeAt(0));
+        if (this.match([tokenType.character])) {
+            var expr = new Expression().newExprNumber(this.previous().value.toString().charCodeAt(0));
             expr.datatype = i8;
             return expr
         }
@@ -1664,6 +1653,9 @@ export class Parser {
         if (expr.type === exprType.address && expr.left?.type === exprType.identifier) {
             return true;
         }
+
+        if(expr.type  === exprType.undefnd) return true;
+        
         return false;
     }
 

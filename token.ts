@@ -11,6 +11,7 @@ export var colors = {
     blue: "\x1b[34m"
 }
 
+
 export enum tokenType {
     plus,
     minus,
@@ -107,6 +108,7 @@ export enum tokenType {
     qmark,
     sizeof,
     alignof,
+    character,
     eof
 };
 
@@ -159,7 +161,7 @@ export class Lexer {
             return;
         }
 
-        throw new Error("Expected " + char);
+        throw new Error(`Expected ${char} found ${this.peek()}`);
     }
 
     peek() {
@@ -325,6 +327,20 @@ export class Lexer {
         this.advance();
     }
 
+    readChar() {
+        this.advance();
+        var value = '';
+        if(this.peek() == '\\') {
+            value = this.getEscape();
+            this.advance();
+        } else {
+            value = this.peek();
+        }
+        this.advance();
+        this.expect("'");
+        return new Token(tokenType.character, value, this.line, this.col, this.file_name, this.tokens.length)
+    }
+
     lex(): Token[] {
         this.line = 1;
         this.col = 1;
@@ -334,7 +350,7 @@ export class Lexer {
             if (this.isNumber(char)) {
                 this.number();
                 continue;
-            } else if (this.isSpace(char)) {
+            } else if (this.isSpace(char) ) {
                 if (this.advance() === '\n') {
                     this.col = 1; this.line++;
                 }
@@ -537,7 +553,8 @@ export class Lexer {
                     this.tokens.push(this.readString());
                     break;
                 case "'":
-                    this.push(tokenType.squote, char);
+                    //this.push(tokenType.squote, char);
+                    this.tokens.push(this.readChar());
                     break;
                 case "\\":
                     this.push(tokenType.bslash, char);
