@@ -133,6 +133,12 @@ export class Expression {
         this.type = exprType.struct_literal;
         this.datatype = data_type;
         this.setters = setters;
+        if(isResolutionPass()) return this;
+        data_type.members.forEach((member)=> {
+            if(!this.setters.find((s)=> s.field_offset === member.offset)) {
+                this.setters.push({field_offset:member.offset, data_type:member.type, value:new Expression().newExprUndefined()})
+            }
+        })
         return this;
     }
 

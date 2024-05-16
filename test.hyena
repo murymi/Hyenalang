@@ -1,4 +1,11 @@
-var source_code:&u8 = undefined;
+struct Foo {
+    a:u64,
+    b:u64
+}
+
+var my_structure = Foo{
+    
+};
 
 fn main() void {
     //token_error("hello world", .{});
