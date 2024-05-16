@@ -1041,8 +1041,11 @@ function genGlobals(globals: Variable[]) {
             if (g.datatype.kind === myType.struct) {
                 var i = 0;
                 g.initializer.setters.forEach((s) => {
-                    var value = s.value.type === exprType.undefnd? 0 : s.value.val;
-                    console.log(`   .${g.datatype.members[i].type.size}byte ${value}`);
+                    if(s.value.type === exprType.undefnd) {
+                        console.log(`   .zero ${g.datatype.members[i].type.size}`);
+                    } else {
+                        console.log(`   .${g.datatype.members[i].type.size}byte ${s.value.val}`);
+                    }
                     if (i < g.datatype.members.length - 1) { console.log(`   .align ${g.datatype.members[i + 1].type.align}`); }
                     i++;
                 })

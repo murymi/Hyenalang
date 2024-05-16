@@ -1,16 +1,7 @@
-struct Foo {
-    a:u64,
-    b:u64
-}
-
-var my_structure = Foo{
-    
-};
-
 fn main() void {
-    //token_error("hello world", .{});
+    token_error("hello world", .{});
 }
 
 
-// import "string.hyena"
-// import "token.hyena"
+import "string.hyena"
+import "token.hyena"
