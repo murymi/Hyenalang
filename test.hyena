@@ -1,7 +1,15 @@
+struct Zoo {
+    ptr:*[1]u8
+}
+
+var j = []u8{1};
+
+var a = Zoo{ .ptr = &j };
+
 fn main() void {
-    token_error("hello world", .{});
+    
 }
 
 
-import "string.hyena"
-import "token.hyena"
+// import "string.hyena"
+// import "token.hyena"

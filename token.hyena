@@ -168,8 +168,18 @@ fn peek_next_next() u8 {
     return source_code[current+2];
 }
 
+struct NTpair {
+    name:&u8,
+    type:TokType
+}
+
+var token_map = []NTpair {
+    NTpair {}
+};
+
 fn tokenize(code:&u8) *Token {
     source_code = code;
+    var curr_char = peek();
 }
 
 

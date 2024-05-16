@@ -6,6 +6,7 @@ import { Variable, fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
 import { Type, alignTo, f32, myType, u64, u8 } from "./type";
+import { tokenError } from "./parser";
 
 
 var latestContinueLabel = "";
@@ -394,14 +395,14 @@ function assignLit(offset: number, expr: Expression) {
             console.log("   push rdi");
             console.log(`   add rdi, ${s.field_offset + offset}`);
             console.log("   push rdi");
-            if(s.data_type.size > 8) {
-                if(s.value.type === exprType.call) {
+            if (s.data_type.size > 8) {
+                if (s.value.type === exprType.call) {
                     //console.log("# ====call found=====");
                     //console.log("pop r14");
                     s.value.call_in_lit = true;
                     generateCode(s.value);
                 } else {
-                    generateAddress(s.value); 
+                    generateAddress(s.value);
                     storeStruct(s.data_type);
                 }
             } else {
@@ -448,7 +449,7 @@ function genAssignLarge(expr: Expression) {
     } else if (expr.right?.type === exprType.array_literal) {
         return assignArrayLiteral(expr)
     }
-    
+
     generateAddress(expr.left as Expression);
     push();
     if (expr.right?.type === exprType.assigned_for_use) {
@@ -654,7 +655,7 @@ function generateCode(expr: Expression) {
 
             var arg_count = expr.params.length - 1;
             var arg_end = 0;
-            if(expr.call_in_lit) {
+            if (expr.call_in_lit) {
                 arg_count++;
                 arg_end++;
             }
@@ -676,7 +677,7 @@ function generateCode(expr: Expression) {
 
             if (expr.callee.datatype.fn_type === fnType.native) {
                 pop("rax");
-                if(expr.call_in_lit) pop("rdi");
+                if (expr.call_in_lit) pop("rdi");
                 console.log("   call rax");
             } else {
                 pop("r15");
@@ -741,7 +742,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             break
         case stmtType.ifStmt:
             var labeloffset = incLabel();
-            if(stmt.initializer) {
+            if (stmt.initializer) {
                 generateCode(stmt.initializer);
             }
             generateCode(stmt.cond);
@@ -866,14 +867,14 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log(`   jmp .L.${label}.p.else`);
             stmt.prongs.forEach((prong, i) => {
                 console.log(`.L.${label}.p.${i}:`);
-                if(prong.capture) {
+                if (prong.capture) {
                     generateCode(prong.capture);
-                } 
+                }
                 genStmt(prong, fnid);
                 console.log(`   jmp .L.end.${label}`)
             });
             console.log(`.L.${label}.p.else:`)
-            if(stmt.else_?.capture) {
+            if (stmt.else_?.capture) {
                 generateCode(stmt.else_.capture);
             }
             genStmt(stmt.else_ as Statement, fnid);
@@ -881,7 +882,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.intloop:
             var labeloffset = incLabel();
-            stmt.loop_var_assigns.forEach((lpa)=>{
+            stmt.loop_var_assigns.forEach((lpa) => {
                 generateCode(lpa);
             })
 
@@ -1010,6 +1011,78 @@ function genText(fns: Function[]) {
     })
 }
 
+function isPtrForId(expr: Expression): boolean {
+    if (expr.type === exprType.address) {
+        if (expr.left?.type === exprType.identifier) {
+            return true;
+        }
+    }
+
+    if (expr.type === exprType.assigned_for_use) {
+        return true;
+    }
+
+    return false;
+}
+
+
+function isConstExpr(expr: Expression) {
+    return expr.datatype.isInteger() || expr.isLiteral() || isPtrForId(expr) || expr.datatype.isString();
+}
+
+function genGlobalLit(expr: Expression, data_type: Type) {
+    switch (expr.type) {
+        case exprType.array_literal:
+            console.log(`   .quad ${expr.datatype.arrayLen}`);
+            expr.setters.forEach((s) => {
+                if (!isConstExpr(s.value)) {
+                    tokenError("Expect const expression", s.token);
+                }
+                genGlobalLit(s.value, s.data_type);
+            })
+            break;
+        case exprType.struct_literal:
+            var i = 0;
+            expr.setters.forEach((s) => {
+                if (!isConstExpr(s.value)) {
+                    tokenError("Expect const expression", s.token);
+                }
+                genGlobalLit(s.value, s.data_type);
+                if (i < expr.datatype.members.length - 1) {
+                    console.log(`   .align ${expr.datatype.members[i + 1].type.align}`);
+                }
+                i++;
+            })
+            break;
+        default:
+            if (data_type.kind === myType.slice && data_type.base === u8) {
+                console.log(`   .quad ${expr.bytes.length}`)
+                console.log(`   .quad offset .L.data.bytes.${expr.label} + 8`)
+                return;
+            }
+            if (expr.type === exprType.undefnd) {
+                console.log(`   .zero ${data_type.size}`);
+                return;
+            }
+
+            if (expr.datatype.isPtr()) {
+                if (expr.type === exprType.assigned_for_use) {
+                    console.log("   .quad " + expr.left?.left?.variable.name);
+                } else {
+                    console.log("   .quad " + expr.left?.variable.name);
+                }
+                return;
+            }
+
+            if (data_type.size === 1) {
+                console.log(`   .byte ${expr.val}`);
+            } else {
+                console.log(`   .${data_type.size}byte ${expr.val}`);
+            }
+            break;
+    }
+}
+
 function genGlobals(globals: Variable[]) {
     globals.forEach((g) => {
         if (g.initializer) {
@@ -1026,35 +1099,45 @@ function genGlobals(globals: Variable[]) {
             }
 
             if (g.datatype.kind === myType.array) {
-                console.log(`   .quad ${g.initializer.datatype.arrayLen}`);
-                g.initializer.setters.forEach((s) => {
-                    var base_size = g.initializer?.datatype.base.size;
-                    if(base_size === 1) {
-                        console.log(`   .byte ${s.value.val}`);
-                    } else {
-                        console.log(`   .${base_size}byte ${s.value.val}`);
-                    }
-                })
+                genGlobalLit(g.initializer, g.datatype);
+                // console.log(`   .quad ${g.initializer.datatype.arrayLen}`);
+                // g.initializer.setters.forEach((s) => {
+                //     var base_size = g.initializer?.datatype.base.size;
+                //     if(base_size === 1) {
+                //         console.log(`   .byte ${s.value.val}`);
+                //     } else {
+                //         console.log(`   .${base_size}byte ${s.value.val}`);
+                //     }
+                // })
                 return;
             }
 
             if (g.datatype.kind === myType.struct) {
-                var i = 0;
-                g.initializer.setters.forEach((s) => {
-                    if(s.value.type === exprType.undefnd) {
-                        console.log(`   .zero ${g.datatype.members[i].type.size}`);
-                    } else {
-                        console.log(`   .${g.datatype.members[i].type.size}byte ${s.value.val}`);
-                    }
-                    if (i < g.datatype.members.length - 1) { console.log(`   .align ${g.datatype.members[i + 1].type.align}`); }
-                    i++;
-                })
+                genGlobalLit(g.initializer, g.datatype);
+                // var i = 0;
+                // g.initializer.setters.forEach((s) => {
+                //     if(s.value.type === exprType.undefnd) {
+                //         console.log(`   .zero ${g.datatype.members[i].type.size}`);
+                //     } else {
+                //         console.log(`   .${g.datatype.members[i].type.size}byte ${s.value.val}`);
+                //     }
+                //     if (i < g.datatype.members.length - 1) { console.log(`   .align ${g.datatype.members[i + 1].type.align}`); }
+                //     i++;
+                // })
                 return;
             }
-
-            if(g.datatype.isPtr()) {
-                console.log("   .quad " + g.initializer.left?.variable.name);
+            // to do
+            if (g.datatype.isPtr()) {
+                if (g.initializer.type === exprType.assigned_for_use) {
+                    console.log("   .quad " + g.initializer.left?.left?.variable.name);
+                } else {
+                    console.log("   .quad " + g.initializer.left?.variable.name);
+                }
                 return
+            }
+
+            if (g.initializer.type === exprType.assigned_for_use) {
+                return;
             }
 
             if (g.initializer.datatype.size === 1) {
@@ -1068,7 +1151,7 @@ function genGlobals(globals: Variable[]) {
     console.log(".bss");
     globals.forEach((g) => {
 
-        if(g.initializer?.type === exprType.undefnd) {
+        if (g.initializer?.type === exprType.undefnd) {
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
             console.log("   .zero " + g.datatype.size);

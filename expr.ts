@@ -1,7 +1,7 @@
 import { Variable, addGlobalString, fnType, isResolutionPass } from "./main";
 import { tokenError } from "./parser";
 import { Statement } from "./stmt";
-import { Token } from "./token";
+import { Token, tokenType } from "./token";
 import { Type, f32, i32, i64, myType, nullptr, u64, u8, voidtype } from "./type";
 
 export enum exprType {
@@ -63,7 +63,7 @@ export class Expression {
     val: number;
 
     //struct
-    offset:number;
+    offset: number;
 
     // var
     num: number;
@@ -87,40 +87,40 @@ export class Expression {
     idtype: identifierType;
 
     // var
-    labelinitialize:boolean;
+    labelinitialize: boolean;
     label: number;
 
     // var
-    is_glob:boolean;
+    is_glob: boolean;
 
     //struct
-    defaults:Expression[]
+    defaults: Expression[]
 
     //slice
-    id:Expression
+    id: Expression
 
-    variable:Variable
+    variable: Variable
 
-    cond:Expression;
+    cond: Expression;
 
-    prong:number;
+    prong: number;
 
-    setters:{ field_offset:number,data_type:Type, value:Expression }[];
+    setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[];
 
-    call_in_lit:boolean
+    call_in_lit: boolean
 
-    isLiteral():boolean {
+    isLiteral(): boolean {
         return this.type === exprType.array_literal || this.type === exprType.struct_literal;
     }
 
-    arrayLiteral(setters:{ field_offset:number,data_type:Type, value:Expression }[], data_type:Type) {
+    arrayLiteral(setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[], data_type: Type) {
         this.datatype = data_type;
         this.setters = setters;
         this.type = exprType.array_literal;
         return this;
     }
 
-    newIfExpr(cond:Expression, left:Expression, right:Expression){
+    newIfExpr(cond: Expression, left: Expression, right: Expression) {
         this.cond = cond;
         this.left = left;
         this.right = right;
@@ -129,14 +129,18 @@ export class Expression {
         return this
     }
 
-    newStructLiteral(setters:{ field_offset:number,data_type:Type, value:Expression }[], data_type:Type) {
+    newStructLiteral(setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[], data_type: Type) {
         this.type = exprType.struct_literal;
         this.datatype = data_type;
         this.setters = setters;
-        if(isResolutionPass()) return this;
-        data_type.members.forEach((member)=> {
-            if(!this.setters.find((s)=> s.field_offset === member.offset)) {
-                this.setters.push({field_offset:member.offset, data_type:member.type, value:new Expression().newExprUndefined()})
+        if (isResolutionPass()) return this;
+        
+        data_type.members.forEach((member) => {
+            if (!this.setters.find((s) => s.field_offset === member.offset)) {
+                this.setters.push({
+                    field_offset: member.offset, data_type: member.type, value: new Expression().newExprUndefined(),
+                    token: new Token(tokenType.eof, "", 0, 0, "")
+                })
             }
         })
         return this;
@@ -148,7 +152,7 @@ export class Expression {
         return this;
     }
 
-    newExprRange(left:Expression, right:Expression) {
+    newExprRange(left: Expression, right: Expression) {
         this.type = exprType.range;
         this.left = left;
         this.right = right;
@@ -156,22 +160,22 @@ export class Expression {
         return this;
     }
 
-    newExprAddress(left:Expression):Expression {
+    newExprAddress(left: Expression): Expression {
         this.type = exprType.address;
         this.left = left;
         this.datatype = new Type().newPointer(left.datatype);
         return this;
     }
 
-    newAssignForUse(left:Expression, right:Expression):Expression {
+    newAssignForUse(left: Expression, right: Expression): Expression {
         this.type = exprType.assigned_for_use;
         this.datatype = right.datatype;
-        this.left = left;
-        this.right = right;
+        this.left = left // assign;
+        this.right = right // id;
         return this;
     }
 
-    newExprUnary(op: Token, right:Expression):Expression{
+    newExprUnary(op: Token, right: Expression): Expression {
         this.type = exprType.unary;
         this.operator = op;
         this.right = right;
@@ -179,7 +183,7 @@ export class Expression {
         return this;
     }
 
-    newExprGet(offset:number, expr :Expression, datatype:Type):Expression{
+    newExprGet(offset: number, expr: Expression, datatype: Type): Expression {
         this.type = exprType.get;
         this.left = expr;
         this.offset = offset;
@@ -188,9 +192,9 @@ export class Expression {
         return this;
     }
 
-    newExprSet(expr: Expression, assign:Expression, token:Token):Expression{
-        if(!expr.datatype.eql(assign.datatype) && !isResolutionPass() && assign.type !== exprType.undefnd) {
-            if(expr.datatype.isInteger() && assign.datatype.isInteger()) {} else {
+    newExprSet(expr: Expression, assign: Expression, token: Token): Expression {
+        if (!expr.datatype.eql(assign.datatype) && !isResolutionPass() && assign.type !== exprType.undefnd) {
+            if (expr.datatype.isInteger() && assign.datatype.isInteger()) { } else {
                 tokenError(`Expected ${expr.datatype.toString()} found ${assign.datatype.toString()}`, token);
             }
         }
@@ -202,7 +206,7 @@ export class Expression {
         return this;
     }
 
-    newExprBinary(op: Token, left: Expression, right:Expression):Expression{
+    newExprBinary(op: Token, left: Expression, right: Expression): Expression {
         this.type = exprType.binary_op;
         this.left = left;
         this.right = right;
@@ -211,29 +215,29 @@ export class Expression {
         return this;
     }
 
-    newExprPrimary():Expression{
+    newExprPrimary(): Expression {
         this.type = exprType.primary;
         return this;
     }
 
-    newExprGrouping(expr: Expression):Expression{
+    newExprGrouping(expr: Expression): Expression {
         this.left = expr;
         this.type = exprType.grouping;
         this.datatype = expr.datatype;
         return this;
     }
 
-    depointerize(id:Expression):Expression {
+    depointerize(id: Expression): Expression {
         return new Expression().newExprDeref(id);
     }
 
-    newExprIdentifier(variable:Variable):Expression{
+    newExprIdentifier(variable: Variable): Expression {
         this.type = exprType.identifier;
         this.variable = variable;
-        if(variable) {
+        if (variable) {
             this.datatype = variable.datatype;
 
-            if(variable.pointerised) {
+            if (variable.pointerised) {
                 return this.depointerize(this);
             }
         }
@@ -241,7 +245,7 @@ export class Expression {
     }
 
 
-    newExprFnIdentifier(name: string,datatype: Type):Expression{
+    newExprFnIdentifier(name: string, datatype: Type): Expression {
         this.type = exprType.fn_identifier;
         this.datatype = datatype;
         this.datatype.kind = datatype.kind;
@@ -249,29 +253,29 @@ export class Expression {
         return this;
     }
 
-    newExprTemplateIdentifier(name: string):Expression{
+    newExprTemplateIdentifier(name: string): Expression {
         this.type = exprType.tmp_identifier;
         this.name = name;
         return this;
     }
 
-    newExprDeref(left:Expression) :Expression {
+    newExprDeref(left: Expression): Expression {
         this.left = left;
         this.type = exprType.deref;
         this.datatype = left.datatype.base;
         return this;
     }
 
-    newExprDerefIndex(left:Expression) :Expression {
+    newExprDerefIndex(left: Expression): Expression {
         this.left = left;
         this.type = exprType.deref_index;
         this.datatype = left.datatype.base;
         return this;
     }
 
-    newExprAssign(left:Expression, val:Expression, token:Token):Expression{
-        if(!left.datatype.eql(val.datatype) && !isResolutionPass() && val.type !== exprType.undefnd) {
-            if(left.datatype.isInteger() && val.datatype.isInteger()) {} else {
+    newExprAssign(left: Expression, val: Expression, token: Token): Expression {
+        if (!left.datatype.eql(val.datatype) && !isResolutionPass() && val.type !== exprType.undefnd) {
+            if (left.datatype.isInteger() && val.datatype.isInteger()) { } else {
                 tokenError(`Expected ${left.datatype.toString()} found ${val.datatype.toString()}`, token);
             }
         }
@@ -282,7 +286,7 @@ export class Expression {
         return this;
     }
 
-    newExprCall(callee:Expression, datatype:Type, args:Expression[], fnT:fnType):Expression{
+    newExprCall(callee: Expression, datatype: Type, args: Expression[], fnT: fnType): Expression {
         this.type = exprType.call;
         this.callee = callee;
         this.datatype = datatype;
@@ -292,26 +296,26 @@ export class Expression {
         return this;
     }
 
-    newExprNumber(val:number, isfloat?:boolean):Expression{
+    newExprNumber(val: number, isfloat?: boolean): Expression {
         this.type = exprType.number;
         this.val = val;
         this.datatype = i32;
-        if(isfloat){
-            if(isfloat) {
+        if (isfloat) {
+            if (isfloat) {
                 this.datatype = f32;
             }
         }
         return this;
     }
 
-    newExprBoolean(val:number):Expression{
+    newExprBoolean(val: number): Expression {
         this.type = exprType.number;
         this.val = val;
         this.datatype = u8;
         return this;
     }
 
-    newExprString(strng:string):Expression {
+    newExprString(strng: string): Expression {
         var label = addGlobalString(strng);
         this.label = label;
         this.bytes = strng;
@@ -320,7 +324,7 @@ export class Expression {
         return this;
     }
 
-    newExprCase(prong:number, left:Expression) {
+    newExprCase(prong: number, left: Expression) {
         this.prong = prong;
         this.left = left;
         this.type = exprType.case;
@@ -330,7 +334,7 @@ export class Expression {
 
 
 
-    newExprSlideString(id:Expression):Expression{
+    newExprSlideString(id: Expression): Expression {
         this.type = exprType.slice_array;
         this.left = new Expression().newExprNumber(0);
         this.right = new Expression().newExprNumber(id.bytes.length);
@@ -340,7 +344,7 @@ export class Expression {
         return this;
     }
 
-    newExprSlice(defs:Expression[]) {
+    newExprSlice(defs: Expression[]) {
         this.type = exprType.varslice;
         this.defaults = defs;
         this.datatype = new Type().newSlice(u8);
@@ -348,7 +352,7 @@ export class Expression {
         return this;
     }
 
-    newExprSlideArray(expr:Expression, begin:Expression, end:Expression) {
+    newExprSlideArray(expr: Expression, begin: Expression, end: Expression) {
         this.type = exprType.slice_array;
         this.left = begin;
         this.right = end;
@@ -358,7 +362,7 @@ export class Expression {
     }
 
 
-    newExprSlideSlice(expr:Expression, begin:Expression, end:Expression) {
+    newExprSlideSlice(expr: Expression, begin: Expression, end: Expression) {
         this.type = exprType.slice_slice;
         this.left = begin;
         this.right = end;
@@ -374,12 +378,12 @@ export class Expression {
         return this;
     }
 
-    newExprAnonString(offset:number) {
+    newExprAnonString(offset: number) {
         this.type = exprType.anon_string;
         this.offset = offset;
         this.datatype = new Type().newSlice(u8);
         return this;
     }
-    constructor(){}
+    constructor() { }
 }
 

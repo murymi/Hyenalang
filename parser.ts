@@ -186,7 +186,7 @@ export class Parser {
     }
 
     assignBeforeUse(val: Expression, name = ""): { assign: Expression, id: Expression } {
-        var variable = incLocalOffset(name, val.datatype, undefined);
+        var variable = incLocalOffset(name, val.datatype, undefined, val);
         var id = new Expression().newExprIdentifier(variable);
         if (val.type === exprType.call && val.datatype.size > 8) {
             val.params.splice(0, 0, new Expression().newExprAddress(id));
@@ -196,15 +196,20 @@ export class Parser {
     }
 
     async taggedUnionLiteral(struc_type: Type): Promise<Expression> {
-        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
         this.expect(tokenType.leftbrace, "{");
         this.expect(tokenType.dot, ".");
         var member_tok = this.expect(tokenType.identifier, "identifier");
         var fo = getOffsetOfMember(struc_type, member_tok);
-        this.expect(tokenType.equal, "=");
+
+        var eq = this.expect(tokenType.equal, "=");
         var tag_value = struc_type.tag.enumvalues.find((v) => v.name === member_tok.value)?.value;
-        setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression });
-        setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: await this.expression() });
+        var field_value = await this.expression();
+        if(!fo.datatype.eql(field_value.datatype)) {
+            tokenError(`Literal Expects type ${fo.datatype.toString()} found ${field_value.datatype.toString()}`, eq);
+        }
+        setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression, token:member_tok/**work around */ });
+        setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: field_value, token:member_tok });
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, struc_type);
     }
@@ -212,16 +217,19 @@ export class Parser {
     async structLiteral(name: string): Promise<Expression> {
         var struc_type = searchStruct(name) as Type;
         if (struc_type.is_tagged_union) return this.taggedUnionLiteral(struc_type);
-        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
         this.expect(tokenType.leftbrace, "{");
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 this.expect(tokenType.dot, ".");
                 var member_tok = this.expect(tokenType.identifier, "identifier");
                 var fo = getOffsetOfMember(struc_type, member_tok);
-                this.expect(tokenType.equal, "=");
+                var eq = this.expect(tokenType.equal, "=");
                 var val = await this.expression();
-                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value:val  });
+                if(!fo.datatype.eql(val.datatype)) {
+                    tokenError(`Literal Expects type ${fo.datatype.toString()} found ${val.datatype.toString()}`, eq);
+                }
+                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value:val ,token:member_tok });
                 if (!this.match([tokenType.comma])) break;
             }
         }
@@ -264,7 +272,7 @@ export class Parser {
         this.expect(tokenType.rightsquare, "]");
         var base = this.parseType();
         this.expect(tokenType.leftbrace, "{");
-        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
         var offset = 0;
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
@@ -275,7 +283,7 @@ export class Parser {
                 if (!base.eql(v.datatype)) {
                     tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
                 }
-                setters.push({ field_offset: offset, data_type: base, value: v });
+                setters.push({ field_offset: offset, data_type: base, value: v, token:this.previous() });
                 offset += base.size;
                 if (!this.match([tokenType.comma])) break;
             }
@@ -300,7 +308,7 @@ export class Parser {
     async nameLessStruct(): Promise<Expression> {
         if (isResolutionPass()) return this.nameLessStructRes();
         this.expect(tokenType.leftbrace, "{");
-        var setters: { field_offset: number, data_type: Type, value: Expression }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
         var offset = 8;
         var data_type = new Type();
         data_type.align = 8;
@@ -312,7 +320,7 @@ export class Parser {
                    tokenError(`Large field ${expr.datatype.toString()} not allowed in tuple `, this.previous());
                 }
                 offset = alignTo(8, offset);
-                setters.push({ field_offset: offset, data_type: expr.datatype, value: expr });
+                setters.push({ field_offset: offset, data_type: expr.datatype, value: expr, token:this.previous() });
                 data_type.members.push({ name: "", offset: offset, type: expr.datatype, default: undefined });
                 offset += expr.datatype.size;
                 if (data_type.align < expr.datatype.align) {
@@ -321,7 +329,7 @@ export class Parser {
                 if (!this.match([tokenType.comma])) break;
             }
         }
-        setters.splice(0, 0, { field_offset: 0, data_type: u64, value: new Expression().newExprNumber(data_type.members.length) });
+        setters.splice(0, 0, { field_offset: 0, data_type: u64, value: new Expression().newExprNumber(data_type.members.length), token:this.peek() });
         data_type.members.splice(0, 0, { name: "len", offset: 0, type: u64, default: undefined });
         data_type.size = alignTo(data_type.align, offset);
         data_type.kind = myType.tuple;
@@ -1654,8 +1662,10 @@ export class Parser {
             return true;
         }
 
+        if(expr.type === exprType.assigned_for_use) return true;
+
         if(expr.type  === exprType.undefnd) return true;
-        
+
         return false;
     }
 
@@ -1677,7 +1687,8 @@ export class Parser {
         type = type ?? initializer.datatype;
         //console.error(initializer);
         var variable = incLocalOffset(name.value as string, type as Type, name, initializer);
-
+        
+        //if(!isResolutionPass()) console.error(initializer,"=======");
         if (variable.is_global && !this.validGlobalInitializer(initializer)) {
             tokenError("Global initializer should be const expression", eq)
         }
@@ -1691,6 +1702,7 @@ export class Parser {
             new Expression().newExprIdentifier(variable)
             , initializer, eq
         );
+
 
         this.expect(tokenType.semicolon, ";");
         return new Statement().newVarstatement(initializer);
