@@ -108,6 +108,7 @@ var current_line    = 0;
 var current_column  = 0;
 var current = 0;
 var source_code:&u8 = undefined;
+var eof:u8 = -1;
 
 impl Token {
     init(type:TokType, value:&u8) *Token {
@@ -134,8 +135,38 @@ fn advance() void {
     return source_code[current - 1];
 }
 
+fn peek() u8 {
+    if(more_tokens()) {
+        return source_code[current];
+    }
+    return eof;
+}
+
+fn expect(char:u8) void {
+    if(peek() == char) {
+        advance();
+        return;
+    }
+
+    fmt::println("Epected %c found %c", .{char, peek()});
+    exit(1);
+}
+
+fn peek_next() u8 {
+    if(source_code.len < current+2) return eof;
+    return source_code[current+1];
+}
+
+fn peek_next_next() u8 {
+    if(source_code.len < current+3) return eof;
+    return source_code[current+2];
+}
+
 fn tokenize(source_code:&u8) *Token {
+
 }
 
 
 import "c.hyena"
+import "fmt.hyena"
+import "string.hyena"
