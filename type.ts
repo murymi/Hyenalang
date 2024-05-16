@@ -247,7 +247,7 @@ export class Type {
         ]
         this.kind = myType.slice;
         this.size = 16;
-        this.align = 16;
+        this.align = 8;
         this.base = base;
         return this;
     }

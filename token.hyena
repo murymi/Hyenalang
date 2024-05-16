@@ -106,9 +106,9 @@ struct Token {
 
 var current_line    = 0;
 var current_column  = 0;
-var current = 0;
+var current         = 0;
 var source_code:&u8 = undefined;
-var eof:u8 = -1;
+var eof:u8          = -1;
 
 impl Token {
     init(type:TokType, value:&u8) *Token {
@@ -124,6 +124,12 @@ impl Token {
 }
 
 var first_token = Token {};
+
+fn token_error(message:&u8, args:argv) void {
+    fmt::print("current_file%q:%q ", .{current_line, current_column});
+    fmt::println(message, args);
+    exit(1);
+}
 
 fn more_tokens() bool {
     return current < source_code.len;
@@ -148,7 +154,7 @@ fn expect(char:u8) void {
         return;
     }
 
-    fmt::println("Epected %c found %c", .{char, peek()});
+    token_error("Epected %c found %c", .{char, peek()});
     exit(1);
 }
 
@@ -162,8 +168,8 @@ fn peek_next_next() u8 {
     return source_code[current+2];
 }
 
-fn tokenize(source_code:&u8) *Token {
-
+fn tokenize(code:&u8) *Token {
+    source_code = code;
 }
 
 

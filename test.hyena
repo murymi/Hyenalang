@@ -1,8 +1,9 @@
+var source_code:&u8 = undefined;
+
 fn main() void {
-    var a = Token::init(TokType._eof, "end of file");
-    a.value.len;
+    //token_error("hello world", .{});
 }
 
 
-import "string.hyena"
-import "token.hyena"
+// import "string.hyena"
+// import "token.hyena"

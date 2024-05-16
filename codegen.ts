@@ -1013,10 +1013,10 @@ function genText(fns: Function[]) {
 function genGlobals(globals: Variable[]) {
     globals.forEach((g) => {
         if (g.initializer) {
+            if (g.initializer.type === exprType.undefnd) return;
             if (g.initializer.datatype.kind === myType.void) {
                 return;
             }
-            if (g.initializer.type === exprType.undefnd) return;
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
             if (g.datatype.kind === myType.slice && g.datatype.base === u8) {
@@ -1063,6 +1063,14 @@ function genGlobals(globals: Variable[]) {
 
     console.log(".bss");
     globals.forEach((g) => {
+
+        if(g.initializer?.type === exprType.undefnd) {
+            console.log(".align " + g.datatype.align);
+            console.log(g.name + ":");
+            console.log("   .zero " + g.datatype.size);
+            return;
+        }
+
         if (g.initializer === undefined) {
             console.log(".align " + g.datatype.align);
             console.log(g.name + ":");
