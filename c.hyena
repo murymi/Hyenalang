@@ -6,4 +6,6 @@ extern fn fseek(f:*void, a:u64, b:u64) void;
 extern fn ftell(f:*void) u64;
 extern fn rewind(f:*void) void;
 extern fn fread(buff:*u8, n:u64, m:u64, f:*void) u64;
-
+extern fn strtol(chars:*u8, end:*u8, b:u64) i64;
+extern fn memcpy(dest:*u8, src:*u8, n:u64) void;
+extern fn strncmp(a:*u8, b:*u8, n:u64) i32;

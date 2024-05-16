@@ -18,17 +18,30 @@ impl strings {
     }
 
     is_space(char:u8) bool {
-        return char == '\t' or char == '\n' or char == 'p';
+        return char == '\t' or char == '\n' or char == ' ';
     }
 
     slice_to_cstring(slice:&u8) *u8 {
-        var c_string = cast(*u8)malloc(slice.len + 1);
-        var tmp = c_string;
-        for(slice) |char| {
-            tmp.* = char;
-            tmp += 1;
+        if(cast(*u8)malloc(slice.len + 1)) |c_string| {
+            var tmp = c_string;
+            for(slice) |char| {
+                tmp.* = char;
+                tmp += 1;
+            }
+            tmp.* = '\0';
+            return c_string;
+        } else {
+            fmt::println("malloc failed at string::slice_to_cstring()", .{});
+            exit(1);
         }
-        tmp.* = '\0';
-        return c_string;
+    }
+
+    parse_int(slice:&u8) i32 {
+        return strtol(strings::slice_to_cstring(slice),null,10);
+    }
+
+    compare(a:&u8, b:&u8) bool {
+        if(!strncmp(a.ptr, b.ptr, a.len)) return true;
+        return false;
     }
 }

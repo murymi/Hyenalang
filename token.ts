@@ -228,9 +228,11 @@ export class Lexer {
             case "r": return '\r';
             case "0": return '\0';
             case "b": return '\b';
+            case "\\": return '\\';
+            case "\'": return '\'';
         }
 
-        console.error(`unsupported escape sequence \\${this.peekNext()}`);
+        console.error(`unsupported escape sequenze \\${this.peekNext()}`);
         process.exit(1);
     }
 

@@ -1,9 +1,17 @@
+struct Foo {
+    a:u64,
+    b:u64
+}
+
+var foos:[5]Foo = undefined;
+
+
 fn main() void {
-   puts(strings::slice_to_cstring("hello world")); 
+    for(foos) |f| {
+
+    }
 }
 
 
-import "string.hyena"
+//import "string.hyena"
 //import "token.hyena"
-
-extern fn puts(st:*u8) void;

@@ -919,8 +919,12 @@ function genStmt(stmt: Statement, fnid: number): void {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
                     } else {
-                        console.log("   mov rax, [rax]");
-                        store(m.index_var?.datatype as Type);
+                        if((m.index_var as Variable).datatype.size > 8) {
+                            storeStruct(m.index_var?.datatype as Type);
+                        } else {
+                            store(m.index_var?.datatype as Type);
+                            console.log("   mov rax, [rax]");
+                        }
                     }
                 } else if (m.range_type === rangeType.slice) {
                     console.log(`   lea rax, [rbp-${m.index_var?.offset}]`);
@@ -935,8 +939,12 @@ function genStmt(stmt: Statement, fnid: number): void {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
                     } else {
-                        console.log("   mov rax, [rax]");
-                        store(m.index_var?.datatype as Type);
+                        if((m.index_var as Variable).datatype.size > 8) {
+                            storeStruct(m.index_var?.datatype as Type);
+                        } else {
+                            store(m.index_var?.datatype as Type);
+                            console.log("   mov rax, [rax]");
+                        }
                     }
                 }
             })

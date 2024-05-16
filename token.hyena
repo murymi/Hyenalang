@@ -94,6 +94,7 @@ enum TokType {
     _qmark,
     _sizeof,
     _alignof,
+    _character,
     _eof
 }
 
@@ -101,7 +102,8 @@ struct Token {
     type:   TokType,
     value:  &u8,
     line:   u64,
-    col:    u64
+    col:    u64,
+    number: i32
 }
 
 var current_line:u64    = 0;
@@ -121,6 +123,8 @@ impl Token {
         };
         return token_ptr;
     }
+
+    
 }
 
 var first_token = Token {};
@@ -225,13 +229,81 @@ fn get_escape() u8 {
         'b' => return '\b';,
         'r' => return '\r';,
         else => |char| {
-            token_error("Unknown escape esquence", .{char});
+            //token_error("Unknown escape esquence", .{char});
+            return char;
         }
     }
 }
 
-fn number() i32 {
+fn read_string() *Token {
+    advance();
+    var buff:[1024]u8 = undefined;
+    var count = 0;
+    while(more_tokens() and peek() != '"' and peek() != '\n') {
+        if(peek() == '\\') {
+            buff[count] = get_escape();
+            advance();
+        } else {
+            buff[count] = peek();
+        }
+        advance();
+        count += 1;
+    }
 
+    var buff_ptr = cast(*u8)malloc(count+1);
+    memcpy(buff_ptr, (cast(*u64)buff)+1, count);
+    (buff_ptr + count).* = '\0';
+    var slice:&u8 = undefined;
+    slice.ptr = buff_ptr;
+    slice.len = count;
+    var tok = Token::init(TokType._string, slice);
+    expect('"');
+    return tok;
+}
+
+fn read_char() *Token {
+    advance();
+    var value:u8 = undefined;
+    if(peek() == '\\') {
+        value = get_escape();
+        advance();
+    } else {
+        value = peek();
+    }
+    advance();
+    expect('\'');
+    var tok = Token::init(TokType._character, "");
+    tok.number = value;
+    return tok;
+}
+
+fn number() *Token {
+    var start = current;
+    while(more_tokens()) {
+        if(!strings::is_number(peek())) break;
+        advance();
+    }
+    var tok = Token::init(TokType._number, "");
+    tok.number = strings::parse_int(source_code[start..current]);
+    return tok;
+}
+
+fn match_token(ndle:&u8) TokType {
+    for(token_map) |T| {
+        if(strings::compare(ndle, T.key)) {
+            return T.type;
+        }
+    }
+    return -1;
+}
+
+fn identifier() *Token {
+    var start = current;
+    while(more_tokens()) {
+        if(!strings::is_alnum(peek())) break;
+        advance();
+    }
+    var slice = source_code[start..current];
 }
 
 fn tokenize(code:&u8) *Token {
