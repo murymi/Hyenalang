@@ -340,6 +340,9 @@ export class Type {
         this.align = 4;
         this.enumvalues = mems;
         this.name = name;
+        this.enumvalues.forEach((ev)=>{
+            ev.value.datatype = this;
+        })
         return this;
     }
 

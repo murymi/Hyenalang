@@ -169,12 +169,52 @@ fn peek_next_next() u8 {
 }
 
 struct NTpair {
-    name:&u8,
+    key:&u8,
     type:TokType
 }
 
 var token_map = []NTpair {
-    NTpair {}
+            NTpair { .key = "var",        .type = TokType._var },
+            NTpair { .key = "if",         .type = TokType._if },
+            NTpair { .key = "else",       .type = TokType._else },
+            NTpair { .key = "while",      .type = TokType._while },
+            NTpair { .key = "break",      .type = TokType._break },
+            NTpair { .key = "continue",   .type = TokType._continue },
+            NTpair { .key = "extern",     .type = TokType._extern },
+            NTpair { .key = "fn",         .type = TokType._fn },
+            NTpair { .key = "return",     .type = TokType._return },
+            NTpair { .key = "struct",     .type = TokType._struct },
+            NTpair { .key = "void",       .type = TokType._void },
+            NTpair { .key = "u8",         .type = TokType._u8 },
+            NTpair { .key = "u16",        .type = TokType._u16 },
+            NTpair { .key = "u32",        .type = TokType._u32 },
+            NTpair { .key = "u64",        .type = TokType._u64 },
+            NTpair { .key = "i8",         .type = TokType._i8 },
+            NTpair { .key = "i16",        .type = TokType._i16 },
+            NTpair { .key = "i32",        .type = TokType._i32 },
+            NTpair { .key = "i64",        .type = TokType._i64 },
+            NTpair { .key = "true",       .type = TokType._true },
+            NTpair { .key = "false",      .type = TokType._false },
+            NTpair { .key = "bool",       .type = TokType._bool },
+            NTpair { .key = "f32",        .type = TokType._f32 },
+            NTpair { .key = "union",      .type = TokType._union },
+            NTpair { .key = "enum",       .type = TokType._enum },
+            NTpair { .key = "and",        .type = TokType._and },
+            NTpair { .key = "or",         .type = TokType._or },
+            NTpair { .key = "str",        .type = TokType._str },
+            NTpair { .key = "undefined",  .type = TokType._undefined },
+            NTpair { .key = "asm",        .type = TokType._asm },
+            NTpair { .key = "module",     .type = TokType._module },
+            NTpair { .key = "impl",       .type = TokType._impl },
+            NTpair { .key = "import",     .type = TokType._import },
+            NTpair { .key = "switch",     .type = TokType._switch },
+            NTpair { .key = "for",        .type = TokType._for },
+            NTpair { .key = "defer",      .type = TokType._defer },
+            NTpair { .key = "null",       .type = TokType._null },
+            NTpair { .key = "cast",       .type = TokType._cast },
+            NTpair { .key = "argv",       .type = TokType._argv },
+            NTpair { .key = "sizeof",     .type = TokType._sizeof },
+            NTpair { .key = "alignof",    .type = TokType._alignof}
 };
 
 fn tokenize(code:&u8) *Token {

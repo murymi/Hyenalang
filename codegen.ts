@@ -1027,7 +1027,9 @@ function isPtrForId(expr: Expression): boolean {
 
 
 function isConstExpr(expr: Expression) {
-    return expr.datatype.isInteger() || expr.isLiteral() || isPtrForId(expr) || expr.datatype.isString();
+    return expr.datatype.isInteger() ||
+     expr.isLiteral() || isPtrForId(expr) || expr.datatype.isString()
+      || expr.type === exprType.undefnd || expr.datatype.kind === myType.enum;
 }
 
 function genGlobalLit(expr: Expression, data_type: Type) {
@@ -1036,7 +1038,7 @@ function genGlobalLit(expr: Expression, data_type: Type) {
             console.log(`   .quad ${expr.datatype.arrayLen}`);
             expr.setters.forEach((s) => {
                 if (!isConstExpr(s.value)) {
-                    tokenError("Expect const expression", s.token);
+                    tokenError("Expect const expression in array literal", s.token);
                 }
                 genGlobalLit(s.value, s.data_type);
             })
@@ -1045,12 +1047,10 @@ function genGlobalLit(expr: Expression, data_type: Type) {
             var i = 0;
             expr.setters.forEach((s) => {
                 if (!isConstExpr(s.value)) {
-                    tokenError("Expect const expression", s.token);
+                    tokenError("Expect const expression in struct literal", s.token);
                 }
+                console.log(`   .align ${expr.datatype.members[i].type.align}`);
                 genGlobalLit(s.value, s.data_type);
-                if (i < expr.datatype.members.length - 1) {
-                    console.log(`   .align ${expr.datatype.members[i + 1].type.align}`);
-                }
                 i++;
             })
             break;
