@@ -1,5 +1,8 @@
 struct strings{}
 
+import "c.hyena"
+import "fmt.hyena"
+
 impl strings {
 
     is_number(char:u8) bool {
@@ -16,5 +19,16 @@ impl strings {
 
     is_space(char:u8) bool {
         return char == '\t' or char == '\n' or char == 'p';
+    }
+
+    slice_to_cstring(slice:&u8) *u8 {
+        var c_string = cast(*u8)malloc(slice.len + 1);
+        var tmp = c_string;
+        for(slice) |char| {
+            tmp.* = char;
+            tmp += 1;
+        }
+        tmp.* = '\0';
+        return c_string;
     }
 }

@@ -1,14 +1,9 @@
-struct NTpair {
-    key:&u8,
-    type:u64
-}
-
-var token_map:NTpair = undefined;
-
 fn main() void {
-    
+   puts(strings::slice_to_cstring("hello world")); 
 }
 
 
-// import "string.hyena"
+import "string.hyena"
 //import "token.hyena"
+
+extern fn puts(st:*u8) void;

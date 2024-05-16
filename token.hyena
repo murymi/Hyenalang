@@ -217,6 +217,23 @@ var token_map = []NTpair {
             NTpair { .key = "alignof",    .type = TokType._alignof}
 };
 
+fn get_escape() u8 {
+    switch(peek_next()) {
+        'n' => return '\n';,
+        't' => return '\t';,
+        '0' => return '\0';,
+        'b' => return '\b';,
+        'r' => return '\r';,
+        else => |char| {
+            token_error("Unknown escape esquence", .{char});
+        }
+    }
+}
+
+fn number() i32 {
+
+}
+
 fn tokenize(code:&u8) *Token {
     source_code = code;
     var curr_char = peek();
