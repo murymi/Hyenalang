@@ -205,7 +205,7 @@ export class Parser {
         var eq = this.expect(tokenType.equal, "=");
         var tag_value = struc_type.tag.enumvalues.find((v) => v.name === member_tok.value)?.value;
         var field_value = await this.expression();
-        if(!fo.datatype.eql(field_value.datatype)) {
+        if(!fo.datatype.eql(field_value.datatype) && field_value.type !== exprType.undefnd && !field_value.datatype.isInteger()) {
             tokenError(`Literal Expects type ${fo.datatype.toString()} found ${field_value.datatype.toString()}`, eq);
         }
         setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression, token:member_tok/**work around */ });
@@ -226,7 +226,7 @@ export class Parser {
                 var fo = getOffsetOfMember(struc_type, member_tok);
                 var eq = this.expect(tokenType.equal, "=");
                 var val = await this.expression();
-                if(!fo.datatype.eql(val.datatype)) {
+                if(!fo.datatype.eql(val.datatype) && val.type !== exprType.undefnd && !val.datatype.isInteger()) {
                     tokenError(`Literal Expects type ${fo.datatype.toString()} found ${val.datatype.toString()}`, eq);
                 }
                 setters.push({ field_offset: fo.offset, data_type: fo.datatype, value:val ,token:member_tok });

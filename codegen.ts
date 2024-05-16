@@ -1055,13 +1055,14 @@ function genGlobalLit(expr: Expression, data_type: Type) {
             })
             break;
         default:
+            if (expr.type === exprType.undefnd) {
+                console.log(`   .zero ${data_type.size}`);
+                return;
+            }
+
             if (data_type.kind === myType.slice && data_type.base === u8) {
                 console.log(`   .quad ${expr.bytes.length}`)
                 console.log(`   .quad offset .L.data.bytes.${expr.label} + 8`)
-                return;
-            }
-            if (expr.type === exprType.undefnd) {
-                console.log(`   .zero ${data_type.size}`);
                 return;
             }
 
