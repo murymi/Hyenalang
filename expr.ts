@@ -134,7 +134,7 @@ export class Expression {
         this.datatype = data_type;
         this.setters = setters;
         if (isResolutionPass()) return this;
-        
+
         data_type.members.forEach((member) => {
             if (!this.setters.find((s) => s.field_offset === member.offset)) {
                 this.setters.push({
@@ -316,11 +316,12 @@ export class Expression {
     }
 
     newExprString(strng: string): Expression {
+        this.type = exprType.string;
+        this.datatype = new Type().newSlice(u8);
+        if(isResolutionPass()) return this;
         var label = addGlobalString(strng);
         this.label = label;
         this.bytes = strng;
-        this.type = exprType.string;
-        this.datatype = new Type().newSlice(u8);
         return this;
     }
 

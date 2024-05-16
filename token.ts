@@ -228,12 +228,9 @@ export class Lexer {
             case "r": return '\r';
             case "0": return '\0';
             case "b": return '\b';
-            case "\\": return '\\';
-            case "\'": return '\'';
         }
 
-        console.error(`unsupported escape sequenze \\${this.peekNext()}`);
-        process.exit(1);
+        return this.peekNext();
     }
 
     readString(): Token {
@@ -250,6 +247,7 @@ export class Lexer {
             this.advance();
         }
         this.expect('"');
+        //console.error(value);
         return new Token(tokenType.string, value, this.line, this.col, this.file_name, this.tokens.length, true);
     }
 
@@ -566,7 +564,7 @@ export class Lexer {
                     this.tokenError("unexpected token ");
             }
         }
-
+        //console.error(this.tokens);
         return this.tokens;
     }
 }

@@ -1684,7 +1684,10 @@ export class Parser {
             tokenError("Type not known", this.previous());
         }
 
-        type = type ?? initializer.datatype;
+        if(type == undefined) {
+            type = initializer.datatype;
+        }
+        console.error(type.toString(), type.size);
         //console.error(initializer);
         var variable = incLocalOffset(name.value as string, type as Type, name, initializer);
         

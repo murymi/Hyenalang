@@ -1,17 +1,19 @@
-struct Foo {
-    a:u64,
-    b:u64
-}
-
-var foos:[5]Foo = undefined;
+var current_line:u64    = 0;
+var current_column:u64  = 0;
+var current:u64         = 0;
+var source_code:&u8 = undefined;
+var eof:u8          = -1;
 
 
 fn main() void {
-    for(foos) |f| {
-
-    }
+    // xz = "\"aaaaaaaaaaaa\"";
+    // tokenize(xz);
+    
 }
 
-
-//import "string.hyena"
-//import "token.hyena"
+// import "fmt.hyena"
+// import "string.hyena"
+// import "token.hyena"
+// 
+// extern fn puts(o:*u8) void;
+// import "io.hyena"

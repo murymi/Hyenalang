@@ -922,8 +922,8 @@ function genStmt(stmt: Statement, fnid: number): void {
                         if((m.index_var as Variable).datatype.size > 8) {
                             storeStruct(m.index_var?.datatype as Type);
                         } else {
-                            store(m.index_var?.datatype as Type);
                             console.log("   mov rax, [rax]");
+                            store(m.index_var?.datatype as Type);
                         }
                     }
                 } else if (m.range_type === rangeType.slice) {
@@ -942,8 +942,8 @@ function genStmt(stmt: Statement, fnid: number): void {
                         if((m.index_var as Variable).datatype.size > 8) {
                             storeStruct(m.index_var?.datatype as Type);
                         } else {
-                            store(m.index_var?.datatype as Type);
                             console.log("   mov rax, [rax]");
+                            store(m.index_var?.datatype as Type);
                         }
                     }
                 }
@@ -973,7 +973,7 @@ function genGlobalStrings(globs: { value: string }[]): number {
         console.log(".L.data.bytes." + i + ":");
         console.log(`   .quad ${glob.value.length}`);
         for (let i = 0; i < glob.value.length; i++) {
-            console.log(`   .byte 0x${glob.value.charCodeAt(i).toString(16)} `);
+            console.log(`   .byte ${glob.value.charCodeAt(i)} `);
         }
         console.log("   .byte " + 0);
         loffset = i;
@@ -1149,10 +1149,10 @@ function genGlobals(globals: Variable[]) {
                 return;
             }
 
-            if (g.initializer.datatype.size === 1) {
+            if (g.datatype.size === 1) {
                 console.log("   .byte " + g.initializer.right?.val);
             } else {
-                console.log("   ." + g.initializer.datatype.size + "byte " + g.initializer.val);
+                console.log("   ." + g.datatype.size + "byte " + g.initializer.val);
             }
         }
     });

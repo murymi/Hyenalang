@@ -289,7 +289,7 @@ fn number() *Token {
 }
 
 fn match_token(ndle:&u8) TokType {
-    for(token_map) |T| {
+    for(token_map) |*T| {
         if(strings::compare(ndle, T.key)) {
             return T.type;
         }
@@ -304,11 +304,61 @@ fn identifier() *Token {
         advance();
     }
     var slice = source_code[start..current];
+
+    if(cast(i32)match_token(slice) >= 0) |type| {
+        return Token::init(type, slice);
+    }
+
+    return Token::init(TokType._identifier, slice);
+}
+
+fn skip_comment() void {
+    while(more_tokens() and peek() != '\n') advance();
+    if(more_tokens()){
+        advance();
+        current_column = 0;
+        current_line += 1;
+    }
 }
 
 fn tokenize(code:&u8) *Token {
     source_code = code;
-    var curr_char = peek();
+    current_line = 0;
+    current_column = 0;
+
+    more_tokens();
+    fmt::println("%q", .{current});
+
+    peek();
+    return;
+
+    while (true) {
+        var curr_char = 'c';
+        //peek();
+        break;
+        if(strings::is_number(curr_char)) {
+            number();
+            continue;
+        } else if(strings::is_space(curr_char)) {
+            if(curr_char == '\n') {
+                current_column = 0;
+                current_line += 1;
+            }
+            continue;
+        } else if(strings::is_alpha(curr_char)) {
+            identifier();
+            continue;
+        } else if(curr_char == '/') {
+            if(peek_next() == '/'){
+                skip_comment();
+                continue;
+            } 
+        } else if (curr_char == '"') {
+            //read_string();
+            break;
+        }
+        break;
+    }
 }
 
 
