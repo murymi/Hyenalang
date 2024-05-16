@@ -249,15 +249,15 @@ fn read_string() *Token {
         advance();
         count += 1;
     }
+    expect('"');
 
     var buff_ptr = cast(*u8)malloc(count+1);
-    memcpy(buff_ptr, (cast(*u64)buff)+1, count);
+    memcpy(buff_ptr, (cast(*u64)&buff)+1, count);
     (buff_ptr + count).* = '\0';
     var slice:&u8 = undefined;
     slice.ptr = buff_ptr;
     slice.len = count;
     var tok = Token::init(TokType._string, slice);
-    expect('"');
     return tok;
 }
 
@@ -326,39 +326,40 @@ fn tokenize(code:&u8) *Token {
     current_line = 0;
     current_column = 0;
 
-    more_tokens();
-    fmt::println("%q", .{current});
+    read_string();
 
-    peek();
-    return;
+    // more_tokens();
 
-    while (true) {
-        var curr_char = 'c';
-        //peek();
-        break;
-        if(strings::is_number(curr_char)) {
-            number();
-            continue;
-        } else if(strings::is_space(curr_char)) {
-            if(curr_char == '\n') {
-                current_column = 0;
-                current_line += 1;
-            }
-            continue;
-        } else if(strings::is_alpha(curr_char)) {
-            identifier();
-            continue;
-        } else if(curr_char == '/') {
-            if(peek_next() == '/'){
-                skip_comment();
-                continue;
-            } 
-        } else if (curr_char == '"') {
-            //read_string();
-            break;
-        }
-        break;
-    }
+    // for(source_code) |char| {
+    //     fmt::println("%b", .{peek()});
+    //     advance();
+    // }
+
+    // while (true) {
+    //     var curr_char = peek();
+    //     if(strings::is_number(curr_char)) {
+    //         number();
+    //         continue;
+    //     } else if(strings::is_space(curr_char)) {
+    //         if(curr_char == '\n') {
+    //             current_column = 0;
+    //             current_line += 1;
+    //         }
+    //         continue;
+    //     } else if(strings::is_alpha(curr_char)) {
+    //         identifier();
+    //         continue;
+    //     } else if(curr_char == '/') {
+    //         if(peek_next() == '/'){
+    //             skip_comment();
+    //             continue;
+    //         } 
+    //     } else if (curr_char == '"') {
+    //         read_string();
+    //         continue;
+    //     }
+    //     break;
+    // }
 }
 
 

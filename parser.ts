@@ -1687,7 +1687,7 @@ export class Parser {
         if(type == undefined) {
             type = initializer.datatype;
         }
-        console.error(type.toString(), type.size);
+        //console.error(type.toString(), type.size);
         //console.error(initializer);
         var variable = incLocalOffset(name.value as string, type as Type, name, initializer);
         

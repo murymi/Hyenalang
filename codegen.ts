@@ -1150,7 +1150,7 @@ function genGlobals(globals: Variable[]) {
             }
 
             if (g.datatype.size === 1) {
-                console.log("   .byte " + g.initializer.right?.val);
+                console.log("   .byte " + g.initializer.val);
             } else {
                 console.log("   ." + g.datatype.size + "byte " + g.initializer.val);
             }
