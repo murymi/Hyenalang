@@ -183,11 +183,13 @@ export function getOffsetOfMember(struct: Type, tok:Token) {
         }
     }
 
-    if (struct.member_fn_names.find((n) => n === member)) {
-        return { offset: -1, datatype: i64, name: struct.name + member }
+    if(struct.member_fn_names) {
+        if (struct.member_fn_names.find((n) => n === member)) {
+            return { offset: -1, datatype: i64, name: struct.name + member }
+        }
     }
 
-    tokenError(member +" is not member of "+struct.name,tok);
+    tokenError(member +" is not member of "+struct.toString(),tok);
     process.exit()
 }
 

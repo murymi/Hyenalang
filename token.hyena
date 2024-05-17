@@ -329,19 +329,52 @@ fn skip_comment() void {
     }
 }
 
+struct TokenArray {
+    items:&Token,
+    capacity:u64
+}
+
+impl TokenArray {
+    init() TokenArray {
+        var slice:&Token = undefined;
+        slice.ptr = null;
+        slice.len = 0;
+        return TokenArray {
+            .items = slice,
+            .capacity = 0
+        };
+    }
+
+    append(self:*TokenArray, tok:Token) void {
+        // if(self.capacity <= self.items.len) {
+        //     var new_ptr = cast(*Token)malloc(self.capacity + (10 * sizeof(Token)));
+        //     memcpy(new_ptr, self.items.ptr, (self.capacity * sizeof(Token)));
+        //     free(self.items.ptr);
+        //     self.items.ptr = new_ptr;
+        //     self.capacity += 10;
+        // }
+
+        // self.items[self.items.len] = tok;
+        // self.items.len += 1;
+    }
+
+    add(self:*TokenArray, type:TokType) void {
+        self.append(Token::init(type, ""));
+    }
+}
 
 
-fn tokenize(code:&u8) *Token {
-    var first_token = Token {};
-    var ct = &first_token;
+fn tokenize(code:&u8) TokenArray {
+    var tokens = TokenArray::init();
     source_code = code;
     current_line = 0;
     current_column = 0;
 
     while (true) {
         var curr_char = peek();
+
         if(strings::is_number(curr_char)) {
-            ct = ct.push_tok(number());
+            tokens.append(number());
             continue;
         } else if(strings::is_space(curr_char)) {
             if(curr_char == '\n') {
@@ -350,7 +383,7 @@ fn tokenize(code:&u8) *Token {
             }
             continue;
         } else if(strings::is_alpha(curr_char)) {
-            ct = ct.push_tok(identifier());
+            tokens.append(identifier());
             continue;
         } else if(curr_char == '/') {
             if(peek_next() == '/'){
@@ -358,45 +391,174 @@ fn tokenize(code:&u8) *Token {
                 continue;
             } 
         } else if (curr_char == '"') {
-            ct = ct.push_tok(read_string());
+            tokens.append(read_string());
+            continue;
+        } else if(curr_char == '\'') {
+            tokens.append(read_char());
             continue;
         }
         
+        fmt::println("%b",.{curr_char});
 
         switch(curr_char) {
             -1 => {
-                ct = ct.push_val(TokType._eof);
-                break;
-            },
+                        tokens.add(TokType._eof);
+                        break;
+                    },
             '+' => {
-                if(peek() == '=') {
-                    ct = ct.push_val(TokType._addeq);
-                    advance();
-                    continue;
-                }
-                ct = ct.push_val(TokType._plus);
-            },
+                        if(peek() == '=') {
+                            tokens.add(TokType._addeq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._plus);
+                        }
+                    },
             '-' => {
-                if(peek() == '=') {
-                    ct = ct.push_val(TokType._subeq);
-                    advance();
-                    continue;
-                }
-                ct = ct.push_val(TokType._minus);
-            },
+                        if(peek() == '=') {
+                            tokens.add(TokType._subeq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._minus);
+                        }
+                    },
             '/' => {
-                if(peek() == '=') {
-                    ct = ct.push_val(TokType._diveq);
-                    advance();
-                    continue;
-                }
-                ct = ct.push_val(TokType._divide);
-            },
+                        if(peek() == '=') {
+                            tokens.add(TokType._diveq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._divide);
+                        }
+                    },
+            '*' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._muleq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._multiply);
+                        }
+                    },
+            '>' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._gte);
+                            advance();
+                        } else if(peek_next() == '>') {
+                            if(peek_next_next() == '=') {
+                                tokens.add(TokType._shreq);
+                                advance();
+                                advance();
+                            } else {
+                                tokens.add(TokType._shr);
+                                advance();
+                            }
+                        } else {
+                            tokens.add(TokType._greater);
+                        }
+                    }, 
+            '!' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._neq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._bang);
+                        }
+                    },
+            '<' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._lte);
+                            advance();
+                        } else if(peek_next() == '<') {
+                            if(peek_next_next() == '=') {
+                                tokens.add(TokType._shleq);
+                                advance();
+                                advance();
+                            } else {
+                                tokens.add(TokType._shl);
+                                advance();
+                            }
+                        } else {
+                            tokens.add(TokType._less);
+                        }
+                    },
+            '^' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._bitoreq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._bitxor);
+                        }
+                    },
+            '&' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._bitandeq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._bitand);
+                        }
+                    },
+            '|' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._bitoreq);
+                            advance();
+                        } else {
+                            tokens.add(TokType._bitor);
+                        }
+                    },
+            '~' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._bitnoteq);
+                        } else {
+                            tokens.add(TokType._bitnot);
+                        }
+                    },
+            '=' => {
+                        if(peek() == '=') {
+                            tokens.add(TokType._eq);
+                            advance();
+                        } else if(peek() == '>') {
+                            tokens.add(TokType._plong);
+                            advance();
+                        } else {
+                            tokens.add(TokType._equal);
+                        }
+                    },
+            ':' => {
+                        if(peek() == ':') {
+                            tokens.add(TokType._doublecolon);
+                            advance();
+                        } else {
+                            tokens.add(TokType._colon);
+                        }
+                    },
+            '.' => {
+                        if(peek() == '.') {
+                            tokens.add(TokType._range);
+                            advance();
+                        } else {
+                            tokens.add(TokType._dot);
+                        }
+                    },
+            '{' => tokens.add(TokType._leftbrace);,
+            '}' => tokens.add(TokType._rightbrace);,
+            '(' => tokens.add(TokType._leftparen);,
+            ')' => tokens.add(TokType._rightparen);,
+            '[' => tokens.add(TokType._leftsquare);,
+            ']' => tokens.add(TokType._rightsquare);,
+            '%' => tokens.add(TokType._mod);,
+            '?' => tokens.add(TokType._qmark);,
+            ',' => tokens.add(TokType._comma);,
+            ';' => tokens.add(TokType._semicolon);,
+            '|' => tokens.add(TokType._pipe);,
             else => |c| {
-                token_error("Unexpected token %b", .{c});
+                        token_error("Unexpected token %b", .{c});
+                        break;
             }
+
         }
+
+        advance();
     }
+
+    return tokens;
 }
 
 

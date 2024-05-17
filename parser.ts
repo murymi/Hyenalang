@@ -579,6 +579,10 @@ export class Parser {
             return new Expression().newExprGet(0, new Expression(), voidtype);
         }
 
+        if(expr.datatype === undefined) {
+            tokenError("member access in non struct", dot);
+        }
+
         if (propname.type === tokenType.identifier || propname.type === tokenType.multiply) { } else {
             tokenError("expect property name after dot", this.peek());
         }
@@ -697,9 +701,11 @@ export class Parser {
         var index = await this.expression();
         var t = this.advance();
 
-        if (expr.datatype.kind === myType.ptr) {
-            expr = new Expression().newExprDeref(expr);
+        if(expr.datatype === undefined) {
+            tokenError("indexing non array", this.peek());
         }
+
+        if (expr.datatype.kind === myType.ptr/**g */) {expr = new Expression().newExprDeref(expr);}
 
         switch (expr.datatype.kind) {
             case myType.slice:// likes char*
