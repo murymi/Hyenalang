@@ -103,8 +103,7 @@ struct Token {
     value:  &u8,
     line:   u64,
     col:    u64,
-    number: i32,
-    next: *Token
+    number: i32
 }
 
 var current_line:u64    = 0;
@@ -114,26 +113,15 @@ var source_code:&u8 = undefined;
 var eof:u8          = -1;
 
 impl Token {
-    init(type:TokType, value:&u8) *Token {
-        var token_ptr = cast(*Token)malloc(sizeof(Token));
-        token_ptr.* = Token {
+    init(type:TokType, value:&u8) Token {
+        return Token {
             .type = type,
             .value = value,
             .line = current_line,
             .col = current_column
         };
-        return token_ptr;
     }
 
-    push_tok(self:*Token, tok:*Token) *Token {
-        self.next = tok;
-        return self.next;
-    }
-
-    push_val(self:*Token, type:TokType) *Token {
-        self.next = Token::init(type,"");
-        return self.next;
-    }
 }
 
 
@@ -244,7 +232,7 @@ fn get_escape() u8 {
     }
 }
 
-fn read_string() *Token {
+fn read_string() Token {
     advance();
     var buff:[1024]u8 = undefined;
     var count = 0;
@@ -270,7 +258,7 @@ fn read_string() *Token {
     return tok;
 }
 
-fn read_char() *Token {
+fn read_char() Token {
     advance();
     var value:u8 = undefined;
     if(peek() == '\\') {
@@ -286,7 +274,7 @@ fn read_char() *Token {
     return tok;
 }
 
-fn number() *Token {
+fn number() Token {
     var start = current;
     while(more_tokens()) {
         if(!strings::is_number(peek())) break;
@@ -306,7 +294,7 @@ fn match_token(ndle:&u8) TokType {
     return -1;
 }
 
-fn identifier() *Token {
+fn identifier() Token {
     var start = current;
     while(more_tokens()) {
         if(!strings::is_alnum(peek())) break;
@@ -346,16 +334,18 @@ impl TokenArray {
     }
 
     append(self:*TokenArray, tok:Token) void {
-        // if(self.capacity <= self.items.len) {
-        //     var new_ptr = cast(*Token)malloc(self.capacity + (10 * sizeof(Token)));
-        //     memcpy(new_ptr, self.items.ptr, (self.capacity * sizeof(Token)));
-        //     free(self.items.ptr);
-        //     self.items.ptr = new_ptr;
-        //     self.capacity += 10;
-        // }
+        if(self.capacity == self.items.len) {
+            var new_ptr = cast(*Token)malloc(self.capacity * sizeof(Token) + 10 *(sizeof(Token)));
+            if(self.items.len > 0) {
+                memcpy(new_ptr, self.items.ptr, 1);
+                free(self.items.ptr);
+            }
+            self.items.ptr = new_ptr;
+            self.capacity += 10;
+        }
 
-        // self.items[self.items.len] = tok;
-        // self.items.len += 1;
+        self.items[self.items.len] = tok;
+        self.items.len += 1;
     }
 
     add(self:*TokenArray, type:TokType) void {
@@ -381,6 +371,7 @@ fn tokenize(code:&u8) TokenArray {
                 current_column = 0;
                 current_line += 1;
             }
+            advance();
             continue;
         } else if(strings::is_alpha(curr_char)) {
             tokens.append(identifier());

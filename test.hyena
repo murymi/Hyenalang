@@ -1,7 +1,11 @@
-import "token.hyena"
 
 
 fn main() void {
-    tokenize("1+2-2*4%7");
+    tokenize(" 145+178*3900_5/73<<=if,else, while,kuja hapa fn //7>>=9:0::'a'");
+    //puts(strings::slice_to_cstring("hello world kkkoopp"[0..0]));
 }
+
+import "token.hyena"
+import "c.hyena"
+extern fn puts(g:*u8) void;
 
