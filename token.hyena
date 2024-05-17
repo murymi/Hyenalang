@@ -331,9 +331,8 @@ fn skip_comment() void {
 
 
 
-var first_token = Token {};
-
 fn tokenize(code:&u8) *Token {
+    var first_token = Token {};
     var ct = &first_token;
     source_code = code;
     current_line = 0;
@@ -342,7 +341,7 @@ fn tokenize(code:&u8) *Token {
     while (true) {
         var curr_char = peek();
         if(strings::is_number(curr_char)) {
-            //ct = ct.push_tok(number());
+            ct = ct.push_tok(number());
             continue;
         } else if(strings::is_space(curr_char)) {
             if(curr_char == '\n') {
@@ -351,7 +350,7 @@ fn tokenize(code:&u8) *Token {
             }
             continue;
         } else if(strings::is_alpha(curr_char)) {
-            //ct = ct.push_tok(identifier());
+            ct = ct.push_tok(identifier());
             continue;
         } else if(curr_char == '/') {
             if(peek_next() == '/'){
@@ -359,18 +358,42 @@ fn tokenize(code:&u8) *Token {
                 continue;
             } 
         } else if (curr_char == '"') {
-            //ct = ct.push_tok(read_string());
+            ct = ct.push_tok(read_string());
             continue;
         }
         
 
         switch(curr_char) {
             -1 => {
-                //ct = ct.push_val(TokType._eof);
+                ct = ct.push_val(TokType._eof);
                 break;
             },
+            '+' => {
+                if(peek() == '=') {
+                    ct = ct.push_val(TokType._addeq);
+                    advance();
+                    continue;
+                }
+                ct = ct.push_val(TokType._plus);
+            },
+            '-' => {
+                if(peek() == '=') {
+                    ct = ct.push_val(TokType._subeq);
+                    advance();
+                    continue;
+                }
+                ct = ct.push_val(TokType._minus);
+            },
+            '/' => {
+                if(peek() == '=') {
+                    ct = ct.push_val(TokType._diveq);
+                    advance();
+                    continue;
+                }
+                ct = ct.push_val(TokType._divide);
+            },
             else => |c| {
-                //token_error("Unexpected token %b", .{c});
+                token_error("Unexpected token %b", .{c});
             }
         }
     }

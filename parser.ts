@@ -712,7 +712,7 @@ export class Parser {
                         }
                         return this.parseSliceSlide(expr, index)
                     case tokenType.rightsquare:
-                        if (expr.type === exprType.deref) {
+                        if (expr.type === exprType.deref || expr.type === exprType.get) {
                             return this.parseSliceIndex(expr, index);
                         }
                         if (!this.isIdentifier(expr)) {
@@ -736,7 +736,7 @@ export class Parser {
                         }
                         return this.parseArraySlide(expr, index)
                     case tokenType.rightsquare:
-                        if (expr.type === exprType.deref) {
+                        if (expr.type === exprType.deref || expr.type === exprType.get) {
                             return this.parseArrayIndex(expr, index);
                         }
                         if (!this.isIdentifier(expr)) {

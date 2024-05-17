@@ -134,9 +134,6 @@ export class Variable {
         this.name = name;
         this.datatype = datatype;
         this.pointerised = pointerised;
-        if (scopeDepth !== 0) {
-            variable_scopes[0].variables.push(this);
-        }
         return this;
     }
 
@@ -159,10 +156,11 @@ function checkVariableInCurrScope(name:string, tok: Token) {
     }
 }
 
-function addVariableInFn(name: string, type: Type, token:Token|undefined) {
-    var old = functions[currentFn].locals.length;
-    functions[currentFn].locals.push(new Variable(token).local(name, type));
-    return functions[currentFn].locals[old];
+function addVariableInFn(name: string, type: Type, token:Token|undefined):Variable {
+    var variab = new Variable(token).local(name, type)
+    functions[currentFn].locals.push(variab);
+    variable_scopes[0].variables.push(variab);
+    return variab;
 }
 
 export function incLocalOffset(name: string, type: Type, token:undefined|Token, initializer?: Expression): Variable {
@@ -182,9 +180,11 @@ export function incLocalOffset(name: string, type: Type, token:undefined|Token, 
         globals.push(new Variable(token).global(name, type, initializer));
         return globals[globals.length - 1];
     }
-
     checkVariableInCurrScope(name, token as Token);
-    return addVariableInFn(name, type,token);
+    var added = addVariableInFn(name, type,token);
+    //console.error(added);
+
+    return added;
 }
 
 export function addGlobalString(value: string): number {
@@ -223,8 +223,10 @@ export function getLocalOffset(name: string, tok: Token): { offset: number, data
 
 
     for (let scope of variable_scopes) {
+        //console.error(scope.variables[0]);
         for (let v of scope.variables) {
             if (v.name === name) {
+                //console.error(v, "**", scope.variables.length, v.name === name, v.scope);
                 return { offset: 0, datatype: v.datatype, variable: v };
             }
         }

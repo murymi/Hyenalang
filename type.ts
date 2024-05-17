@@ -455,6 +455,7 @@ export class Type {
             case myType.f32:
             case myType.f64:
             case myType.bool:
+            case myType.ptr:
             return true;
         }
         return false;

@@ -1,13 +1,41 @@
+import "token.hyena"
+struct TokenArray {
+    items:&Token,
+    capacity:u64
+}
+// 
+// impl TokenArray {
+//     init() TokenArray {
+//         var slice:&Token = undefined;
+//         slice.ptr = null;
+//         slice.len = 0;
+//         return TokenArray {
+//             .items = slice,
+//             .capacity = 0
+//         };
+//     }
+// 
+//     append(self:*TokenArray, tok:Token) void {
+//         if(self.capacity == self.items.len) {
+//             var new_ptr = cast(*Token)malloc(self.items.len + (sizeof(Token)));
+//             memcpy(new_ptr, self.items.ptr, (self.capacity * sizeof(Token)));
+//             self.items.ptr = new_ptr;
+//             self.items.len = self.capacity + 1;
+//         }
+// 
+//         self.items[self.capacity] = tok;
+//         self.capacity += 1;
+//     }
+// }
+// 
+
 
 fn main() void {
-    loop1: for(0..10) |_| {
-        loop2: for(0..10) |_| {
-            loop3: for(0..10) |_| {
-                continue: loop2;
-            }
-        }
-    }
+    var tok_array = TokenArray{};
+    tok_array.items[0] = Token{};
+    // tok_array.items.len;
+    // tok_array.append(Token {.line = 70 });
+    // tok_array.items.len;
 
 }
 
-import "fmt.hyena"
