@@ -104,11 +104,12 @@ export class Statement {
         ptr: boolean | undefined,
         array_id: Expression | undefined,
         index_var: Variable | undefined
-    }[], assigns:Expression[]) {
+    }[], assigns:Expression[], label:string) {
         this.type = stmtType.intloop;
         this.body = body;
         this.metadata = metadata;
         this.loop_var_assigns = assigns;
+        this.name = label;
         return this;
     }
 
@@ -138,14 +139,16 @@ export class Statement {
         return this;
     }
 
-    newWhileStatement(cond: Expression, then: Statement): Statement {
+    newWhileStatement(cond: Expression, then: Statement, label:string): Statement {
         this.type = stmtType.whileStmt;
         this.then = then;
         this.cond = cond;
+        this.name = label;
         return this;
     }
 
-    newBreakStatement(): Statement {
+    newBreakStatement(name = ""): Statement {
+        this.name = name;
         this.type = stmtType.braek;
         return this;
     }
@@ -162,7 +165,8 @@ export class Statement {
         return this;
     }
 
-    newContinueStatement(): Statement {
+    newContinueStatement(name = ""): Statement {
+        this.name = name;
         this.type = stmtType.contineu;
         return this;
     }

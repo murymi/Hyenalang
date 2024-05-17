@@ -41,6 +41,15 @@ export function addAnonString(val: Expression) {
     return anon_strings.length - 1;
 }
 
+var labels:Token[] = [];
+export function pushLabel(name:Token) {
+    labels.push(name);
+}
+
+export function searchlabel(name:string) {
+    return labels.find((l)=> l.value === name );
+}
+
 export class Function {
     name: string;
     arity: number;

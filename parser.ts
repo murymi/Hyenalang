@@ -14,7 +14,9 @@ import {
     incLocalOffset,
     isResolutionPass,
     pushFunction,
+    pushLabel,
     resetCurrentFunction,
+    searchlabel,
     setCurrentFuction
 } from "./main";
 import { Type, alignTo, argv, bool, f32, getEnum, getOffsetOfMember, i16, i32, i64, i8, myType, popModule, pushEnum, pushModule, pushStructType, searchStruct, self_ref, u16, u32, u64, u8, voidtype } from "./type";
@@ -196,7 +198,7 @@ export class Parser {
     }
 
     async taggedUnionLiteral(struc_type: Type): Promise<Expression> {
-        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[] = [];
         this.expect(tokenType.leftbrace, "{");
         this.expect(tokenType.dot, ".");
         var member_tok = this.expect(tokenType.identifier, "identifier");
@@ -205,11 +207,11 @@ export class Parser {
         var eq = this.expect(tokenType.equal, "=");
         var tag_value = struc_type.tag.enumvalues.find((v) => v.name === member_tok.value)?.value;
         var field_value = await this.expression();
-        if(!fo.datatype.eql(field_value.datatype) && field_value.type !== exprType.undefnd && !field_value.datatype.isInteger()) {
+        if (!fo.datatype.eql(field_value.datatype) && field_value.type !== exprType.undefnd && !field_value.datatype.isInteger()) {
             tokenError(`Literal Expects type ${fo.datatype.toString()} found ${field_value.datatype.toString()}`, eq);
         }
-        setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression, token:member_tok/**work around */ });
-        setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: field_value, token:member_tok });
+        setters.push({ field_offset: 0, data_type: struc_type.tag, value: tag_value as Expression, token: member_tok/**work around */ });
+        setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: field_value, token: member_tok });
         this.expect(tokenType.rightbrace, "}");
         return new Expression().newStructLiteral(setters, struc_type);
     }
@@ -217,7 +219,7 @@ export class Parser {
     async structLiteral(name: string): Promise<Expression> {
         var struc_type = searchStruct(name) as Type;
         if (struc_type.is_tagged_union) return this.taggedUnionLiteral(struc_type);
-        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[] = [];
         this.expect(tokenType.leftbrace, "{");
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
@@ -226,10 +228,10 @@ export class Parser {
                 var fo = getOffsetOfMember(struc_type, member_tok);
                 var eq = this.expect(tokenType.equal, "=");
                 var val = await this.expression();
-                if(!fo.datatype.eql(val.datatype) && val.type !== exprType.undefnd && !val.datatype.isInteger()) {
+                if (!fo.datatype.eql(val.datatype) && val.type !== exprType.undefnd && !val.datatype.isInteger()) {
                     tokenError(`Literal Expects type ${fo.datatype.toString()} found ${val.datatype.toString()}`, eq);
                 }
-                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value:val ,token:member_tok });
+                setters.push({ field_offset: fo.offset, data_type: fo.datatype, value: val, token: member_tok });
                 if (!this.match([tokenType.comma])) break;
             }
         }
@@ -272,7 +274,7 @@ export class Parser {
         this.expect(tokenType.rightsquare, "]");
         var base = this.parseType();
         this.expect(tokenType.leftbrace, "{");
-        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[] = [];
         var offset = 0;
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
@@ -283,7 +285,7 @@ export class Parser {
                 if (!base.eql(v.datatype)) {
                     tokenError(`Literal Expects type ${base.toString()} found ${v.datatype.toString()}`, this.previous());
                 }
-                setters.push({ field_offset: offset, data_type: base, value: v, token:this.previous() });
+                setters.push({ field_offset: offset, data_type: base, value: v, token: this.previous() });
                 offset += base.size;
                 if (!this.match([tokenType.comma])) break;
             }
@@ -308,7 +310,7 @@ export class Parser {
     async nameLessStruct(): Promise<Expression> {
         if (isResolutionPass()) return this.nameLessStructRes();
         this.expect(tokenType.leftbrace, "{");
-        var setters: { field_offset: number, data_type: Type, value: Expression, token:Token }[] = [];
+        var setters: { field_offset: number, data_type: Type, value: Expression, token: Token }[] = [];
         var offset = 8;
         var data_type = new Type();
         data_type.align = 8;
@@ -316,11 +318,11 @@ export class Parser {
         if (!this.check(tokenType.rightbrace)) {
             while (true) {
                 var expr = await this.expression();
-                if(expr.datatype.size > 8 && expr.datatype.size !== 16) {
-                   tokenError(`Large field ${expr.datatype.toString()} not allowed in tuple `, this.previous());
+                if (expr.datatype.size > 8 && expr.datatype.size !== 16) {
+                    tokenError(`Large field ${expr.datatype.toString()} not allowed in tuple `, this.previous());
                 }
                 offset = alignTo(8, offset);
-                setters.push({ field_offset: offset, data_type: expr.datatype, value: expr, token:this.previous() });
+                setters.push({ field_offset: offset, data_type: expr.datatype, value: expr, token: this.previous() });
                 data_type.members.push({ name: "", offset: offset, type: expr.datatype, default: undefined });
                 offset += expr.datatype.size;
                 if (data_type.align < expr.datatype.align) {
@@ -329,7 +331,7 @@ export class Parser {
                 if (!this.match([tokenType.comma])) break;
             }
         }
-        setters.splice(0, 0, { field_offset: 0, data_type: u64, value: new Expression().newExprNumber(data_type.members.length), token:this.peek() });
+        setters.splice(0, 0, { field_offset: 0, data_type: u64, value: new Expression().newExprNumber(data_type.members.length), token: this.peek() });
         data_type.members.splice(0, 0, { name: "len", offset: 0, type: u64, default: undefined });
         data_type.size = alignTo(data_type.align, offset);
         data_type.kind = myType.tuple;
@@ -913,7 +915,7 @@ export class Parser {
 
     async BitwiseAnd(): Promise<Expression> {
         var expr = await this.relational();
-        while(this.match([tokenType.bitand])) {
+        while (this.match([tokenType.bitand])) {
             var operator = this.previous();
             var right = await this.relational();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -923,7 +925,7 @@ export class Parser {
 
     async bitwiseXor(): Promise<Expression> {
         var expr = await this.BitwiseAnd();
-        while(this.match([tokenType.bitxor])) {
+        while (this.match([tokenType.bitxor])) {
             var operator = this.previous();
             var right = await this.BitwiseAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -933,7 +935,7 @@ export class Parser {
 
     async bitwiseOr(): Promise<Expression> {
         var expr = await this.bitwiseXor();
-        while(this.match([tokenType.bitor])) {
+        while (this.match([tokenType.bitor])) {
             var operator = this.previous();
             var right = await this.bitwiseXor();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -943,7 +945,7 @@ export class Parser {
 
     async logicalAnd(): Promise<Expression> {
         var expr = await this.bitwiseOr();
-        while(this.match([tokenType.and])) {
+        while (this.match([tokenType.and])) {
             var operator = this.previous();
             var right = await this.bitwiseOr();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -953,7 +955,7 @@ export class Parser {
 
     async logicalOr(): Promise<Expression> {
         var expr = await this.logicalAnd();
-        while(this.match([tokenType.or])) {
+        while (this.match([tokenType.or])) {
             var operator = this.previous();
             var right = await this.logicalAnd();
             expr = new Expression().newExprBinary(operator, expr, right);
@@ -1109,22 +1111,22 @@ export class Parser {
     async ifStatement(): Promise<Statement> {
         this.expect(tokenType.leftparen, "( after if");
         var cond = await this.expression();
-        if(cond.datatype.isInteger() || cond.datatype.isPtr()) {} else {
-            if(!isResolutionPass()) {
+        if (cond.datatype.isInteger() || cond.datatype.isPtr()) { } else {
+            if (!isResolutionPass()) {
                 console.error(cond.datatype);
                 tokenError("Expression should be bool, ptr or int", this.previous());
             }
         }
         this.expect(tokenType.rightparen, ") after condition");
         beginScope();
-        var assign:Expression|undefined = undefined;
-        if(this.match([tokenType.pipe])) {
+        var assign: Expression | undefined = undefined;
+        if (this.match([tokenType.pipe])) {
             var captok = this.expect(tokenType.identifier, "capture");
             var cap_name = captok.value as string;
             var obj = this.assignBeforeUse(cond, cap_name);
             cond = obj.id;
             assign = obj.assign;
-            this.expect(tokenType.pipe,"|");
+            this.expect(tokenType.pipe, "|");
         }
         var then = await this.statement();
         var else_: Statement | undefined = undefined;
@@ -1396,7 +1398,7 @@ export class Parser {
         return new Statement();
     }
 
-    async integerLoop(): Promise<Statement> {
+    async integerLoop(label = ""): Promise<Statement> {
         if (isResolutionPass()) {
             return await this.loopRes();
         }
@@ -1409,7 +1411,7 @@ export class Parser {
             if (bottom.datatype.isInteger()) {
                 ranges.push({ range: await this.makeIntRange(bottom), range_type: rangeType.int, id: undefined });
             } else {
-                if(bottom.datatype.isPtr()) bottom = new Expression().newExprDeref(bottom);
+                if (bottom.datatype.isPtr()) bottom = new Expression().newExprDeref(bottom);
                 switch (bottom.datatype.kind) {
                     case myType.array:
                         if (bottom.isLiteral()) {
@@ -1496,34 +1498,65 @@ export class Parser {
 
         var body = await this.statement();
         endScope();
-        return new Statement().newIntLoop(body, metadata, assigns);
+        return new Statement().newIntLoop(body, metadata, assigns, label);
     }
 
-    async forStatement(): Promise<Statement> {
+    async forStatement(label = ""): Promise<Statement> {
         this.expect(tokenType.leftparen, "( after while");
 
-        return await this.integerLoop();
+        return await this.integerLoop(label);
     }
 
-    async whileStatement(): Promise<Statement> {
+    async whileStatement(label = ""): Promise<Statement> {
         this.expect(tokenType.leftparen, "( after while");
         var cond = await this.expression();
         this.expect(tokenType.rightparen, ") after condition");
         var then = await this.statement();
 
-        return new Statement().newWhileStatement(cond, then);
+        return new Statement().newWhileStatement(cond, then, label);
     }
 
     async statement(): Promise<Statement> {
+        if (this.match([tokenType.identifier])) {
+            var label = this.previous();
+            if (this.match([tokenType.colon])) {
+                var l = searchlabel(label.value as string);
+                if (l) {
+                    tokenError(`Label ${l.value} exits at ${relative(cwd(), l.file_name)}:${l.line}:${l.col}`, this.previous());
+                }
+                if (!isResolutionPass()) pushLabel(label);
+
+                if (this.match([tokenType.for])) {
+                    return await this.forStatement(label.value as string);
+                }
+
+                if (this.match([tokenType.while])) {
+                    return await this.whileStatement(label.value as string);
+                }
+                tokenError("Expect loop after label", this.peek());
+            } else {
+                this.current -= 1;
+            }
+        }
 
         if (this.match([tokenType.contineu])) {
+            var lab = "";
+            if (this.match([tokenType.colon])) {
+                lab = this.expect(tokenType.identifier, "label name").value.toString();
+                if (!searchlabel(lab) && !isResolutionPass()) tokenError("undefined label", this.previous());
+            }
             this.expect(tokenType.semicolon, ";");
-            return new Statement().newContinueStatement();
+            return new Statement().newContinueStatement(lab);
         }
 
         if (this.match([tokenType.braek])) {
+            var lab = "";
+            if (this.match([tokenType.colon])) {
+                lab = this.expect(tokenType.identifier, "label name").value.toString();
+                if (!searchlabel(lab) && !isResolutionPass()) tokenError("undefined label", this.previous());
+            }
             this.expect(tokenType.semicolon, ";");
-            return new Statement().newBreakStatement();
+            return new Statement().newBreakStatement(lab);
         }
 
         if (this.match([tokenType.leftbrace])) {
@@ -1629,7 +1662,7 @@ export class Parser {
 
                 if (curr_struct) {
                     if (tok.value === curr_struct) {
-                        if(prev.type === tokenType.rightsquare) {
+                        if (prev.type === tokenType.rightsquare) {
                             tokenError(`Attempt to declare recursive struct`, tok);
                         }
                         return self_ref;
@@ -1662,9 +1695,9 @@ export class Parser {
             return true;
         }
 
-        if(expr.type === exprType.assigned_for_use) return true;
+        if (expr.type === exprType.assigned_for_use) return true;
 
-        if(expr.type  === exprType.undefnd) return true;
+        if (expr.type === exprType.undefnd) return true;
 
         return false;
     }
@@ -1684,13 +1717,13 @@ export class Parser {
             tokenError("Type not known", this.previous());
         }
 
-        if(type == undefined) {
+        if (type == undefined) {
             type = initializer.datatype;
         }
         //console.error(type.toString(), type.size);
         //console.error(initializer);
         var variable = incLocalOffset(name.value as string, type as Type, name, initializer);
-        
+
         //if(!isResolutionPass()) console.error(initializer,"=======");
         if (variable.is_global && !this.validGlobalInitializer(initializer)) {
             tokenError("Global initializer should be const expression", eq)
@@ -1866,8 +1899,8 @@ export class Parser {
             member.name = this.expect(tokenType.identifier, "Expect member name").value as string;
             this.expect(tokenType.colon, "expect : after name");
 
-            if(this.peek().type === tokenType.identifier) {
-                if(this.peek().value === name) {
+            if (this.peek().type === tokenType.identifier) {
+                if (this.peek().value === name) {
                     tokenError(`Attempt to declare recursive struct`, this.peek());
                 }
             }
@@ -1892,7 +1925,7 @@ export class Parser {
             struc = new Type().newStruct(name, strucmembers)
         }
         struc.replaceSelfRef();
-        if (isResolutionPass() ) pushStructType(struc, name_tok);
+        if (isResolutionPass()) pushStructType(struc, name_tok);
 
         return new Statement().newStructDeclStatement();
     }

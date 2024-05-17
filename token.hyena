@@ -103,7 +103,8 @@ struct Token {
     value:  &u8,
     line:   u64,
     col:    u64,
-    number: i32
+    number: i32,
+    next: *Token
 }
 
 var current_line:u64    = 0;
@@ -124,10 +125,17 @@ impl Token {
         return token_ptr;
     }
 
-    
+    push_tok(self:*Token, tok:*Token) *Token {
+        self.next = tok;
+        return self.next;
+    }
+
+    push_val(self:*Token, type:TokType) *Token {
+        self.next = Token::init(type,"");
+        return self.next;
+    }
 }
 
-var first_token = Token {};
 
 fn token_error(message:&u8, args:argv) void {
     fmt::print("current_file:%q:%q ", .{current_line, current_column});
@@ -158,7 +166,7 @@ fn expect(char:u8) void {
         return;
     }
 
-    token_error("Epected %c found %c", .{char, peek()});
+    token_error("Epected %b found %b", .{char, peek()});
     exit(1);
 }
 
@@ -171,6 +179,7 @@ fn peek_next_next() u8 {
     if(source_code.len < current+3) return eof;
     return source_code[current+2];
 }
+
 
 struct NTpair {
     key:&u8,
@@ -304,11 +313,10 @@ fn identifier() *Token {
         advance();
     }
     var slice = source_code[start..current];
-
-    if(cast(i32)match_token(slice) >= 0) |type| {
+    var type = cast(i32)match_token(slice);
+    if(type >= 0) {
         return Token::init(type, slice);
     }
-
     return Token::init(TokType._identifier, slice);
 }
 
@@ -321,45 +329,51 @@ fn skip_comment() void {
     }
 }
 
+
+
+var first_token = Token {};
+
 fn tokenize(code:&u8) *Token {
+    var ct = &first_token;
     source_code = code;
     current_line = 0;
     current_column = 0;
 
-    read_string();
+    while (true) {
+        var curr_char = peek();
+        if(strings::is_number(curr_char)) {
+            //ct = ct.push_tok(number());
+            continue;
+        } else if(strings::is_space(curr_char)) {
+            if(curr_char == '\n') {
+                current_column = 0;
+                current_line += 1;
+            }
+            continue;
+        } else if(strings::is_alpha(curr_char)) {
+            //ct = ct.push_tok(identifier());
+            continue;
+        } else if(curr_char == '/') {
+            if(peek_next() == '/'){
+                skip_comment();
+                continue;
+            } 
+        } else if (curr_char == '"') {
+            //ct = ct.push_tok(read_string());
+            continue;
+        }
+        
 
-    // more_tokens();
-
-    // for(source_code) |char| {
-    //     fmt::println("%b", .{peek()});
-    //     advance();
-    // }
-
-    // while (true) {
-    //     var curr_char = peek();
-    //     if(strings::is_number(curr_char)) {
-    //         number();
-    //         continue;
-    //     } else if(strings::is_space(curr_char)) {
-    //         if(curr_char == '\n') {
-    //             current_column = 0;
-    //             current_line += 1;
-    //         }
-    //         continue;
-    //     } else if(strings::is_alpha(curr_char)) {
-    //         identifier();
-    //         continue;
-    //     } else if(curr_char == '/') {
-    //         if(peek_next() == '/'){
-    //             skip_comment();
-    //             continue;
-    //         } 
-    //     } else if (curr_char == '"') {
-    //         read_string();
-    //         continue;
-    //     }
-    //     break;
-    // }
+        switch(curr_char) {
+            -1 => {
+                //ct = ct.push_val(TokType._eof);
+                break;
+            },
+            else => |c| {
+                //token_error("Unexpected token %b", .{c});
+            }
+        }
+    }
 }
 
 

@@ -9,8 +9,26 @@ import { Type, alignTo, f32, myType, u64, u8 } from "./type";
 import { tokenError } from "./parser";
 
 
-var latestContinueLabel = "";
-var latestBreakLabel = "";
+var continueLabels:string []= [];
+var breakLabels:string[] = [];
+
+function pushLabels(cont:string, br:string) {
+    continueLabels.push(cont);
+    breakLabels.push(br);
+}
+
+function popLabels() {
+    continueLabels.pop();
+    breakLabels.pop();
+}
+
+function breakLabel() {
+    return breakLabels[breakLabels.length-1];
+}
+
+function continueLable (){
+    return continueLabels[breakLabels.length-1];
+}
 
 var argRegisters = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
@@ -391,6 +409,9 @@ function assignLit(offset: number, expr: Expression) {
             console.log(`   mov qword ptr [rdi+${s.field_offset + offset}], ${s.value.datatype.arrayLen}`);
             assignLit(s.field_offset + offset + 8, s.value);
         } else {
+
+            if(s.value.type === exprType.undefnd) return;
+
             pop("rdi");
             console.log("   push rdi");
             console.log(`   add rdi, ${s.field_offset + offset}`);
@@ -757,24 +778,36 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log(".L.end." + labeloffset + ":");
             break;
         case stmtType.whileStmt:
-            var labeloffset = incLabel();
-            latestBreakLabel = ".L.break." + labeloffset;
-            latestContinueLabel = ".L.continue." + labeloffset;
-            console.log(".L.continue." + labeloffset + ":");
+            if(stmt.name !== "") {
+                pushLabels(`.L.continue.${stmt.name}`,`.L.break.${stmt.name}`);
+            } else {
+                var labeloffset = incLabel();
+                pushLabels(`.L.continue.${labeloffset}`,`.L.break.${labeloffset}`)
+            }
+            console.log(continueLable()+":");
             generateCode(stmt.cond);
             console.log("   cmp rax, 0");
-            console.log("   je .L.break." + labeloffset);
+            console.log(`   je ${breakLabel()}`);
             genStmt(stmt.then, fnid);
-            console.log("   jmp .L.continue." + labeloffset);
-            console.log(".L.break." + labeloffset + ":");
+            console.log(`   jmp ${continueLable()}`);
+            console.log(breakLabel()+":");
+            popLabels();
             break;
         case stmtType.braek:
-            if (latestBreakLabel === "") throw new Error("Stray break");
-            console.log("   jmp " + latestBreakLabel);
+            if (breakLabels.length === 0) throw new Error("Stray break");
+            if(stmt.name.length > 0) {
+                console.log(`   jmp .L.break.${stmt.name}`);
+            } else {
+                console.log("   jmp " + breakLabel());
+            }
             break;
         case stmtType.contineu:
-            if (latestContinueLabel === "") throw new Error("Stray continue");
-            console.log("   jmp " + latestContinueLabel);
+            if (continueLabels.length === 0) throw new Error("Stray continue");
+            if(stmt.name.length > 0) {
+                console.log(`   jmp .L.continue.${stmt.name}`);
+            } else {
+                console.log("   jmp " + continueLable());
+            }
             break;
         case stmtType.ret:
             if (stmt.expr.datatype.kind === myType.string) {
@@ -891,9 +924,13 @@ function genStmt(stmt: Statement, fnid: number): void {
                 console.log(`   mov [rbp-${m.counter.offset}], rax`)
             })
 
-            latestBreakLabel = ".L.break." + labeloffset;
-            latestContinueLabel = ".L.continue." + labeloffset;
-            console.log(".L.continue." + labeloffset + ":");
+            if(stmt.name !== "") {
+                pushLabels(`.L.continue.${stmt.name}`,`.L.break.${stmt.name}`);
+            } else {
+                var labeloffset = incLabel();
+                pushLabels(`.L.continue.${labeloffset}`,`.L.break.${labeloffset}`)
+            }
+            console.log(`${continueLable()}:`);
 
             if (stmt.metadata[0].range_type !== rangeType.slice) {
                 generateCode(stmt.metadata[0].range.right as Expression);
@@ -903,7 +940,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             }
             console.log("   dec rax");
             console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
-            console.log("   jge .L.break." + labeloffset);
+            console.log(`   jge ${breakLabel()}`);
 
             stmt.metadata.forEach((m) => {
                 console.log(`   inc qword ptr [rbp-${m.counter.offset}]`);
@@ -949,8 +986,9 @@ function genStmt(stmt: Statement, fnid: number): void {
                 }
             })
             genStmt(stmt.body, fnid);
-            console.log("   jmp .L.continue." + labeloffset);
-            console.log(".L.break." + labeloffset + ":");
+            console.log(`   jmp ${continueLable()}`);
+            console.log(`${breakLabel()}:`);
+            popLabels();
             break;
         case stmtType.defer:
             genStmt(stmt.then, fnid);

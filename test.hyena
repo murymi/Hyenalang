@@ -1,12 +1,13 @@
+
 fn main() void {
-    var xz = "\"aaaaaaaaaaaa\"";
-    tokenize(xz);
-    
+    loop1: for(0..10) |_| {
+        loop2: for(0..10) |_| {
+            loop3: for(0..10) |_| {
+                continue: loop2;
+            }
+        }
+    }
+
 }
 
-// import "fmt.hyena"
-// import "string.hyena"
-import "token.hyena"
-// 
-// extern fn puts(o:*u8) void;
-// import "io.hyena"
+import "fmt.hyena"
