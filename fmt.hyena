@@ -77,6 +77,11 @@ impl fmt {
             
         }
     }
+
+    buff_print() &u8 {
+
+    }
 }
 
 import "io.hyena"
+import "c.hyena"

@@ -1414,7 +1414,7 @@ export class Parser {
         var ranges: { range: Expression, range_type: rangeType, id: Expression | undefined }[] = []
         while (true) {
             var bottom = await this.expression();
-            if (bottom.datatype.isInteger()) {
+            if (bottom.datatype.isInteger() && !bottom.datatype.isPtr()) {
                 ranges.push({ range: await this.makeIntRange(bottom), range_type: rangeType.int, id: undefined });
             } else {
                 if (bottom.datatype.isPtr()) bottom = new Expression().newExprDeref(bottom);
@@ -1610,10 +1610,24 @@ export class Parser {
 
     parseType(curr_struct?: string): Type {
         if (this.match([tokenType.leftsquare])) {
-            var len = this.expect(tokenType.number, "Expect size of array").value;
-            this.expect(tokenType.rightsquare, "] expected");
+            var len = 0;
+            var to_ptr = false;
+            if(this.match([tokenType.number])) {
+                len = this.previous().value as number;
+                this.expect(tokenType.rightsquare, "] expected");
+            } else if(this.match([tokenType.rightsquare])) {
+                to_ptr = true;
+                len = 0;
+            } else {
+                tokenError("Expect array size", this.peek());
+            }
             var base = this.parseType(curr_struct);
-            return new Type().newArray(base, len as number);
+            var array =  new Type().newArray(base, len as number);
+
+            if(to_ptr) {
+                return new Type().newPointer(array);
+            }
+            return array;
         }
 
         if (this.match([tokenType.bitand])) {

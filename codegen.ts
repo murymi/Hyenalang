@@ -915,6 +915,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.intloop:
             var labeloffset = incLabel();
+
             stmt.loop_var_assigns.forEach((lpa) => {
                 generateCode(lpa);
             })
@@ -931,13 +932,14 @@ function genStmt(stmt: Statement, fnid: number): void {
                 pushLabels(`.L.continue.${labeloffset}`,`.L.break.${labeloffset}`)
             }
             console.log(`${continueLable()}:`);
-
-            if (stmt.metadata[0].range_type !== rangeType.slice) {
-                generateCode(stmt.metadata[0].range.right as Expression);
-            } else {
+            
+            if(stmt.metadata[0].range_type === rangeType.slice || stmt.metadata[0].range_type === rangeType.array) {
                 generateAddress(stmt.metadata[0].array_id as Expression);
                 console.log("   mov rax, [rax]");
+            } else {
+                generateCode(stmt.metadata[0].range.right as Expression);
             }
+
             console.log("   dec rax");
             console.log(`   cmp [rbp-${stmt.metadata[0].counter.offset}], rax`)
             console.log(`   jge ${breakLabel()}`);
