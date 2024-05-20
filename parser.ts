@@ -762,7 +762,7 @@ export class Parser {
                 }
                 return this.parseTupleIndex(expr, index);
             default:
-                console.error("indexing non array", expr.datatype);
+                console.error("indexing non array", expr.datatype, isResolutionPass());
                 process.exit(1);
 
         }

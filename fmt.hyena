@@ -24,6 +24,27 @@ impl fmt {
         fmt::write_int(int);
     }
 
+    write_int_buff(buff:[]u8, int:i64, index:u64) void {
+        if(int < 0) {
+            int = -int;
+            buff[index] = '-';
+        }
+        if(int <= 0) return;
+        var char = int % 10 + '0';
+        var pos = fmt::write_int_buff(buff, int/10, index+1);
+        buff[index] = char;
+        return index+1;
+    }
+
+    write_integer_buff(buff:[]u8, int:i64) void {
+        if(int == 0) {
+            buff[0] = '0';
+            return;
+        }
+
+        return fmt::write_int_buff(buff, int, 0);
+    }
+
     println(format:&u8, args:argv) void {
         fmt::print(format,args);
         fmt::write_char('\n');
@@ -78,8 +99,54 @@ impl fmt {
         }
     }
 
-    buff_print() &u8 {
-
+    buff_print(buff:[]u8, format:&u8, args:argv) []u8 {
+        var skip_next = false;
+        var tmp_args = cast(*u64)args;
+        var idx = 1;
+        for(format, 1..) |char, i| {
+            if(skip_next) {
+                skip_next = false;
+                continue;
+            }
+            switch(char) {
+                '%' => {
+                    skip_next = true;
+                    switch(format[i]) {
+                        'q' => {
+                            fmt::write_integer_buff(buff, (tmp_args + idx).*);
+                            idx += 1;
+                        },
+                        'd' => {
+                            var pos = fmt::write_integer_buff(buff, cast(i32)(tmp_args + idx).*);
+                            fmt::println("%q", .{pos});
+                            idx += 1;
+                        },
+                        'w' => {
+                            fmt::write_integer_buff(buff, cast(i16)(tmp_args + idx).*);
+                            idx += 1;
+                        },
+                        'b' => {
+                            fmt::write_char((tmp_args + idx).*);
+                            idx += 1;
+                        },
+                        's' => {
+                            var slice = cast(&u8)(tmp_args + idx).*;
+                            write(1, slice.ptr, slice.len);
+                            idx += 2;
+                        },
+                        else => {
+                            fmt::write_char(char);
+                            skip_next  = false;
+                        }
+                    }
+                },
+                else => { 
+                    fmt::write_char(char); 
+                    skip_next = false;
+                }
+            }
+            
+        }
     }
 }
 

@@ -1,12 +1,10 @@
-fn buff(a:[]u8) void {
-    for(a)|_| {
-        fmt::println("==", .{});
-    }
-}
-
 fn main() void {
     var a:[10]u8 = undefined;
-    buff(a);
+
+    fmt::buff_print(a, "%d", .{14});
+
+    fmt::println("%s", .{a[0..2]});
+    
 }
 
 import "fmt.hyena"

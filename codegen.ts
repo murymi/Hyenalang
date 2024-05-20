@@ -422,7 +422,44 @@ function assignLit(offset: number, expr: Expression) {
                     //console.log("pop r14");
                     s.value.call_in_lit = true;
                     generateCode(s.value);
-                } else {
+                } else if(s.value.type === exprType.slice_array) {
+                    generateCode(s.value.left as Expression);
+                    console.log("   mov rdx, rax");
+                    push();
+                    generateCode(s.value.right as Expression);
+                    pop("rdi");
+                    genSubtract();
+                    console.log("   mov rcx, rax");
+                    pop("rax");
+                    console.log("   mov [rax], rcx");
+                    console.log("   add rax, 8");
+                    push();
+                    generateAddress(s.value.id);
+                    console.log("   add rax, 8");
+                    console.log(`   imul rdx, ${s.value.datatype.base.size}`)
+                    console.log("   add rax, rdx");
+                    pop("rdi");
+                    console.log("   mov [rdi], rax");
+                } else if(s.value.type === exprType.slice_slice) {
+                    generateCode(s.value.left as Expression);
+                    console.log("   mov rdx, rax");
+                    push();
+                    generateCode(s.value.right as Expression);
+                    pop("rdi");
+                    genSubtract();
+                    console.log("   mov rcx, rax");
+                    pop("rax");
+                    console.log("   mov [rax], rcx");
+                    console.log("   add rax, 8");
+                    push();
+                    generateAddress(s.value.id);
+                    console.log("   add rax, 8");
+                    console.log("   mov rax, [rax]");
+                    console.log(`   imul rdx, ${s.value.datatype.base.size}`)
+                    console.log("   add rax, rdx");
+                    pop("rdi");
+                    console.log("   mov [rdi], rax");
+                } else{
                     generateAddress(s.value);
                     storeStruct(s.data_type);
                 }

@@ -215,13 +215,6 @@ export function getLocalOffset(name: string, tok: Token): { offset: number, data
         return { offset: -4, datatype: i64, variable: undefined };
     }
 
-    for (let i = functions.length - 1; i >= 0; i--) {
-        if (functions[i].name === name) {
-            return { offset: -1, datatype: functions[i].data_type, variable: undefined }
-        }
-    }
-
-
     for (let scope of variable_scopes) {
         //console.error(scope.variables[0]);
         for (let v of scope.variables) {
@@ -243,6 +236,12 @@ export function getLocalOffset(name: string, tok: Token): { offset: number, data
     for (let i = 0; i < globals.length; i++) {
         if (globals[i].name === name) {
             return { offset: -2, datatype: globals[i].datatype, variable: globals[i] }
+        }
+    }
+
+    for (let i = functions.length - 1; i >= 0; i--) {
+        if (functions[i].name === name) {
+            return { offset: -1, datatype: functions[i].data_type, variable: undefined }
         }
     }
 
