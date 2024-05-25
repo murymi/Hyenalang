@@ -209,7 +209,7 @@ fn main () void {
 
 ### if
 
-```
+```zig
 fn main() {
     var a = 0;
     if(a == 0) {
@@ -328,7 +328,7 @@ fn main() void {
 ```
 
 ### struct/union functions
-```
+```zig
 struct Cow {
     name:&u8,
     age:u8
