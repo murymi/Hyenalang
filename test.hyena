@@ -1,10 +1,6 @@
 fn main() void {
-    var a:[10]u8 = undefined;
-
-    fmt::buff_print(a, "%d", .{14});
-
-    fmt::println("%s", .{a[0..2]});
-    
+    defer 8+9;
+    return;
+    defer 3+4;
 }
-
-import "fmt.hyena"
+//import "fmt.hyena"

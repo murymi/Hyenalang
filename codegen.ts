@@ -30,6 +30,8 @@ function continueLable (){
     return continueLabels[breakLabels.length-1];
 }
 
+var defers: Statement[] = [];
+
 var argRegisters = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 var dwordArgRegisters = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 var wordArgRegisters = ["di", "si", "dx", "cx", "r8w", "r9w"];
@@ -796,7 +798,29 @@ function genStmt(stmt: Statement, fnid: number): void {
             generateCode(stmt.initializer as Expression);
             break;
         case stmtType.block:
-            stmt.stmts.forEach((s, i) => { genStmt(s, fnid); })
+            var found_defers = 0;
+            stmt.stmts.forEach((s, i) => { 
+                switch(s.type) {
+                    case stmtType.defer_ph:
+                        found_defers++;
+                    break
+                    case stmtType.braek:
+                    case stmtType.contineu:
+                    case stmtType.ret:
+                        for (let i = stmt.defers.length-1; i > stmt.defers.length - found_defers - 1; i--) {
+                            genStmt(stmt.defers[i], fnid);
+                        }
+                        genStmt(s, fnid);
+                        break;
+                    default:
+                        genStmt(s, fnid);
+                }
+            })
+            //console.error(found_defers);
+
+            stmt.defers.forEach((d)=> {
+                genStmt(d, fnid);
+            })
             break
         case stmtType.ifStmt:
             var labeloffset = incLabel();
@@ -1030,7 +1054,8 @@ function genStmt(stmt: Statement, fnid: number): void {
             popLabels();
             break;
         case stmtType.defer:
-            genStmt(stmt.then, fnid);
+            //genStmt(stmt.then, fnid);
+            //defers.push(stmt.then);
             break;
         case stmtType.enumdecl:
         case stmtType.structdecl:

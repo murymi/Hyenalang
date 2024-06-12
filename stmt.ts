@@ -21,7 +21,8 @@ export enum stmtType {
     module,
     switch,
     intloop,
-    defer
+    defer,
+    defer_ph
 }
 
 export class Statement {
@@ -55,6 +56,7 @@ export class Statement {
 
     //switch
     prongs: Statement[];
+    defers: Statement[];
     cases: Expression[];
 
     asm_lines: string[]
@@ -76,6 +78,10 @@ export class Statement {
 
     loop_var_assigns: Expression[];
 
+    newDeferPlaceHolder() {
+        this.type = stmtType.defer_ph;
+        return this;
+    }
 
     newEnum(){
         this.type = stmtType.enumdecl;
@@ -171,8 +177,9 @@ export class Statement {
         return this;
     }
 
-    newBlockStatement(stmts: Statement[]): Statement {
+    newBlockStatement(stmts: Statement[], defers: Statement[]): Statement {
         this.stmts = stmts;
+        this.defers = defers;
         this.type = stmtType.block;
         return this;
     }

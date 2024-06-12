@@ -288,7 +288,10 @@ export function setCurrentFuction(n: number) {
     currentFn = n;
 }
 
-export function getcurrFn() { return currentFn; }
+export function getcurrFn() { 
+    return currentFn; 
+}
+
 export function restoreFn(num: number) {
     currentFn = num;
 }

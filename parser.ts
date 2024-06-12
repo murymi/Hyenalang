@@ -9,6 +9,7 @@ import {
     compile,
     endScope,
     fnType,
+    getFn,
     getLocalOffset,
     getcurrFn,
     incLocalOffset,
@@ -1086,16 +1087,17 @@ export class Parser {
             var stmt = await this.declaration();
             if (stmt.type === stmtType.defer) {
                 defers.push(stmt.then);
+                stmts.push(new Statement().newDeferPlaceHolder());
             } else {
                 stmts.push(stmt);
             }
         }
         this.expect(tokenType.rightbrace, "}");
-        defers.reverse().forEach((d) => {
-            stmts.push(d);
-        })
+        // defers.reverse().forEach((d) => {
+        //     stmts.push(d);
+        // })
         endScope();
-        return new Statement().newBlockStatement(stmts);
+        return new Statement().newBlockStatement(stmts, defers.reverse());
     }
 
     async re_turn(): Promise<Statement> {
@@ -1815,6 +1817,8 @@ export class Parser {
             return new Statement().newNativeFnStatement(name as string);
         }
         setCurrentFuction(curr_fn);
+
+        //getFn
         this.expect(tokenType.leftbrace, "{");
         var body = await this.block();
         resetCurrentFunction(name, body);
