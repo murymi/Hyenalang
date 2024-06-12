@@ -1103,7 +1103,7 @@ export class Parser {
     async re_turn(): Promise<Statement> {
         if (this.match([tokenType.semicolon])) {
             var expr = new Expression().newExprNumber(0);
-            expr.datatype = i64;
+            expr.datatype = voidtype;
             return new Statement().newReturnStatement(expr);
         }
         var expr = await this.expression();

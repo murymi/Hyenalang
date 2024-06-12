@@ -1,6 +1,10 @@
 fn main() void {
     defer 8+9;
-    return;
     defer 3+4;
+    defer 8+9;
+    return;
+    defer 8+9;
+    defer 8+9;
+
 }
 //import "fmt.hyena"

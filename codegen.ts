@@ -5,7 +5,7 @@ import { Statement, stmtType } from "./stmt";
 import { Variable, fnType } from "./main";
 import { Function } from "./main";
 import { count, error } from "console";
-import { Type, alignTo, f32, myType, u64, u8 } from "./type";
+import { Type, alignTo, f32, myType, u64, u8, voidtype } from "./type";
 import { tokenError } from "./parser";
 
 
@@ -871,6 +871,10 @@ function genStmt(stmt: Statement, fnid: number): void {
             }
             break;
         case stmtType.ret:
+            if (stmt.expr.datatype === voidtype) {
+                console.log(`   jmp .L.endfn.${fnid}`);
+                return;
+            }
             if (stmt.expr.datatype.kind === myType.string) {
                 //console.error(stmt.expr.datatype);
                 console.log("   mov rax, [rbp-8]");
