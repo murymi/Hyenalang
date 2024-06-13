@@ -398,6 +398,8 @@ export class Type {
                 return "u64";
             case myType.bool:
                 return "bool";
+            case myType.f32:
+                return "f32";
             case myType.enum:
             case myType.struct:
                 return this.name;

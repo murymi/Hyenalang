@@ -1,10 +1,9 @@
+extern fn printf(a:*u8, f:f32) void;
+
 fn main() void {
-    defer 8+9;
-    defer 3+4;
-    defer 8+9;
-    return;
-    defer 8+9;
-    defer 8+9;
+
+    if(2.0 or 6.0) {}
+
 
 }
 //import "fmt.hyena"

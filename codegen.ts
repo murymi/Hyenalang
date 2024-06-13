@@ -9,10 +9,10 @@ import { Type, alignTo, f32, myType, u64, u8, voidtype } from "./type";
 import { tokenError } from "./parser";
 
 
-var continueLabels:string []= [];
-var breakLabels:string[] = [];
+var continueLabels: string[] = [];
+var breakLabels: string[] = [];
 
-function pushLabels(cont:string, br:string) {
+function pushLabels(cont: string, br: string) {
     continueLabels.push(cont);
     breakLabels.push(br);
 }
@@ -23,11 +23,11 @@ function popLabels() {
 }
 
 function breakLabel() {
-    return breakLabels[breakLabels.length-1];
+    return breakLabels[breakLabels.length - 1];
 }
 
-function continueLable (){
-    return continueLabels[breakLabels.length-1];
+function continueLable() {
+    return continueLabels[breakLabels.length - 1];
 }
 
 var defers: Statement[] = [];
@@ -53,9 +53,13 @@ function incLabel() {
     return l++;
 }
 
-function genDivide() {
-    console.log("   cqo");
-    console.log("   idiv rdi");
+function genDivide(datatype:Type) {
+    if (datatype.kind === myType.f32) {
+        console.log("   divss xmm0, xmm1")
+    } else {
+        console.log("   cqo");
+        console.log("   idiv rdi");
+    }
 }
 
 function genMod() {
@@ -64,60 +68,104 @@ function genMod() {
     console.log("   mov rax, rdx");
 }
 
-function genMultiply() {
-    console.log("   imul rax, rdi");
+function genMultiply(datatype:Type) {
+    if (datatype.kind === myType.f32) {
+        console.log("   mulss xmm0, xmm1")
+    } else {
+        console.log("   imul rax, rdi");
+    }
 }
 
 function genAdd(datatype: Type) {
-    if (datatype === f32) {
-        return;
+    if (datatype.kind === myType.f32) {
+        console.log("   addss xmm0, xmm1")
+    } else {
+        console.log("   add rax, rdi");
     }
-
-    console.log("   add rax, rdi");
 }
 
-function genSubtract() {
-    console.log("   sub rax, rdi");
+function genSubtract(datatype:Type) {
+    if (datatype.kind === myType.f32) {
+        console.log("   addss xmm0, xmm1")
+    } else {
+        console.log("   sub rax, rdi");
+    }
 }
 
-function genLess() {
-    console.log("   cmp rax, rdi");
-    console.log("   setl al");
-    console.log("   movzb rax, al");
+function genLess(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   ucomiss xmm0, xmm1");
+        console.log("   setb al");
+        console.log("   movzb rax, al");
+    } else {
+        console.log("   cmp rax, rdi");
+        console.log("   setl al");
+        console.log("   movzb rax, al");
+    }
 }
 
-function genGreater() {
-    console.log("   cmp rax, rdi");
-    console.log("   setg al");
-    console.log("   movzb rax, al")
+function genGreater(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   ucomiss xmm0, xmm1");
+        console.log("   seta al");
+        console.log("   movzb rax, al");
+    } else {
+        console.log("   cmp rax, rdi");
+        console.log("   setg al");
+        console.log("   movzb rax, al")
+    }
 }
 
-function genLessEq() {
-    console.log("   cmp rax, rdi");
-    console.log("   setle al");
-    console.log("   movzb rax, al")
+function genLessEq(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   ucomiss xmm0, xmm1");
+        console.log("   setbe al");
+        console.log("   movzb rax, al");
+    } else {
+        console.log("   cmp rax, rdi");
+        console.log("   setle al");
+        console.log("   movzb rax, al")
+    }
 }
 
-function genGreaterEq() {
-    console.log("   cmp rax, rdi");
-    console.log("   setge al");
-    console.log("   movzb rax, al")
+function genGreaterEq(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   ucomiss xmm0, xmm1");
+        console.log("   setae al");
+        console.log("   movzb rax, al");
+    } else {
+        console.log("   cmp rax, rdi");
+        console.log("   setge al");
+        console.log("   movzb rax, al")
+    }
 }
 
-function genEq() {
-    console.log("   cmp rax, rdi");
+function genEq(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   ucomiss xmm0, xmm1");
+    } else {
+        console.log("   cmp rax, rdi");
+    }
     console.log("   sete al");
     console.log("   movzb rax, al")
 }
 
-function genNotEq() {
-    console.log("   cmp rax, rdi");
+function genNotEq(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   ucomiss xmm0, xmm1");
+    } else {
+        console.log("   cmp rax, rdi");
+    }
     console.log("   setne al");
     console.log("   movzb rax, al")
 }
 
-function genNegate() {
-    console.log("   neg rax");
+function genNegate(datatype:Type) {
+    if(datatype.kind === myType.f32) {
+        console.log("   xorps xmm0, [__negativefloatmask__]")
+    } else {
+        console.log("   neg rax");
+    }
 }
 
 function push() {
@@ -154,11 +202,21 @@ function genBitNot() {
     console.log("   not rax");
 }
 
-function genLogicalAnd() {
+function genLogicalAnd(ltype:Type, rtype:Type) {
     var label = incLabel();
-    console.log(`   cmp rax, 0`);
+    if(ltype.kind === myType.f32) {
+        console.log("   xor xmm2, xmm2");
+        console.log("   ucomiss xmm0, xmm2");
+    } else {
+        console.log(`   cmp rax, 0`);
+    }
     console.log(`   je .L.fail.${label}`);
-    console.log(`   cmp rdi, 0`);
+    if(rtype.kind === myType.f32) {
+        console.log("   xor xmm2, xmm2");
+        console.log("   ucomiss xmm1, xmm2");
+    } else {
+        console.log(`   cmp rdi, 0`);
+    }
     console.log(`   je .L.fail.${label}`);
     console.log(`   mov rax, 1`);
     console.log(`   jmp .L.finish.${label}`);
@@ -167,14 +225,25 @@ function genLogicalAnd() {
     console.log(`.L.finish.${label}:`);
 }
 
-function genLogicalOr() {
+function genLogicalOr(ltype:Type, rtype:Type) {
     var label = incLabel();
-    console.log(`   cmp rax, 0`);
+    
+    if(ltype.kind === myType.f32) {
+        console.log("   xor xmm2, xmm2");
+        console.log("   ucomiss xmm0, xmm2");
+    } else {
+        console.log(`   cmp rax, 0`);
+    }
     console.log(`   je .L.step2.${label}`);
     console.log(`   mov rax, 1`);
     console.log(`   jmp .L.finish.${label}`);
     console.log(`.L.step2.${label}:`);
-    console.log(`   cmp rdi, 0`);
+    if(rtype.kind === myType.f32) {
+        console.log("   xor xmm2, xmm2");
+        console.log("   ucomiss xmm1, xmm2");
+    } else {
+        console.log(`   cmp rdi, 0`);
+    }
     console.log(`   je .L.finish.${label}`);
     console.log(`   mov rax, 1`);
     console.log(`.L.finish.${label}:`);
@@ -197,40 +266,43 @@ function genShiftRight() {
     console.log(`   loop .L.shr.${label}`);
 }
 
-function genBinary(operator: tokenType, datatype: Type) {
-
-    console.log("   pop rdi");
+function genBinary(operator: tokenType, datatype: Type, rtype:Type) {
+    if (datatype.kind === myType.f32) {
+        popf32(1)
+    } else {
+        console.log("   pop rdi");
+    }
 
     switch (operator) {
         case tokenType.divide:
-            genDivide();
+            genDivide(datatype);
             break;
         case tokenType.multiply:
-            genMultiply();
+            genMultiply(datatype);
             break
         case tokenType.plus:
             genAdd(datatype);
             break
         case tokenType.minus:
-            genSubtract();
+            genSubtract(datatype);
             break
         case tokenType.greater:
-            genGreater();
+            genGreater(datatype);
             break;
         case tokenType.less:
-            genLess();
+            genLess(datatype);
             break;
         case tokenType.eq:
-            genEq();
+            genEq(datatype);
             break;
         case tokenType.lte:
-            genLessEq();
+            genLessEq(datatype);
             break;
         case tokenType.gte:
-            genGreaterEq();
+            genGreaterEq(datatype);
             break;
         case tokenType.neq:
-            genNotEq();
+            genNotEq(datatype);
             break;
         case tokenType.bitnot:
             genBitNot();
@@ -245,10 +317,10 @@ function genBinary(operator: tokenType, datatype: Type) {
             genBitOr();
             break;
         case tokenType.and:
-            genLogicalAnd();
+            genLogicalAnd(datatype, rtype);
             break
         case tokenType.or:
-            genLogicalOr();
+            genLogicalOr(datatype, rtype);
             break;
         case tokenType.mod:
             genMod();
@@ -271,10 +343,10 @@ function genBang() {
     console.log("   movzb rax, al");
 }
 
-function genUnary(operator: Token) {
+function genUnary(operator: Token,datatype:Type) {
     switch (operator.type) {
         case tokenType.minus:
-            genNegate();
+            genNegate(datatype);
             break;
         case tokenType.bitnot:
             genBitNot();
@@ -287,6 +359,9 @@ function genUnary(operator: Token) {
 
 function genNumber(expr: Expression) {
     console.log("   mov rax, " + expr.val);
+    if(expr.datatype.kind === myType.f32) {
+        console.log("movd xmm0, rax")
+    }
 }
 
 function load(datatype: Type) {
@@ -295,7 +370,7 @@ function load(datatype: Type) {
     } else if (datatype.size === 2) {
         console.log("   movsx rax, word ptr [rax]");
     } else if (datatype.size === 4) {
-        if (datatype === f32) {
+        if (datatype.kind === myType.f32) {
             console.log("   movss xmm0, dword ptr [rax]");
         } else {
             console.log("   movsxd rax, dword ptr [rax]");
@@ -316,7 +391,7 @@ function store(datatype: Type) {
     } else if (datatype.size === 2) {
         console.log("   mov [rdi], ax");
     } else if (datatype.size === 4) {
-        if (datatype === f32) {
+        if (datatype.kind === myType.f32) {
             console.log("   movss [rdi], xmm0");
         } else {
             console.log("   mov [rdi], eax");
@@ -412,7 +487,7 @@ function assignLit(offset: number, expr: Expression) {
             assignLit(s.field_offset + offset + 8, s.value);
         } else {
 
-            if(s.value.type === exprType.undefnd) return;
+            if (s.value.type === exprType.undefnd) return;
 
             pop("rdi");
             console.log("   push rdi");
@@ -424,13 +499,13 @@ function assignLit(offset: number, expr: Expression) {
                     //console.log("pop r14");
                     s.value.call_in_lit = true;
                     generateCode(s.value);
-                } else if(s.value.type === exprType.slice_array) {
+                } else if (s.value.type === exprType.slice_array) {
                     generateCode(s.value.left as Expression);
                     console.log("   mov rdx, rax");
                     push();
                     generateCode(s.value.right as Expression);
                     pop("rdi");
-                    genSubtract();
+                    genSubtract(u64);
                     console.log("   mov rcx, rax");
                     pop("rax");
                     console.log("   mov [rax], rcx");
@@ -442,13 +517,13 @@ function assignLit(offset: number, expr: Expression) {
                     console.log("   add rax, rdx");
                     pop("rdi");
                     console.log("   mov [rdi], rax");
-                } else if(s.value.type === exprType.slice_slice) {
+                } else if (s.value.type === exprType.slice_slice) {
                     generateCode(s.value.left as Expression);
                     console.log("   mov rdx, rax");
                     push();
                     generateCode(s.value.right as Expression);
                     pop("rdi");
-                    genSubtract();
+                    genSubtract(u64);
                     console.log("   mov rcx, rax");
                     pop("rax");
                     console.log("   mov [rax], rcx");
@@ -461,7 +536,7 @@ function assignLit(offset: number, expr: Expression) {
                     console.log("   add rax, rdx");
                     pop("rdi");
                     console.log("   mov [rdi], rax");
-                } else{
+                } else {
                     generateAddress(s.value);
                     storeStruct(s.data_type);
                 }
@@ -534,7 +609,7 @@ function storeSliceFromArrayWithIndex(
     push();
     generateCode(end);
     pop("rdi");
-    genSubtract();
+    genSubtract(u64);
     console.log("   mov rcx, rax");
     v ? genAddress(to) : genLvalue(to);
     console.log("   mov [rax], rcx");
@@ -560,7 +635,7 @@ function storeSliceFromSliceWithIndex(
     push();
     generateCode(end);
     pop("rdi");
-    genSubtract();
+    genSubtract(u64);
     console.log("   mov rcx, rax");
     v ? genAddress(to) : genLvalue(to);
     console.log("   mov [rax], rcx");
@@ -641,9 +716,13 @@ function generateCode(expr: Expression) {
             break;
         case exprType.binary_op:
             generateCode(expr.right as Expression);
-            push();
+            if (expr.right?.datatype.kind === myType.f32) {
+                pushf32();
+            } else {
+                push();
+            }
             generateCode(expr.left as Expression);
-            genBinary(expr.operator?.type as tokenType, expr.datatype);
+            genBinary(expr.operator?.type as tokenType, expr.left?.datatype as Type, expr.right?.datatype as Type);
             break;
         case exprType.deref_index:
         case exprType.deref:
@@ -656,7 +735,7 @@ function generateCode(expr: Expression) {
             break;
         case exprType.unary:
             generateCode(expr.right as Expression);
-            genUnary(expr.operator as Token);
+            genUnary(expr.operator as Token, expr.datatype);
             break;
         case exprType.number:
             genNumber(expr);
@@ -727,7 +806,12 @@ function generateCode(expr: Expression) {
                     generateCode(p);
                 }
                 //console.error(p.datatype.size);
-                push();
+                if (p.datatype.kind === myType.f32) {
+                    console.log("cvtss2sd xmm0, xmm0")
+                }
+                {
+                    push();
+                }
             });
 
             //console.error(expr.params.length, "len");
@@ -772,7 +856,12 @@ function generateCode(expr: Expression) {
         case exprType.if_expr:
             var label = incLabel();
             generateCode(expr.cond);
-            console.log("cmp rax, 0");
+            if(expr.cond.datatype.kind === myType.f32) {
+                console.log("   xor xmm1, xmm1");
+                console.log("   ucomiss xmm0, xmm1");
+            } else {
+                console.log("cmp rax, 0");
+            }
             console.log(`jz .L.else.${label}`);
             console.log(`.L.if.${label}:`);
             generateCode(expr.left as Expression);
@@ -799,15 +888,15 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.block:
             var found_defers = 0;
-            stmt.stmts.forEach((s, i) => { 
-                switch(s.type) {
+            stmt.stmts.forEach((s, i) => {
+                switch (s.type) {
                     case stmtType.defer_ph:
                         found_defers++;
-                    break
+                        break
                     case stmtType.braek:
                     case stmtType.contineu:
                     case stmtType.ret:
-                        for (let i = stmt.defers.length-1; i > stmt.defers.length - found_defers - 1; i--) {
+                        for (let i = stmt.defers.length - 1; i > stmt.defers.length - found_defers - 1; i--) {
                             genStmt(stmt.defers[i], fnid);
                         }
                         genStmt(s, fnid);
@@ -818,7 +907,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             })
             //console.error(found_defers);
 
-            stmt.defers.forEach((d)=> {
+            stmt.defers.forEach((d) => {
                 genStmt(d, fnid);
             })
             break
@@ -828,7 +917,12 @@ function genStmt(stmt: Statement, fnid: number): void {
                 generateCode(stmt.initializer);
             }
             generateCode(stmt.cond);
-            console.log("   cmp rax, 0");
+            if(stmt.cond.datatype.kind === myType.f32) {
+                console.log("   xor xmm1, xmm1");
+                console.log("   ucomiss xmm0, xmm1");
+            } else {
+                console.log("cmp rax, 0");
+            }
             console.log("   je .L.else." + labeloffset);
             genStmt(stmt.then, fnid);
             console.log("   jmp .L.end." + labeloffset);
@@ -839,24 +933,28 @@ function genStmt(stmt: Statement, fnid: number): void {
             console.log(".L.end." + labeloffset + ":");
             break;
         case stmtType.whileStmt:
-            if(stmt.name !== "") {
-                pushLabels(`.L.continue.${stmt.name}`,`.L.break.${stmt.name}`);
+            if (stmt.name !== "") {
+                pushLabels(`.L.continue.${stmt.name}`, `.L.break.${stmt.name}`);
             } else {
                 var labeloffset = incLabel();
-                pushLabels(`.L.continue.${labeloffset}`,`.L.break.${labeloffset}`)
+                pushLabels(`.L.continue.${labeloffset}`, `.L.break.${labeloffset}`)
             }
-            console.log(continueLable()+":");
-            generateCode(stmt.cond);
-            console.log("   cmp rax, 0");
+            console.log(continueLable() + ":");
+            if(stmt.cond.datatype.kind === myType.f32) {
+                console.log("   xor xmm1, xmm1");
+                console.log("   ucomiss xmm0, xmm1");
+            } else {
+                console.log("cmp rax, 0");
+            }
             console.log(`   je ${breakLabel()}`);
             genStmt(stmt.then, fnid);
             console.log(`   jmp ${continueLable()}`);
-            console.log(breakLabel()+":");
+            console.log(breakLabel() + ":");
             popLabels();
             break;
         case stmtType.braek:
             if (breakLabels.length === 0) throw new Error("Stray break");
-            if(stmt.name.length > 0) {
+            if (stmt.name.length > 0) {
                 console.log(`   jmp .L.break.${stmt.name}`);
             } else {
                 console.log("   jmp " + breakLabel());
@@ -864,7 +962,7 @@ function genStmt(stmt: Statement, fnid: number): void {
             break;
         case stmtType.contineu:
             if (continueLabels.length === 0) throw new Error("Stray continue");
-            if(stmt.name.length > 0) {
+            if (stmt.name.length > 0) {
                 console.log(`   jmp .L.continue.${stmt.name}`);
             } else {
                 console.log("   jmp " + continueLable());
@@ -990,15 +1088,15 @@ function genStmt(stmt: Statement, fnid: number): void {
                 console.log(`   mov [rbp-${m.counter.offset}], rax`)
             })
 
-            if(stmt.name !== "") {
-                pushLabels(`.L.continue.${stmt.name}`,`.L.break.${stmt.name}`);
+            if (stmt.name !== "") {
+                pushLabels(`.L.continue.${stmt.name}`, `.L.break.${stmt.name}`);
             } else {
                 var labeloffset = incLabel();
-                pushLabels(`.L.continue.${labeloffset}`,`.L.break.${labeloffset}`)
+                pushLabels(`.L.continue.${labeloffset}`, `.L.break.${labeloffset}`)
             }
             console.log(`${continueLable()}:`);
-            
-            if(stmt.metadata[0].range_type === rangeType.slice || stmt.metadata[0].range_type === rangeType.array) {
+
+            if (stmt.metadata[0].range_type === rangeType.slice || stmt.metadata[0].range_type === rangeType.array) {
                 generateAddress(stmt.metadata[0].array_id as Expression);
                 console.log("   mov rax, [rax]");
             } else {
@@ -1023,7 +1121,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
                     } else {
-                        if((m.index_var as Variable).datatype.size > 8) {
+                        if ((m.index_var as Variable).datatype.size > 8) {
                             storeStruct(m.index_var?.datatype as Type);
                         } else {
                             console.log("   mov rax, [rax]");
@@ -1043,7 +1141,7 @@ function genStmt(stmt: Statement, fnid: number): void {
                         pop("rdi");
                         console.log("   mov [rdi], rax");
                     } else {
-                        if((m.index_var as Variable).datatype.size > 8) {
+                        if ((m.index_var as Variable).datatype.size > 8) {
                             storeStruct(m.index_var?.datatype as Type);
                         } else {
                             console.log("   mov rax, [rax]");
@@ -1142,8 +1240,8 @@ function isPtrForId(expr: Expression): boolean {
 
 function isConstExpr(expr: Expression) {
     return expr.datatype.isInteger() ||
-     expr.isLiteral() || isPtrForId(expr) || expr.datatype.isString()
-      || expr.type === exprType.undefnd || expr.datatype.kind === myType.enum;
+        expr.isLiteral() || isPtrForId(expr) || expr.datatype.isString()
+        || expr.type === exprType.undefnd || expr.datatype.kind === myType.enum;
 }
 
 function genGlobalLit(expr: Expression, data_type: Type) {
@@ -1295,6 +1393,7 @@ function genEntry() {
     console.log(".align 8");
     console.log("__argc__: .quad 0");
     console.log("__argv__: .quad 0");
+    console.log("__negativefloatmask__: .float -0.0")
     console.log(".text");
     console.log("")
     console.log(".global _start");

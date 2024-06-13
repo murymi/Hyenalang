@@ -207,6 +207,9 @@ export class Expression {
     }
 
     newExprBinary(op: Token, left: Expression, right: Expression): Expression {
+        if(!left.datatype.eql(right.datatype) && !isResolutionPass()) {
+            tokenError(`Expected ${left.datatype.toString()} found ${right.datatype.toString()}`, op);
+        }
         this.type = exprType.binary_op;
         this.left = left;
         this.right = right;

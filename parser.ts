@@ -433,7 +433,19 @@ export class Parser {
         }
 
         if (this.match([tokenType.number])) {
-            return new Expression().newExprNumber(this.previous().value as number, this.previous().isfloat);
+            var prev_tok = this.previous();
+            var tok_value = prev_tok.value as number;
+
+            //var value = BigInt(tok_value);
+
+            if (prev_tok.isfloat) {
+                var array_buffer = new ArrayBuffer(8);
+                var data_view = new DataView(array_buffer);
+                data_view.setFloat32(0, tok_value, true);
+
+                tok_value = data_view.getInt32(0, true);
+            }
+            return new Expression().newExprNumber(tok_value, this.previous().isfloat);
         }
 
         if (this.match([tokenType.leftparen])) {
@@ -682,7 +694,7 @@ export class Parser {
         if (index.val > expr.datatype.base.members.length) {
             tokenError("invalid index", this.previous());
         }
-        var idx = index.val as number
+        var idx = index.val as number;
         return new Expression().newExprGet(
             expr.datatype.base.members[idx + 1].offset,
             new Expression().newExprDeref(expr), expr.datatype.base.members[idx + 1].type);
@@ -1640,8 +1652,6 @@ export class Parser {
         if (tok.type === tokenType.multiply) {
             return new Type().newPointer(this.parseType(curr_struct));
         }
-
-
         switch (tok.type) {
             case tokenType.void:
                 return voidtype;
